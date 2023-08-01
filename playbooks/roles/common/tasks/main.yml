@@ -1,0 +1,22 @@
+- name: Ensure Firewall is disabled
+  ansible.builtin.systemd:
+    name: firewalld
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Disable SELinux
+  ansible.posix.selinux:
+    state: disabled
+
+- name: Install necessary packages
+  ansible.builtin.dnf:
+    name:
+      - git
+      - make
+      - jq
+      - python3-pip
+
+- name: Install kubernetes python library
+  ansible.builtin.pip:
+    name: kubernetes

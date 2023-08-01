@@ -1,0 +1,16 @@
+- name: check for K3s install
+  ansible.builtin.stat:
+    path: /usr/local/bin/kubectl
+  register: k
+        
+- name: Install K3s
+  ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
+  args:
+    chdir: /tmp
+  when: not k.stat.exists
+
+- name: Symlink kubectl (to fix ansible PATH issues)
+  ansible.builtin.file:
+    src: /usr/local/bin/kubectl
+    dest: /usr/bin/kubectl
+    state: link

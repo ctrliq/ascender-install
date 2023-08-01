@@ -1,0 +1,84 @@
+inventories:
+  - name: Default Inventory
+
+projects:
+  - name: Ascender Playbooks
+    description: Administrative Playbooks for Rocky Linux
+    scm_type: git
+    scm_url: https://github.com/ctrliq/ascender-playbooks.git
+    scm_update_on_launch: false
+
+  - name: Ansible Lockdown - CIS - EL9
+    description: CIS Benchmark Hardening for Enterprise Linux 9
+    scm_type: git
+    scm_url: https://github.com/ansible-lockdown/RHEL9-CIS.git
+    scm_update_on_launch: false
+
+  - name: Ansible Lockdown - CIS - EL8
+    description: CIS Benchmark Hardening for Enterprise Linux 8
+    scm_type: git
+    scm_url: https://github.com/ansible-lockdown/RHEL8-CIS.git
+    scm_update_on_launch: false
+
+  - name: Ansible Lockdown - STIG - EL8
+    description: STIG Hardening for Enterprise Linux 8
+    scm_type: git
+    scm_url: https://github.com/ansible-lockdown/RHEL8-STIG.git
+    scm_update_on_launch: false
+
+templates:
+  - name: Configure SELinux
+    description: ""
+    job_type: run
+    inventory: Default Inventory
+    project: Ascender Playbooks
+    playbook: selinux.yml
+    survey_enabled: true
+    survey_file: surveys/selinux.json
+    ask_credential_on_launch: true
+    diff_mode: true
+
+  - name: Gather System Facts
+    description: ""
+    job_type: run
+    inventory: Default Inventory
+    project: Ascender Playbooks
+    playbook: gather_facts.yml
+    ask_credential_on_launch: true
+
+  - name: Patch Enterprise Linux
+    description: ""
+    job_type: run
+    inventory: Default Inventory
+    project: Ascender Playbooks
+    playbook: patching.yml
+    survey_enabled: true
+    survey_file: surveys/patching.json
+    ask_credential_on_launch: true
+
+  - name: CIS Benchmark Hardening for Enterprise Linux 9
+    description: CIS Benchmark Hardening for Enterprise Linux 9
+    job_type: run
+    inventory: Default Inventory
+    project: Ansible Lockdown - CIS - EL9
+    playbook: site.yml
+    ask_credential_on_launch: true
+    diff_mode: true
+
+  - name: CIS Benchmark Hardening for Enterprise Linux 8
+    description: CIS Benchmark Hardening for Enterprise Linux 8
+    job_type: run
+    inventory: Default Inventory
+    project: Ansible Lockdown - CIS - EL8
+    playbook: site.yml
+    ask_credential_on_launch: true
+    diff_mode: true
+
+  - name: STIG Hardening for Enterprise Linux 8
+    description: STIG Hardening for Enterprise Linux 8
+    job_type: run
+    inventory: Default Inventory
+    project: Ansible Lockdown - STIG - EL8
+    playbook: site.yml
+    ask_credential_on_launch: true
+    diff_mode: true

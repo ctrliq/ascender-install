@@ -1,0 +1,61 @@
+{
+    "name": "",
+    "spec": [
+        {
+            "max": 1024,
+            "min": 0,
+            "type": "multiplechoice",
+            "choices": [
+                "enforcing",
+                "permissive",
+                "disabled"
+            ],
+            "default": "enforcing",
+            "required": true,
+            "variable": "selinux_state",
+            "new_question": true,
+            "question_name": "State",
+            "question_description": "The SELinux Mode"
+        },
+        {
+            "max": 64,
+            "min": 1,
+            "type": "text",
+            "choices": "",
+            "default": "targeted",
+            "required": true,
+            "variable": "selinux_policy",
+            "new_question": true,
+            "question_name": "Policy",
+            "question_description": "Name of the SELinux Policy"
+        },
+        {
+            "max": 1024,
+            "min": 1,
+            "type": "text",
+            "choices": "",
+            "default": "/etc/selinux/config",
+            "required": true,
+            "variable": "selinux_configfile",
+            "new_question": true,
+            "question_name": "Configuration File",
+            "question_description": "Path to the Selinux Configuration File"
+        },
+        {
+            "max": 1024,
+            "min": 0,
+            "type": "multiplechoice",
+            "choices": [
+                "Yes",
+                "No"
+            ],
+            "default": "Yes",
+            "required": true,
+            "variable": "selinux_reboot",
+            "new_question": true,
+            "question_name": "Reboot if Necessary",
+            "question_description": "If enabled and a change is made to SELinux that requires a reboot, the server will reboot immediately"
+        }
+    ],
+    "description": ""
+}

@@ -1,0 +1,14 @@
+- name: Create Project - {{ project.name }}
+  awx.awx.project:
+    controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: admin
+    controller_password: "{{ ascender_password }}"
+
+    name: "{{ project.name }}"
+    description: "{{ project.description }}"
+    organization: Default
+    scm_type: "{{ project.scm_type }}"
+    scm_url: "{{ project.scm_url }}"
+    scm_update_on_launch: "{{ project.scm_update_on_launch | default(omit) }}"
+
+

@@ -1,0 +1,19 @@
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ LEDGER_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Set Content
+  ansible.builtin.shell: /usr/local/bin/kubectl config set-context --current --namespace="{{ LEDGER_NAMESPACE }}"
+
+- name: Apply our Deployment
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/deploy.yaml') | from_yaml_all }}"
+
+- name: Wait for Ledger to be up
+  ansible.builtin.shell: "until kubectl get pods -n '{{ LEDGER_NAMESPACE }}' | grep -m 1 'web-' | grep '1/1'; do : ; done"
+  changed_when: false

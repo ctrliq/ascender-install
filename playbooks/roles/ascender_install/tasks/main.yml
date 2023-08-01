@@ -1,0 +1,43 @@
+- name: Clone AWX Operator
+  ansible.builtin.git:
+    repo: https://github.com/ansible/awx-operator.git
+    dest: /opt/awx-operator
+    single_branch: yes
+    version: "{{ ANSIBLE_OPERATOR_VERSION }}"
+#    update: no
+    force: yes
+
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ ASCENDER_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Set Content
+  ansible.builtin.shell: /usr/local/bin/kubectl config set-context --current --namespace="{{ ASCENDER_NAMESPACE }}"
+
+- name: Run Make
+  ansible.builtin.shell: make deploy
+  args:
+    chdir: /opt/awx-operator
+
+- name: Wait for Operator to complete
+  ansible.builtin.shell: "until kubectl get pods -n '{{ ASCENDER_NAMESPACE }}' | grep 'operator' | grep 'Running' | grep '2/2'; do : ; done"
+  changed_when: false
+
+- name: Apply our PVC
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/public-static-pvc.yaml') | from_yaml }}"
+
+- name: Apply our Deployment
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/awx-instance-deployment.yaml') | from_yaml }}"
+
+- name: Wait for Ascender to be up
+  ansible.builtin.shell: "until kubectl get pods -n '{{ ASCENDER_NAMESPACE }}' | grep -m 1 '{{ ASCENDER_NAMESPACE }}-web' | grep '3/3'; do : ; done"
+  changed_when: false

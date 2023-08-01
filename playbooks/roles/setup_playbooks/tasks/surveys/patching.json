@@ -1,0 +1,51 @@
+{
+    "name": "",
+    "spec": [
+        {
+            "max": 1024,
+            "min": 0,
+            "type": "multiplechoice",
+            "choices": [
+                "Yes",
+                "No"
+            ],
+            "default": "No",
+            "required": true,
+            "variable": "security_updates",
+            "new_question": true,
+            "question_name": "Only install Security Updates?",
+            "question_description": ""
+        },
+        {
+            "max": 1024,
+            "min": 0,
+            "type": "multiplechoice",
+            "choices": [
+                "Yes",
+                "No"
+            ],
+            "default": "Yes",
+            "required": true,
+            "variable": "update_kernel",
+            "new_question": false,
+            "question_name": "Install Kernel Updates?",
+            "question_description": ""
+        },
+        {
+            "max": 1024,
+            "min": 0,
+            "type": "multiplechoice",
+            "choices": [
+                "Yes",
+                "No"
+            ],
+            "default": "Yes",
+            "required": true,
+            "variable": "reboot_kernel",
+            "new_question": true,
+            "question_name": "Reboot after Kernel Updates? (if updated)",
+            "question_description": ""
+        }
+    ],
+    "description": ""
+}

@@ -1,0 +1,15 @@
+- name: Install Ascender
+  ansible.builtin.import_playbook: install_ascender.yml
+
+- name: Install Ledger
+  ansible.builtin.import_playbook: install_ledger.yml
+
+- name: Configure Ascender Logging
+  ansible.builtin.import_playbook: configure_logs.yml
+
+- name: Cleanup default resources
+  ansible.builtin.import_playbook: cleanup_demo.yml
+
+- name: Configure Initial Playbooks
+  ansible.builtin.import_playbook: setup_playbooks.yml
+

@@ -1,0 +1,91 @@
+- hosts: ascender
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
+  tasks:
+    - name: Get the Admin password
+      kubernetes.core.k8s_info:
+        api: v1
+        kind: Secret
+        name: ascender-admin-password
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      register: ascender_password
+
+    - name: Get the Service Port
+      kubernetes.core.k8s_info:
+        api: v1
+        kind: Service
+        name: ascender-service
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      register: ascender_service
+
+    - name: Store Results
+      ansible.builtin.set_fact:
+         ascender_username: admin
+         ascender_password: "{{ ascender_password.resources[0].data.password | b64decode }}"
+         ascender_port: "{{ ascender_service.resources[0].spec.ports[0].nodePort }}"
+
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: Get Ledger IP and Port
+      ansible.builtin.set_fact:
+        ascender_ip: "{{ hostvars[groups['ascender'][0]].ansible_default_ipv4.address }}"
+        ascender_password: "{{ hostvars[groups['ascender'][0]].ascender_password }}"
+        ascender_port: "{{ hostvars[groups['ascender'][0]].ascender_port}}"
+
+    - name: Wait until Ascender API is Up
+      uri:
+        url: "http://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+        return_content: yes
+        validate_certs: no
+        status_code:
+          - 200
+      until: uri_output.status == 200
+      retries: 60
+      delay: 10
+      register: uri_output
+
+    - name: Disable the Next UI
+      awx.awx.settings:
+        controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
+        controller_username: admin
+        controller_password: "{{ ascender_password }}"
+        settings:
+          UI_NEXT: false
+
+
+    - name: Remove the Demo Template
+      awx.awx.job_template:
+        controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
+        controller_username: admin
+        controller_password: "{{ ascender_password }}"
+        name: Demo Job Template
+        state: absent
+
+    - name: Remove the Demo Credential
+      awx.awx.credential:
+        controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
+        controller_username: admin
+        controller_password: "{{ ascender_password }}"
+        name: Demo Credential
+        credential_type: Machine
+        state: absent
+
+    - name: Remove the Demo Project
+      awx.awx.project:
+        controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
+        controller_username: admin
+        controller_password: "{{ ascender_password }}"
+        name: Demo Project
+        state: absent
+
+    - name: Remove the Demo Inventory
+      awx.awx.inventory:
+        controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
+        controller_username: admin
+        controller_password: "{{ ascender_password }}"
+        name: Demo Inventory
+        organization: Default
+        state: absent

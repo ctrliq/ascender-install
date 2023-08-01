@@ -1,0 +1,22 @@
+#- name: Create Credentials
+
+- name: Create Inventories
+  include_tasks: inventories.yml
+  loop: "{{ inventories}}"
+  loop_control:
+    label: "{{ inventory.name }}"
+    loop_var: inventory
+
+- name: Create Projects
+  include_tasks: projects.yml
+  loop: "{{ projects }}"
+  loop_control:
+    label: "{{ project.name }}"
+    loop_var: project
+
+- name: Create Templates
+  include_tasks: templates.yml
+  loop: "{{ templates }}"
+  loop_control:
+    label: "{{ template.name }}"
+    loop_var: template
