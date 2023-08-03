@@ -51,9 +51,9 @@
   tasks:
     - name: Get Ledger IP and Port
       ansible.builtin.set_fact:
-        ledger_ip: "{{ hostvars[groups['ledger'][0]].ansible_default_ipv4.address }}"
+        ledger_ip: "{{ hostvars[groups['ledger'][0]].ansible_host }}"
         ledger_parser_port: "{{ hostvars[groups['ledger'][0]].ledger_port }}"
-        ascender_ip: "{{ hostvars[groups['ascender'][0]].ansible_default_ipv4.address }}"
+        ascender_ip: "{{ hostvars[groups['ascender'][0]].ansible_host }}"
         ascender_password: "{{ hostvars[groups['ascender'][0]].ascender_password }}"
         ascender_port: "{{ hostvars[groups['ascender'][0]].ascender_port}}"
 
