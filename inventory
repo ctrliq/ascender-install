@@ -1,8 +1,8 @@
 [ascender]
-hostname1
+ascender_host ansible_host=x.x.x.x ansible_user=username ansible_ssh_pass=password ansible_ssh_private_key_file=ssh_key.pem
 
 [ledger]
-hostname2
+ledger_host ansible_host=x.x.x.x ansible_user=username ansible_ssh_pass=password ansible_ssh_private_key_file=ssh_key.pem
 
 [ascender:vars]
 ASCENDER_NAMESPACE=ascender
@@ -14,4 +14,4 @@ LEDGER_VERSION=latest
 LEDGER_NAMESPACE=ledger
 
 [all:vars]
-K8S_AUTH_KUBECONFIG=/var/lib/rancher/k3s/server/cred/admin.kubeconfig
+K8S_AUTH_KUBECONFIG=/etc/rancher/k3s/k3s.yaml
