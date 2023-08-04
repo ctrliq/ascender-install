@@ -32,7 +32,7 @@
   pre_tasks:
     - name: Set Ascender IP and Port
       ansible.builtin.set_fact:
-        ascender_ip: "{{ hostvars[groups['ascender'][0]].ansible_default_ipv4.address }}"
+        ascender_ip: "{{ hostvars[groups['ascender'][0]].ansible_host }}"
         ascender_password: "{{ hostvars[groups['ascender'][0]].ascender_password }}"
         ascender_port: "{{ hostvars[groups['ascender'][0]].ascender_port}}"
 
