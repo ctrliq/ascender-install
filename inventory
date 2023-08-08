@@ -12,8 +12,15 @@ ANSIBLE_OPERATOR_VERSION=2.4.0
 [ledger:vars]
 LEDGER_VERSION=latest
 LEDGER_NAMESPACE=ledger
+
+# Set default passwords (can not currently change passwords after install)
 LEDGER_PASSWORD=
 LEDGER_DB_PASSWORD=
+
+# Node Port
+# Uncomment to set a specific port, otherwise it will be random within the proper range
+#LEDGER_WEB_NODEPORT=30080
+#LEDGER_PARSER_NODEPORT=30500
 
 [all:vars]
 K8S_AUTH_KUBECONFIG=/etc/rancher/k3s/k3s.yaml
