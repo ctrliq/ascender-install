@@ -1,0 +1,29 @@
+- hosts: ledger
+  become: true
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
+    NAMESPACE: "{{ LEDGER_NAMESPACE }}"
+
+  tasks:
+    - name: Get the Admin password
+      kubernetes.core.k8s_info:
+        api: v1
+        kind: Secret
+        name: admin-password
+        namespace: "{{ LEDGER_NAMESPACE }}"
+      register: ledger_password
+
+    - name: Get the Service Port
+      kubernetes.core.k8s_info:
+        api: v1
+        kind: Service
+        name: web-svc
+        namespace: "{{ LEDGER_NAMESPACE }}"
+      register: ledger_service
+
+    - name: Display results
+      ansible.builtin.debug:
+        msg:
+          - "LEDGER USERNAME: admin"
+          - "LEDGER PASSWORD: {{ ledger_password.resources[0].data['admin-password'] | b64decode }}"
+          - "LEDGER URL: http://{{ hostvars[groups['ledger'][0]].ansible_host }}:{{ ledger_service.resources[0].spec.ports[0].nodePort }}/"
