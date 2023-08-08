@@ -1,6 +1,6 @@
 apiVersion: v1
 data:
-  admin-password: bXlhZG1pbnBhc3M=
+  admin-password:  {{ LEDGER_PASSWORD | b64encode }}
 kind: Secret
 metadata:
   creationTimestamp: null
@@ -11,7 +11,7 @@ type: Opaque
 ---
 apiVersion: v1
 data:
-  db-ledger-password: dGVzdHBhc3N3b3Jk
+  db-ledger-password: {{ LEDGER_DB_PASSWORD | b64encode }}
 kind: Secret
 metadata:
   creationTimestamp: null
@@ -48,7 +48,7 @@ spec:
   - name: parser-port
     port: 5000
     targetPort: 5000
-    nodePort: 30500
+    nodePort: {{ LEDGER_PARSER_NODEPORT | default(omit, true) }}
     protocol: TCP
   selector:
     io.kompose.service: parser
@@ -65,7 +65,7 @@ spec:
   ports:
   - name: web-port
     port: 80
-    nodePort: 30080
+    nodePort: {{ LEDGER_WEB_NODEPORT | default(omit, true) }}
     targetPort: 80
   selector:
     io.kompose.service: web
@@ -114,7 +114,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: registry.mnslab.io:5000/ciq/ledger-db:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -174,7 +174,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-parser:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -221,7 +221,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-web:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:
