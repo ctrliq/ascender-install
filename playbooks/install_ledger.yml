@@ -31,4 +31,4 @@
         msg:
           - "LEDGER USERNAME: admin"
           - "LEDGER PASSWORD: {{ ledger_password.resources[0].data['admin-password'] | b64decode }}"
-          - "LEDGER URL: http://{{ ansible_default_ipv4.address }}:{{ ledger_service.resources[0].spec.ports[0].nodePort }}/"
+          - "LEDGER URL: http://{{ hostvars[groups['ledger'][0]].ansible_host }}:{{ ledger_service.resources[0].spec.ports[0].nodePort }}/"

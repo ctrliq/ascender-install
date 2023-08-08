@@ -32,4 +32,4 @@
         msg:
           - "ASCENDER USERNAME: admin"
           - "ASCENDER PASSWORD: {{ ascender_password.resources[0].data.password | b64decode }}"
-          - "ASCENDER URL: http://{{ ansible_default_ipv4.address }}:{{ ascender_service.resources[0].spec.ports[0].nodePort }}/"
+          - "ASCENDER URL: http://{{ hostvars[groups['ascender'][0]].ansible_host }}:{{ ascender_service.resources[0].spec.ports[0].nodePort }}/"
