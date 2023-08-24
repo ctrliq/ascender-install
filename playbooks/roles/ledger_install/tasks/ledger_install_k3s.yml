@@ -86,17 +86,6 @@
     ascender_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
   when: k8s_lb_protocol == "https"
 
-# - name: If SSL is NOT configured, get the hostname from DNS endpoint of the Load Balancer
-#   kubernetes.core.k8s_info:
-#     kind: Ingress
-#     wait: yes
-#     name: ascender-app-ingress
-#     namespace: "{{ ASCENDER_NAMESPACE }}"
-#     wait_sleep: 10
-#     wait_timeout: 360
-#   register: ascender_ingress
-#   when: k8s_lb_protocol == "http"
-
 - name: Set the Ascender URL and Credentials for HTTP
   ansible.builtin.set_fact:
       ascender_username: "{{ ASCENDER_ADMIN_USER }}"

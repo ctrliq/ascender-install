@@ -1,18 +1,19 @@
-- name: Ensure Firewall is disabled
-  ansible.builtin.systemd:
-    name: firewalld
-    state: stopped
-    enabled: false
-  failed_when: false
+# - name: Ensure Firewall is disabled
+#   ansible.builtin.systemd:
+#     name: firewalld
+#     state: stopped
+#     enabled: false
+#   failed_when: false
 
-- name: Disable SELinux
-  ansible.posix.selinux:
-    state: disabled
+# - name: Disable SELinux
+#   ansible.posix.selinux:
+#     state: disabled
 
 - name: Enable EPEL Repo (required for certbot)
   ansible.builtin.dnf:
     name: epel-release
     state: latest
+  become: true
 
 - name: Install necessary packages
   ansible.builtin.dnf:
@@ -20,10 +21,17 @@
       - git
       - make
       - jq
+      - python-setuptools
       - python3-pip
       - kubectl
       - certbot
+    update_cache: true
+    state: present
+  become: true
 
 - name: Install kubernetes python library
   ansible.builtin.pip:
-    name: kubernetes
+    name:
+      - kubernetes
+    state: forcereinstall
+  become: true

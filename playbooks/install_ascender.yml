@@ -1,6 +1,6 @@
-- hosts: ascender
-  gather_facts: yes
-  become: true
+- hosts: localhost
+  gather_facts: no
+  become: false
 
   vars_files:
     - default.config.yml
@@ -14,21 +14,7 @@
     - common
     # - k3s
 
-  tasks:
-
-    # - name: Install, configure, and start Apache
-    #   block:
-    #     - name: Ensure that ~/.kube folder exists
-    #       ansible.builtin.file:
-    #         path: ~/.kube
-    #         state: directory
-
-    #     - name: Create a symbolic link to the k3s kubeconfig
-    #       ansible.builtin.file:
-    #         src: /etc/rancher/k3s/k3s.yaml
-    #         dest: ~/.kube/config
-    #         state: link
-    #   when: k8s_platform == "k3s" 
+  tasks: 
 
     - name: Create Namespace
       kubernetes.core.k8s:
