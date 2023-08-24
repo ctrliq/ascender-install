@@ -3,9 +3,8 @@
 
 - name: Install Ledger
   ansible.builtin.import_playbook: install_ledger.yml
-
-- name: Configure Ascender Logging
-  ansible.builtin.import_playbook: configure_logs.yml
+  when:
+    - LEDGER_INSTALL
 
 - name: Cleanup default resources
   ansible.builtin.import_playbook: cleanup_demo.yml

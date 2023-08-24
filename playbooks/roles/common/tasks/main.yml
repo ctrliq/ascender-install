@@ -9,6 +9,11 @@
   ansible.posix.selinux:
     state: disabled
 
+- name: Enable EPEL Repo (required for certbot)
+  ansible.builtin.dnf:
+    name: epel-release
+    state: latest
+
 - name: Install necessary packages
   ansible.builtin.dnf:
     name:
@@ -16,6 +21,8 @@
       - make
       - jq
       - python3-pip
+      - kubectl
+      - certbot
 
 - name: Install kubernetes python library
   ansible.builtin.pip:

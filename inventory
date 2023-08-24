@@ -1,17 +1,8 @@
 [ascender]
-ascender_host ansible_host=x.x.x.x ansible_user=username ansible_ssh_pass=password ansible_ssh_private_key_file=ssh_key.pem
+# ascender_host ansible_host=x.x.x.x ansible_user=rocky ansible_ssh_private_key_file=private_key.pem
+ascender_host ansible_host=localhost ansible_user=rocky ansible_connection=local
+
 
 [ledger]
-ledger_host ansible_host=x.x.x.x ansible_user=username ansible_ssh_pass=password ansible_ssh_private_key_file=ssh_key.pem
-
-[ascender:vars]
-ASCENDER_NAMESPACE=ascender
-ASCENDER_VERSION=22.5.0
-ANSIBLE_OPERATOR_VERSION=2.4.0
-
-[ledger:vars]
-LEDGER_VERSION=latest
-LEDGER_NAMESPACE=ledger
-
-[all:vars]
-K8S_AUTH_KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+# ledger_host ansible_host=x.x.x.x ansible_user=rocky ansible_ssh_private_key_file=private_key.pem
+ledger_host ansible_host=localhost ansible_user=rocky ansible_connection=local

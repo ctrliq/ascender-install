@@ -1,35 +1,46 @@
 - hosts: ascender
   gather_facts: yes
   become: true
+
+  vars_files:
+    - default.config.yml
+
   environment:
-    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
     NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
+    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
 
   roles:
     - common
-    - k8s
-    - ascender_install
+    # - k3s
 
   tasks:
-    - name: Get the Admin password
-      kubernetes.core.k8s_info:
-        api: v1
-        kind: Secret
-        name: ascender-admin-password
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-      register: ascender_password
 
-    - name: Get the Service Port
-      kubernetes.core.k8s_info:
-        api: v1
-        kind: Service
-        name: ascender-service
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-      register: ascender_service
+    # - name: Install, configure, and start Apache
+    #   block:
+    #     - name: Ensure that ~/.kube folder exists
+    #       ansible.builtin.file:
+    #         path: ~/.kube
+    #         state: directory
 
-    - name: Display results
-      ansible.builtin.debug:
-        msg:
-          - "ASCENDER USERNAME: admin"
-          - "ASCENDER PASSWORD: {{ ascender_password.resources[0].data.password | b64decode }}"
-          - "ASCENDER URL: http://{{ hostvars[groups['ascender'][0]].ansible_host }}:{{ ascender_service.resources[0].spec.ports[0].nodePort }}/"
+    #     - name: Create a symbolic link to the k3s kubeconfig
+    #       ansible.builtin.file:
+    #         src: /etc/rancher/k3s/k3s.yaml
+    #         dest: ~/.kube/config
+    #         state: link
+    #   when: k8s_platform == "k3s" 
+
+    - name: Create Namespace
+      kubernetes.core.k8s:
+        name: "{{ ASCENDER_NAMESPACE }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: "Run ascender_install role for {{ k8s_platform }}"
+      ansible.builtin.include_role:
+        name: ascender_install
+        tasks_from: "ascender_install_{{ k8s_platform }}"
+
+    - ansible.builtin.debug:
+        msg: "Ascender install complete."
