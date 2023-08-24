@@ -1,14 +1,14 @@
 ---
 k8s_platform: k3s #options include k3s, gke, eks, aks
-# K8S_AUTH_KUBECONFIG: ~/.kube/config # the kubeconfig file
-# KUBE_API_SERVER_ADDR: "XXXXXXXXXXXXXXXXXXXXXXXXX.gr7.us-east-1.eks.amazonaws.com"
-# KUBE_API_SERVER_PORT: 443
+K8S_AUTH_KUBECONFIG: ~/.kube/config # set to /etc/rancher/k3s/k3s.yaml for k3s
+KUBE_API_SERVER_ADDR: "XXXXXXXXXXXXXXXXXXXXXXXXX.gr7.us-east-1.eks.amazonaws.com"
+KUBE_API_SERVER_PORT: 443
 
 # This variable determines whether or not to curl for a cloud loadbalancer/DNS name, or a node IP address before proceeding in setup of ledger and ascender
 install_service_type: loadbalancer #options include loadbalancer, nodeport, or clusterip
 
 # Ascender install variables
-ASCENDER_HOSTNAME: ascender.example.com
+ASCENDER_HOSTNAME: ascender.mford.io
 ASCENDER_NAMESPACE: ascender
 ASCENDER_ADMIN_USER: admin
 ASCENDER_ADMIN_PASSWORD: "myadminpassword"
@@ -19,7 +19,7 @@ ascender_garbage_collect_secrets: true
 
 # Ledger install variables
 LEDGER_INSTALL: true #if false, ledger is not installed
-LEDGER_HOSTNAME: ledger.example.com
+LEDGER_HOSTNAME: ledger.mford.io
 LEDGER_VERSION: latest
 LEDGER_NAMESPACE: ledger
 LEDGER_ADMIN_PASSWORD: "myadminpassword"
@@ -28,8 +28,8 @@ LEDGER_DB_PASSWORD: "mydbpassword"
 k8s_lb_protocol: https #options include http and https
 k8s_loadbalancer_port: 443
 k8s_ledger_loadbalancer_port: 443
-k3s_master_node_ip: "10.0.0.1"
-aws_cert_arn: arn:aws:acm:<region>:<org-id>:certificate/<certificate-id>
+k3s_master_node_ip: "54.157.135.186"
+aws_cert_arn: arn:aws:acm:us-east-1:980128770015:certificate/b5d75dfe-cbd3-43ee-adb5-b791ac204970
 tls_crt_path: "/tmp/ascender.crt"
 tls_key_path: "/tmp/ascender.key"
 

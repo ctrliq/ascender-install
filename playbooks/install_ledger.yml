@@ -1,4 +1,4 @@
-- hosts: ledger
+- hosts: localhost
   become: false
   gather_facts: no
 
@@ -30,43 +30,3 @@
 
     - ansible.builtin.debug:
         msg: "Ledger install complete."
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # Will not insert this back in, as the ledger admin password is known as {{ LEDGER_ADMIN_PASSWORD }}
-    # - name: Get the Admin password
-    #   kubernetes.core.k8s_info:
-    #     api: v1
-    #     kind: Secret
-    #     name: admin-password
-    #     namespace: "{{ LEDGER_NAMESPACE }}"
-    #   register: ledger_password
-
-
-    # Will not insert this back in, as the port will either be 80 or the {{ k8s_loadbalancer_port }}
-    # - name: Get the Service Port
-    #   kubernetes.core.k8s_info:
-    #     api: v1
-    #     kind: Service
-    #     name: web-svc
-    #     namespace: "{{ LEDGER_NAMESPACE }}"
-    #   register: ledger_service
-
-    # - name: Display results
-    #   ansible.builtin.debug:
-    #     msg:
-    #       - "LEDGER USERNAME: admin"
-    #       - "LEDGER PASSWORD: {{ ledger_password.resources[0].data['admin-password'] | b64decode }}"
-    #       - "LEDGER URL: http://{{ hostvars[groups['ledger'][0]].ansible_host }}:{{ ledger_service.resources[0].spec.ports[0].nodePort }}/"
