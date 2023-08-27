@@ -58,6 +58,7 @@
   ansible.builtin.set_fact:
       ledger_ip: "{{ k3s_master_node_ip }}"
       ledger_port: 80
+      ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
   when: k8s_lb_protocol == "http"
 
 - ansible.builtin.debug:
