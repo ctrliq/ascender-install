@@ -55,6 +55,7 @@ spec:
   ingress_path_type: Prefix
   ingress_tls_secret: ascender-tls-secret
   hostname: {{ ASCENDER_HOSTNAME }}
+  {{ additional_spec | indent( width=2) }}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
@@ -90,6 +91,7 @@ spec:
   ingress_path_type: Prefix
   ingress_tls_secret: ascender-tls-secret
   hostname: {{ ASCENDER_HOSTNAME }}
+  {{ additional_spec | indent( width=2) }}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
@@ -129,6 +131,7 @@ spec:
   ingress_type: ingress
   ingress_path: "/"
   ingress_path_type: Prefix
+  {{ additional_spec | indent( width=2) }}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
@@ -151,6 +154,7 @@ spec:
   ingress_type: ingress
   ingress_path: "/"
   ingress_path_type: Prefix
+  {{ additional_spec | indent( width=2) }}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
