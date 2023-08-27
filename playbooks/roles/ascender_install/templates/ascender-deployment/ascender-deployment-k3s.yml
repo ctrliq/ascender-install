@@ -1,4 +1,5 @@
 ---
+# Ascender admin password
 apiVersion: v1
 kind: Secret
 metadata:
@@ -6,8 +7,25 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 stringData:
   password: {{ ASCENDER_ADMIN_PASSWORD }}
+{% if k8s_lb_protocol == 'https' and ASCENDER_PGSQL_HOST is defined %}
 ---
-{% if 'https' == k8s_lb_protocol %}
+# Ascender postgres host/port and credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-postgres-configuration
+  namespace: {{ ASCENDER_NAMESPACE }}
+stringData:
+  host: {{ ASCENDER_PGSQL_HOST }}
+  port: '{{ ASCENDER_PGSQL_PORT }}'
+  database: {{ ASCENDER_PGSQL_DB }}
+  username: {{ ASCENDER_PGSQL_USER }}
+  password: {{ ASCENDER_PGSQL_PWD }}
+  sslmode: prefer
+  type: unmanaged
+type: Opaque
+---
+# Ascender TLS Certificate and Key
 apiVersion: v1
 data:
   tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
@@ -18,6 +36,43 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 type: kubernetes.io/tls
 ---
+# Ascender AWX Object
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: ascender-app
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+  image: "{{ ASCENDER_IMAGE }}"
+  image_version: "{{ ASCENDER_VERSION }}"
+  service_type: ClusterIP
+  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_password_secret: ascender-app-admin-password
+  postgres_configuration_secret: ascender-app-postgres-configuration
+  ingress_type: ingress
+  ingress_path: "/"
+  ingress_path_type: Prefix
+  ingress_tls_secret: ascender-tls-secret
+  hostname: {{ ASCENDER_HOSTNAME }}
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+      - https://{{ ASCENDER_HOSTNAME }}
+{% elif k8s_lb_protocol == 'https' and ASCENDER_PGSQL_HOST is not defined %}
+---
+# Ascender TLS Certificate and Key
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ ASCENDER_NAMESPACE }}
+type: kubernetes.io/tls
+---
+# Ascender AWX Object
 apiVersion: awx.ansible.com/v1beta1
 kind: AWX
 metadata:
@@ -35,12 +90,52 @@ spec:
   ingress_path_type: Prefix
   ingress_tls_secret: ascender-tls-secret
   hostname: {{ ASCENDER_HOSTNAME }}
-  # https://github.com/ansible/awx/issues/14024
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
       - https://{{ ASCENDER_HOSTNAME }}
-{% else %}
+{% elif k8s_lb_protocol == 'http' and ASCENDER_PGSQL_HOST is defined %}
+---
+# Ascender postgres host/port and credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-postgres-configuration
+  namespace: {{ ASCENDER_NAMESPACE }}
+stringData:
+  host: {{ ASCENDER_PGSQL_HOST }}
+  port: '{{ ASCENDER_PGSQL_PORT }}'
+  database: {{ ASCENDER_PGSQL_DB }}
+  username: {{ ASCENDER_PGSQL_USER }}
+  password: {{ ASCENDER_PGSQL_PWD }}
+  sslmode: prefer
+  type: unmanaged
+type: Opaque
+---
+# Ascender AWX Object
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: ascender-app
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+  image: "{{ ASCENDER_IMAGE }}"
+  image_version: "{{ ASCENDER_VERSION }}"
+  service_type: ClusterIP
+  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_password_secret: ascender-app-admin-password
+  postgres_configuration_secret: ascender-app-postgres-configuration
+  ingress_type: ingress
+  ingress_path: "/"
+  ingress_path_type: Prefix
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+      - http://{{ ASCENDER_HOSTNAME }}
+{% else %} # Assume k8s_lb_protocol == 'http' and ASCENDER_PGSQL_HOST is not defined
+---
+# Ascender AWX Object
 apiVersion: awx.ansible.com/v1beta1
 kind: AWX
 metadata:
@@ -56,7 +151,6 @@ spec:
   ingress_type: ingress
   ingress_path: "/"
   ingress_path_type: Prefix
-  # https://github.com/ansible/awx/issues/14024
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
