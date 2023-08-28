@@ -16,7 +16,14 @@ ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 ASCENDER_VERSION: 22.7.0
 ANSIBLE_OPERATOR_VERSION: 2.4.0
 ascender_garbage_collect_secrets: true
-
+ASCENDER_PGSQL_HOST: "ascenderdb2.co8dfrcx9cdk.us-east-1.rds.amazonaws.com" # external ip or url resolvable by the cluster
+ASCENDER_PGSQL_PORT: 5432 # external port, this usually defaults to 5432
+ASCENDER_PGSQL_USER: ascender
+ASCENDER_PGSQL_PWD: mypgadminpassword
+ASCENDER_PGSQL_DB: ascenderdb
+additional_spec: | 
+  no_log: true
+  replicas: 3
 # Ledger install variables
 LEDGER_INSTALL: true #if false, ledger is not installed
 LEDGER_HOSTNAME: ledger.mford.io
@@ -25,12 +32,12 @@ LEDGER_NAMESPACE: ledger
 LEDGER_ADMIN_PASSWORD: "myadminpassword"
 LEDGER_DB_PASSWORD: "mydbpassword"
 
-k8s_lb_protocol: https #options include http and https
+k8s_lb_protocol: http #options include http and https
 k8s_loadbalancer_port: 443
 k8s_ledger_loadbalancer_port: 443
-k3s_master_node_ip: "54.157.135.186"
+k3s_master_node_ip: "54.89.118.36"
 aws_cert_arn: arn:aws:acm:us-east-1:980128770015:certificate/b5d75dfe-cbd3-43ee-adb5-b791ac204970
 tls_crt_path: "/tmp/ascender.crt"
 tls_key_path: "/tmp/ascender.key"
 
-tmp_dir: "/tmp"
+tmp_dir: "/tmp" #TODO: default to {{ playbook_dir}}, change tmp_dir to config_dir
