@@ -11,9 +11,10 @@
     - 5432 or whatever port you have the PostgreSQL server listening on
 
 
-# Install k3s on the server on which ascender will run
-- https://docs.k3s.io/quick-start
-  - note: a k3s installation of Ascender assumes a single node cluster that will double as both a master and worker
+# Install k3s on the server on which ascender will run ([Reference](https://docs.k3s.io/quick-start))
+- K3s provides an installation script that is a convenient way to install it as a service on systemd or openrc based systems. This script is available at https://get.k3s.io. To install K3s using this method, just run:
+  - `$curl -sfL https://get.k3s.io | sh -`
+  - NOTE: A k3s installation of Ascender assumes a single node cluster that will double as both a master and worker
 
 # Ensure kubectl access to k3s cluster ([Reference](https://docs.k3s.io/cluster-access))
 - If running the installation script from a remote location
