@@ -1,0 +1,36 @@
+---
+k8s_platform: k3s #options include k3s, gke, eks, aks
+
+# Ascender install variables
+ASCENDER_HOSTNAME: ascender.example.com
+ASCENDER_NAMESPACE: ascender
+ASCENDER_ADMIN_USER: admin
+ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
+ASCENDER_VERSION: 22.7.0
+ANSIBLE_OPERATOR_VERSION: 2.4.0
+ascender_garbage_collect_secrets: false #This value determines whether or not to remove secrets upon Ascender kubernetes object removal
+ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" # external ip or url resolvable by the cluster
+ASCENDER_PGSQL_PORT: 5432 # external port, this usually defaults to 5432
+ASCENDER_PGSQL_USER: ascender
+ASCENDER_PGSQL_PWD: mypgadminpassword
+ASCENDER_PGSQL_DB: ascenderdb
+additional_spec: | 
+  no_log: true
+  replicas: 1
+# Ledger install variables
+LEDGER_INSTALL: true #if false, ledger is not installed
+LEDGER_HOSTNAME: ledger.example.com
+LEDGER_VERSION: latest
+LEDGER_NAMESPACE: ledger
+LEDGER_ADMIN_PASSWORD: "myadminpassword"
+LEDGER_DB_PASSWORD: "mydbpassword"
+
+k8s_lb_protocol: http #options include http and https
+k8s_loadbalancer_port: 443
+k8s_ledger_loadbalancer_port: 443
+k3s_master_node_ip: "X.X.X.X"
+tls_crt_path: "/tmp/ascender.crt"
+tls_key_path: "/tmp/ascender.key"
+
+tmp_dir: "/tmp" #TODO: default to {{ playbook_dir}}, change tmp_dir to config_dir

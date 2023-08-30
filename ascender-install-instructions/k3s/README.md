@@ -21,7 +21,7 @@
   - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) and place it on local server at `~/.kube/config`
   - Edit `~/.kube/config`, replacing the kubeapiserver address from 127.0.0.1 to a remotely accessible IP address of the master node
 - If running the installation script from the k3s master node itself
-  - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) `~/.kube/config`
+  - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) to `~/.kube/config`
 
 
 # Run the setup script
