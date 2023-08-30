@@ -1,22 +1,19 @@
 ---
 k8s_platform: k3s #options include k3s, gke, eks, aks
-K8S_AUTH_KUBECONFIG: ~/.kube/config # set to /etc/rancher/k3s/k3s.yaml for k3s
-KUBE_API_SERVER_ADDR: "XXXXXXXXXXXXXXXXXXXXXXXXX.gr7.us-east-1.eks.amazonaws.com"
-KUBE_API_SERVER_PORT: 443
 
 # This variable determines whether or not to curl for a cloud loadbalancer/DNS name, or a node IP address before proceeding in setup of ledger and ascender
 install_service_type: loadbalancer #options include loadbalancer, nodeport, or clusterip
 
 # Ascender install variables
-ASCENDER_HOSTNAME: ascender.mford.io
+ASCENDER_HOSTNAME: ascender.example.com
 ASCENDER_NAMESPACE: ascender
 ASCENDER_ADMIN_USER: admin
 ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 ASCENDER_VERSION: 22.7.0
 ANSIBLE_OPERATOR_VERSION: 2.4.0
-ascender_garbage_collect_secrets: true
-ASCENDER_PGSQL_HOST: "ascenderdb2.co8dfrcx9cdk.us-east-1.rds.amazonaws.com" # external ip or url resolvable by the cluster
+ascender_garbage_collect_secrets: false
+ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" # external ip or url resolvable by the cluster
 ASCENDER_PGSQL_PORT: 5432 # external port, this usually defaults to 5432
 ASCENDER_PGSQL_USER: ascender
 ASCENDER_PGSQL_PWD: mypgadminpassword
@@ -26,7 +23,7 @@ additional_spec: |
   replicas: 3
 # Ledger install variables
 LEDGER_INSTALL: true #if false, ledger is not installed
-LEDGER_HOSTNAME: ledger.mford.io
+LEDGER_HOSTNAME: ledger.example.com
 LEDGER_VERSION: latest
 LEDGER_NAMESPACE: ledger
 LEDGER_ADMIN_PASSWORD: "myadminpassword"
@@ -36,7 +33,7 @@ k8s_lb_protocol: http #options include http and https
 k8s_loadbalancer_port: 443
 k8s_ledger_loadbalancer_port: 443
 k3s_master_node_ip: "54.89.118.36"
-aws_cert_arn: arn:aws:acm:us-east-1:980128770015:certificate/b5d75dfe-cbd3-43ee-adb5-b791ac204970
+aws_cert_arn: arn:aws:acm:< region >:< account number >:certificate/< certifitate number>
 tls_crt_path: "/tmp/ascender.crt"
 tls_key_path: "/tmp/ascender.key"
 
