@@ -29,8 +29,16 @@ There is a [default configuration file](playbooks/default.config.yml) that will 
 
 All of the variables and flags in these files have their description/proper usage directly present in the comments.
 
-## Instructions by Kubernetes Platform
+## Installation Instructions by Kubernetes Platform
 - [K3s](ascender-install-instructions/k3s/README.md)
+
+## Uninstall
+Within the `{{ tmp_dir }}`, you will find timestamped kubernetes manifests for `ascender-deployment-{{ k8s_platform }}.yml`, `ledger-{{ k8s_platform }}.yml` (if you installed Ledger), and kustomization.yml. Remove the timestamp from the filename and then run the following commands from within `{{tmp_dir }}``:
+- `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
+- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
+- `$ kubectl delete -k .`
+
+Running the Ascender deletion will remove all related deployments and statefulsets, however, persistent volumes and secrets will remain. To enforce secrets also getting removed, you can use `ascender_garbage_collect_secrets: true` in the `playbooks/default.config.yml` file.
 
 ## Contributing
 It is recommended that all contributions be applied upstream first to AWX, to better support collaboration with the community.

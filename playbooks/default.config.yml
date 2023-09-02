@@ -1,17 +1,27 @@
 ---
-k8s_platform: k3s #options include k3s, gke, eks, aks
+
+# This variable specificies which Kubernetes platform Ascender and its components will be installed on.
+k8s_platform: k3s # Options include k3s, eks
 
 # This variable determines whether or not to curl for a cloud loadbalancer/DNS name, or a node IP address before proceeding in setup of ledger and ascender
-install_service_type: loadbalancer #options include loadbalancer, nodeport, or clusterip
+# install_service_type: loadbalancer #options include loadbalancer, nodeport, or clusterip
 
-# Ascender install variables
+# ---Ascender install variables---
+# Resolvable hostname for Ascender service. This is required for SSL/TLS install.
 ASCENDER_HOSTNAME: ascender.example.com
+# k8s namespace for Ascender k8s objects
 ASCENDER_NAMESPACE: ascender
+# Administrator username for Ascender
 ASCENDER_ADMIN_USER: admin
+# Administrator password for Ascender
 ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+# The OCI container image for Ascender
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
+# The image tag indicating the version of Ascender you wish to install
 ASCENDER_VERSION: 22.7.0
+# The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.4.0
+# 
 ascender_garbage_collect_secrets: false
 ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" # external ip or url resolvable by the cluster
 ASCENDER_PGSQL_PORT: 5432 # external port, this usually defaults to 5432
@@ -21,7 +31,8 @@ ASCENDER_PGSQL_DB: ascenderdb
 additional_spec: | 
   no_log: true
   replicas: 3
-# Ledger install variables
+
+# ---Ledger install variables---
 LEDGER_INSTALL: true #if false, ledger is not installed
 LEDGER_HOSTNAME: ledger.example.com
 LEDGER_VERSION: latest

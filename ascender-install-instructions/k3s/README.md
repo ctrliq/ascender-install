@@ -20,6 +20,8 @@ If you have not done so already, be sure to follow the general prerequisites fou
       - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) and place it on local server at `~/.kube/config`
     - If running the installation script from the k3s master node itself
       - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) to `~/.kube/config`
+- SSL Certificate and Key
+  - #TODO: Add instructions for SSL Certificate generation
 
 ## Install Instructions
 
