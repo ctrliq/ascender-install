@@ -14,6 +14,7 @@ The Ascender installer is a script that makes for relatively easy install of Asc
 ## Configuration File
 
 ## Instructions by Kubernetes Platform
+- [K3s](ascender-install-instructions/k3s/README.md)
 
 ## Contributing
 It is recommended that all contributions be applied upstream first to AWX, to better support collaboration with the community.
