@@ -3,6 +3,7 @@ The Ascender installer is a script that makes for relatively easy install of Asc
 
 # Table of Contents
 - [General Prerequisites](#general-prerequisites)
+- [Optional Components](#optional-components)
 - [Configuration File](#configuration-file)
 - [Instructions by Kubernetes Platform](#instructions-by-kubernetes-platform)
 - [Contributing](#contributing)
@@ -15,9 +16,13 @@ The Ascender installer is a script that makes for relatively easy install of Asc
     - `ascender_host` and `ledger_host` 
       - `ansible_host` needs to be a set to a server that has kubernetes cluster access
       - `ansible_user` needs to set to a user that can escalate to root with `become`
+      - A port needs to be open for SSH access (typically TCP port 22). If you choose to have SSH accept connections on a different port, you need to specify this port with the built-in host variable `ansible_port`.
   - [ansible-core](https://github.com/ansible/ansible) will have to be installed, but the setup script will install it if it is not already there.
 - On `ascender_host` and `ledger_host`, the following is required:
   - A [kubeconfig](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) file, located at `~/.kube/config`. The [current-context](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context) in this file will determine the cluster where Ascender will be installed. This cluster must be up and running at the time of install.
+
+## Optional Components
+- An external PostgreSQL server that the Ascender application can access. If not specified, the AWX Operator responsible for installing Ascender will create a managed PostgreSQL server.
 
 ## Configuration File
 There is a [default configuration file](playbooks/default.config.yml) that will hold all of the options required to set up your installation properly. While this file is comprehensive, you can find more platform-specific config file templates in the respective Kubernetes platform install instructions directory.
