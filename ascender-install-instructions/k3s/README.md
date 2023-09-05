@@ -21,7 +21,8 @@ If you have not done so already, be sure to follow the general prerequisites fou
     - If running the installation script from the k3s master node itself
       - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) to `~/.kube/config`
 - SSL Certificate and Key
-  - #TODO: Add instructions for SSL Certificate generation
+  - To enable HTTPS on your website, you need to provide the Ascender installer with an SSL Certificate file, and a Private Key file. While these can be self-signed certificates, it is best practice to use a trusted certificate, issued by a Certificate Authority. A good way to generate a trusted Certificate for the purpose of sandboxing, is to use the free Certificate Authority, [Let's Encrypt](https://letsencrypt.org/getting-started/).
+  - Once you have a Certificate and Private Key file, make sure they are present on the Ascender installing server, and specify their locations in the default config file, with the variables `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their content, and use then to create a Kubernetes TLS Secret for HTTPS enablement.
 
 ## Install Instructions
 
