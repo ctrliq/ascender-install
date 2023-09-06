@@ -15,6 +15,19 @@
     state: latest
   become: true
 
+- name: Add the Kubernetes yum repository
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/kubernetes.repo
+    content: | 
+      [kubernetes]
+      name=Kubernetes
+      baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+      
+  become: true
+
 - name: Install necessary packages
   ansible.builtin.dnf:
     name:
