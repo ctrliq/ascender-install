@@ -27,13 +27,24 @@ The Ascender installer is a script that makes for relatively easy install of Asc
 ## Configuration File
 There is a [default configuration file](playbooks/default.config.yml) that will hold all of the options required to set up your installation properly. While this file is comprehensive, you can find more platform-specific config file templates in the respective Kubernetes platform install instructions directory.
 
+The *Uninstall* section of this tutorial references two of the variables that need to be set:
+- `k8s_platform`: The Kubernetes platform Ascender is being installed on. This could be K3s, EKS, GKE, or AKS.
+- `tmp_dir`: The directory on the server running the install script, where temporary artifacts will be stored.
+
+
+
 All of the variables and flags in these files have their description/proper usage directly present in the comments.
 
 ## Installation Instructions by Kubernetes Platform
 - [K3s](ascender-install-instructions/k3s/README.md)
 
 ## Uninstall
-Within the `{{ tmp_dir }}`, you will find timestamped kubernetes manifests for `ascender-deployment-{{ k8s_platform }}.yml`, `ledger-{{ k8s_platform }}.yml` (if you installed Ledger), and kustomization.yml. Remove the timestamp from the filename and then run the following commands from within `{{tmp_dir }}``:
+After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
+- `ascender-deployment-{{ k8s_platform }}.yml`
+- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
+- kustomization.yml. 
+
+Remove the timestamp from the filename and then run the following commands from within `tmp_dir``:
 - `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
