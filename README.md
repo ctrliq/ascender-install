@@ -6,6 +6,7 @@ The Ascender installer is a script that makes for relatively easy install of Asc
 - [Optional Components](#optional-components)
 - [Configuration File](#configuration-file)
 - [Instructions by Kubernetes Platform](#instructions-by-kubernetes-platform)
+- [Uninstall](#uninstall)
 - [Contributing](#contributing)
 - [Reporting Issues](#reporting-issues)
 
@@ -27,7 +28,7 @@ The Ascender installer is a script that makes for relatively easy install of Asc
 ## Configuration File
 There is a [default configuration file](playbooks/default.config.yml) that will hold all of the options required to set up your installation properly. While this file is comprehensive, you can find more platform-specific config file templates in the respective Kubernetes platform install instructions directory.
 
-The **Uninstall** section of this tutorial references two of the variables that need to be set:
+The [**Uninstall**](#uninstall) section of this tutorial references two of the variables that need to be set:
 - `k8s_platform`: The Kubernetes platform Ascender is being installed on. This could be K3s, EKS, GKE, or AKS.
 - `tmp_dir`: The directory on the server running the install script, where temporary artifacts will be stored.
 
