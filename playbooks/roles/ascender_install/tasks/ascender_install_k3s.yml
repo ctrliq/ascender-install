@@ -69,7 +69,7 @@
 - ansible.builtin.debug:
     msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
     
-- name: Wait until Ascender API is Up
+- name: Wait until Ascender API is Up (This may take between 10-20 mins)
   ansible.builtin.uri:
     url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
     return_content: yes
