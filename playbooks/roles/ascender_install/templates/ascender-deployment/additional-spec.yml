@@ -1,0 +1,6 @@
+  image_pull_policy: Always
+  redis_capabilities:
+   - CHOWN
+   - SETUID
+   - SETGID
+
