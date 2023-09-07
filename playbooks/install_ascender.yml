@@ -16,6 +16,30 @@
 
   tasks: 
 
+    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "{{ ASCENDER_HOSTNAME }}"
+        line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+      delegate_to: localhost
+      when: use_etc_hosts
+
+    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed is using external DNS"
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "{{ ASCENDER_HOSTNAME }}"
+        state: absent
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+      delegate_to: localhost
+      when: not use_etc_hosts
+
     - name: Create Namespace
       kubernetes.core.k8s:
         name: "{{ ASCENDER_NAMESPACE }}"
