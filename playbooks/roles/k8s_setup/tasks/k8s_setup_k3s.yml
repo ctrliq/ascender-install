@@ -17,7 +17,7 @@
     flat: true
   become: true
 
-- name: Replace old hostname with new hostname (requires Ansible >= 2.4)
+- name: Replace the kubeapi server IP address of the cluster runs on a machine different from the install script
   ansible.builtin.replace:
     path: ~/.kube/config
     regexp: '127.0.0.1'

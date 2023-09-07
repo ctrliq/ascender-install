@@ -1,4 +1,4 @@
-- hosts: localhost
+- hosts: ascender
   gather_facts: no
   connection: local
   become: false

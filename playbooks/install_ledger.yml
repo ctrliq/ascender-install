@@ -1,4 +1,4 @@
-- hosts: localhost
+- hosts: ledger
   become: false
   gather_facts: no
 

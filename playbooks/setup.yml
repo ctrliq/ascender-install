@@ -1,14 +1,17 @@
-- name: Install Ascender
-  ansible.builtin.import_playbook: install_ascender.yml
+- name: Ensure Kubernetes Cluster Access
+  ansible.builtin.import_playbook: kubernetes_setup.yml
 
-- name: Install Ledger
-  ansible.builtin.import_playbook: install_ledger.yml
-  when:
-    - LEDGER_INSTALL
+# - name: Install Ascender
+#   ansible.builtin.import_playbook: install_ascender.yml
 
-- name: Cleanup default resources
-  ansible.builtin.import_playbook: cleanup_demo.yml
+# - name: Install Ledger
+#   ansible.builtin.import_playbook: install_ledger.yml
+#   when:
+#     - LEDGER_INSTALL
 
-- name: Configure Initial Playbooks
-  ansible.builtin.import_playbook: setup_playbooks.yml
+# - name: Cleanup default resources
+#   ansible.builtin.import_playbook: cleanup_demo.yml
+
+# - name: Configure Initial Playbooks
+#   ansible.builtin.import_playbook: setup_playbooks.yml
 
