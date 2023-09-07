@@ -20,7 +20,7 @@ The Ascender installer is a script that makes for relatively easy install of Asc
       - A port needs to be open for SSH access (typically TCP port 22). If you choose to have SSH accept connections on a different port, you need to specify this port with the built-in host variable `ansible_port`.
   - [ansible-core](https://github.com/ansible/ansible) will have to be installed, but the setup script will install it if it is not already there.
 - On `ascender_host` and `ledger_host`, the following is required:
-  - A [kubeconfig](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) file, located at `~/.kube/config`. The [current-context](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context) in this file will determine the cluster where Ascender will be installed. This cluster must be up and running at the time of install.
+  - A [kubeconfig](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) file, located at `~/.kube/config`. The server IP address in the [cluster](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context) section of this file will determine the cluster where Ascender will be installed. This cluster must be up and running at the time of install.
 
 ## Optional Components
 - An external PostgreSQL server that the Ascender application can access. If not specified, the AWX Operator responsible for installing Ascender will create a managed PostgreSQL server.
