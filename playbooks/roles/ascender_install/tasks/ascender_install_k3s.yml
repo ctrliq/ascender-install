@@ -3,6 +3,13 @@
     gather_subset:
      - date_time
 
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ ASCENDER_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    
 - name: Generate manifest to install AWX Operator
   ansible.builtin.template:
     src: templates/awx-operator/kustomization.j2

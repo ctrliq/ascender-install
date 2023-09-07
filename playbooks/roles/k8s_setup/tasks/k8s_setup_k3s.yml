@@ -1,0 +1,26 @@
+- name: Install K3s
+  ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
+  args:
+    chdir: "{{ tmp_dir }}"
+  when: k8s_install
+
+- name: "Ensure that /home/{{ ansible_user }}/.kube directory exists"
+  ansible.builtin.file:
+    path: ~/.kube
+    state: directory
+  delegate_to: localhost
+
+- name: "Copy kubeconfig file from default location to user {{ ansible_user }}'s home directory"
+  ansible.builtin.fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ~/.kube/config
+    flat: true
+  become: true
+
+- name: Replace old hostname with new hostname (requires Ansible >= 2.4)
+  ansible.builtin.replace:
+    path: ~/.kube/config
+    regexp: '127.0.0.1'
+    replace: "{{ k3s_master_node_ip }}"
+  when: ansible_host != "localhost"
+  delegate_to: localhost
