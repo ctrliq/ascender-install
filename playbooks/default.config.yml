@@ -7,53 +7,79 @@ k8s_platform: k3s # Options include k3s, eks
 # install_service_type: loadbalancer #options include loadbalancer, nodeport, or clusterip
 
 # ---Ascender install variables---
+
 # DNS resolvable hostname for Ascender service. This is required for install.
 ASCENDER_HOSTNAME: ascender.example.com
+
 # k8s namespace for Ascender k8s objects
 ASCENDER_NAMESPACE: ascender
+
 # Administrator username for Ascender
 ASCENDER_ADMIN_USER: admin
+
 # Administrator password for Ascender
 ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+
 # The OCI container image for Ascender
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
+
 # The image tag indicating the version of Ascender you wish to install
 ASCENDER_VERSION: 22.7.0
+
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.4.0
-# 
+
+# Determines whether to keep the secrets required to encrypt within Ascender (important when backung up)
 ascender_garbage_collect_secrets: false
-ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" # external ip or url resolvable by the cluster
-ASCENDER_PGSQL_PORT: 5432 # external port, this usually defaults to 5432
+
+# External PostgreSQL ip or url resolvable by the cluster
+ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" 
+
+# External PostgreSQL port, this usually defaults to 5432
+ASCENDER_PGSQL_PORT: 5432 
+
+# External PostgreSQL username
 ASCENDER_PGSQL_USER: ascender
+
+# External PostgreSQL password
 ASCENDER_PGSQL_PWD: mypgadminpassword
+
+# External PostgreSQL database name used for Ascender (this DB must exist)
 ASCENDER_PGSQL_DB: ascenderdb
+
+
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
 ascender_replicas:
 ascender_image_pull_policy:
 
 
 # ---Ledger install variables---
+
 # Determines whether or not Ledger will be installed
 LEDGER_INSTALL: true
+
 # DNS resolvable hostname for Ledger service. This is required for install.
 LEDGER_HOSTNAME: ledger.example.com
+
 # The image tag indicating the version of Ledger you wish to install
 LEDGER_VERSION: latest
+
 # The Kubernetes namespace in which Ledger objects will live
 LEDGER_NAMESPACE: ledger
+
 # Admin password for Ledger (the username is admin by default)
 LEDGER_ADMIN_PASSWORD: "myadminpassword"
+
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
 
+# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+# If set to https,
 k8s_lb_protocol: http #options include http and https
 k8s_loadbalancer_port: 443
 k8s_ledger_loadbalancer_port: 443
 k3s_master_node_ip: "54.89.118.36"
 use_etc_hosts: false
-aws_cert_arn: arn:aws:acm:< region >:< account number >:certificate/< certifitate number>
-tls_crt_path: "/tmp/ascender.crt"
-tls_key_path: "/tmp/ascender.key"
+
 
 tmp_dir: "/tmp" #TODO: default to {{ playbook_dir}}, change tmp_dir to config_dir
