@@ -74,12 +74,33 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 LEDGER_DB_PASSWORD: "mydbpassword"
 
 # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
-# If set to https,
+# If set to https, you MUST provide certificate/key options for the Installer to use.
 k8s_lb_protocol: http #options include http and https
-k8s_loadbalancer_port: 443
-k8s_ledger_loadbalancer_port: 443
+
+# AWS Certitifate Resource Name, required when deploying HTTPS in EKS
+aws_cert_arn: arn:aws:acm:< region >:< account number >:certificate/< certifitate number>
+
+# TLS Certificate file, required when deploying HTTPS in K3s
+tls_crt_path: "/tmp/ascender.crt"
+
+# TLS Private Key file, required when deploying HTTPS in K3s
+tls_key_path: "/tmp/ascender.key"
+
+# Routable IP address for the K3s Master/Worker node - required for DNS 
 k3s_master_node_ip: "54.89.118.36"
+
+# Set to false if using an external DNS server for resolution
+# Set to true if not
 use_etc_hosts: false
 
+# A directory in which to place both temporary artifacts
+# and timestamped Kubernetes Manifests to make Ascender/Ledger easy
+# to uninstall
+tmp_dir: "/tmp" 
 
-tmp_dir: "/tmp" #TODO: default to {{ playbook_dir}}, change tmp_dir to config_dir
+# k8s_ledger_loadbalancer_port: 443
+# k8s_loadbalancer_port: 443
+
+
+
+
