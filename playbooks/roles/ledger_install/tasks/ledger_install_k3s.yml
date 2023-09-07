@@ -83,7 +83,7 @@
   ansible.builtin.set_fact:
     ascender_username: "{{ ASCENDER_ADMIN_USER }}"
     ascender_ip: "{{ ASCENDER_HOSTNAME }}"
-    ascender_port: "{{ k8s_loadbalancer_port }}"
+    ascender_port: 443
     ascender_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
   when: k8s_lb_protocol == "https"
 
