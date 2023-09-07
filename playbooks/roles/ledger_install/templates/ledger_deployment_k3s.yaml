@@ -93,7 +93,8 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - http:
+    - host: {{ LEDGER_HOSTNAME }}
+      http:
         paths:
           # - path: /* # SSL Redirect Setting
           #   backend:
@@ -107,7 +108,7 @@ spec:
               service:
                 name: web-svc
                 port:
-                  number: 80
+                  number: 443
       tls:
         - hosts:
           - {{ LEDGER_HOSTNAME }}
@@ -372,7 +373,8 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - http:
+    - host: {{ LEDGER_HOSTNAME }}
+      http:
         paths:
         - path: /
           pathType: Prefix

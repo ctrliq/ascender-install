@@ -134,6 +134,7 @@ spec:
   ingress_type: ingress
   ingress_path: "/"
   ingress_path_type: Prefix
+  hostname: {{ ASCENDER_HOSTNAME }}
   {{ additional_spec | indent( width=2) }}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
@@ -158,6 +159,7 @@ spec:
   ingress_type: ingress
   ingress_path: "/"
   ingress_path_type: Prefix
+  hostname: {{ ASCENDER_HOSTNAME }}
   {{ additional_spec | indent( width=2) }}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS

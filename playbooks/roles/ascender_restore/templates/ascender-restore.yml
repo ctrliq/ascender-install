@@ -1,8 +1,8 @@
 apiVersion: awx.ansible.com/v1beta1
 kind: AWXBackup
 metadata:
-  name: ascender-backup-{{ ansible_date_time.date }}-{{ ansible_date_time.epoch }}
+  name: ascender-restore-{{ ansible_date_time.date }}-{{ ansible_date_time.epoch }}
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
   deployment_name: ascender-app
-  clean_backup_on_delete: true
+  backup_name: 

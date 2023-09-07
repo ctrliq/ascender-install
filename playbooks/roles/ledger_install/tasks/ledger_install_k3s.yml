@@ -56,7 +56,7 @@
 
 - name: Set the Ledger URL for HTTP
   ansible.builtin.set_fact:
-      ledger_ip: "{{ k3s_master_node_ip }}"
+      ledger_ip: "{{ LEDGER_HOSTNAME }}"
       ledger_port: 80
       ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
   when: k8s_lb_protocol == "http"
@@ -90,9 +90,12 @@
 - name: Set the Ascender URL and Credentials for HTTP
   ansible.builtin.set_fact:
       ascender_username: "{{ ASCENDER_ADMIN_USER }}"
-      ascender_ip: "{{ k3s_master_node_ip }}"
+      ascender_ip: "{{ ASCENDER_HOSTNAME }}"
       ascender_port: 80
   when: k8s_lb_protocol == "http"
+
+- ansible.builtin.debug:
+    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
 
 - name: Wait until Ascender API is Up
   ansible.builtin.uri:
