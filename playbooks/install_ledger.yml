@@ -1,4 +1,4 @@
-- hosts: ledger
+- hosts: localhost
   become: false
   gather_facts: no
 
@@ -9,10 +9,6 @@
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
     NAMESPACE: "{{ LEDGER_NAMESPACE }}"
     PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
-
-  roles:
-    - common
-    # - k3s
 
   tasks:
 
