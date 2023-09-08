@@ -108,7 +108,7 @@ spec:
               service:
                 name: web-svc
                 port:
-                  number: 443
+                  number: 80
       tls:
         - hosts:
           - {{ LEDGER_HOSTNAME }}
