@@ -17,10 +17,20 @@
     flat: true
   become: true
 
-- name: Replace the kubeapi server IP address of the cluster runs on a machine different from the install script
+- name: "Replace the kubeconfig cluster kube-api server IP with the public IP address, if the cluster is remote "
   ansible.builtin.replace:
     path: ~/.kube/config
     regexp: '127.0.0.1'
     replace: "{{ k3s_master_node_ip }}"
-  when: ansible_host != "localhost"
   delegate_to: localhost
+  when: ansible_host != "localhost"
+  
+
+- name: Get a list of all nodes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    validate_certs: false
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
