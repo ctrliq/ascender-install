@@ -1,6 +1,8 @@
 
 The Ascender installer is a script that makes for relatively easy install of Ascender Automation Platform on Kubernetes platforms of multiple flavors. The installer is being expanded to new Kubernetes platforms as users/contributors allow, and if you have specific needs for a platform not yet supported, please submit an issue to this Github repository.
 
+While Ascender installs on Kubernetes, you don't need to be a guru in Kubernetes, or even have a Kubernetes cluster up and working!  For each specified Kubernetes platform, the installer will set up a Kubernetes cluster on your behalf, and set up the cluster access file at its default location of `~/.kube/config`.  Windows and Network admins rejoice!
+
 # Table of Contents
 - [General Prerequisites](#general-prerequisites)
 - [Optional Components](#optional-components)

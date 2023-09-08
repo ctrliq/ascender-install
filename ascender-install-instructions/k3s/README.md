@@ -11,15 +11,9 @@ If you have not done so already, be sure to follow the general prerequisites fou
 
 ## K3s-specific Prerequisites
 - NOTE: The K3s install of Ascender is not yet meant for production, but rather as a sandbox on which to try Ascender. As such, the Installer expects a single-node K3s cluster which will act as both master and worker node.
-- These instructions assume an already existing K3s cluster. If you need to install K3s on the `ascender_host` and `ledger_host`, please follow the installation instructions:
-  - Install k3s on the server on which ascender will run ([Reference](https://docs.k3s.io/quick-start))
-    - K3s provides an installation script that is a convenient way to install it as a service on systemd or openrc based systems. This script is available at https://get.k3s.io. To install K3s using this method, just run:
-      - `$curl -sfL https://get.k3s.io | sh -`
-  - Ensure kubectl access to k3s cluster ([Reference](https://docs.k3s.io/cluster-access))
-    - If running the installation script from a remote location
-      - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) and place it on local server at `~/.kube/config`
-    - If running the installation script from the k3s master node itself
-      - Copy the kubeconfig file from its default location on the k3s master node (`/etc/rancher/k3s/k3s.yaml`) to `~/.kube/config`
+- These instructions accomodate both an existing K3s cluster, and will set one up on your behalf if needed. This behavior is determined by the variable `k8s_install`
+  - If `k8s_install` is set to true, the installer will set up K3s on the `ascender_host`in the inventory file. (`ascender_host` can be localhost)
+  - If `k8s_install` is set to false, the installer will not perform a K3s install
 - SSL Certificate and Key
   - To enable HTTPS on your website, you need to provide the Ascender installer with an SSL Certificate file, and a Private Key file. While these can be self-signed certificates, it is best practice to use a trusted certificate, issued by a Certificate Authority. A good way to generate a trusted Certificate for the purpose of sandboxing, is to use the free Certificate Authority, [Let's Encrypt](https://letsencrypt.org/getting-started/).
   - Once you have a Certificate and Private Key file, make sure they are present on the Ascender installing server, and specify their locations in the default config file, with the variables `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their content, and use then to create a Kubernetes TLS Secret for HTTPS enablement.
@@ -30,4 +24,4 @@ If you have not done so already, be sure to follow the general prerequisites fou
 You can use the README.md in thid directory as a K3s reference, but the file used by the script must be located at the `playbooks/default.config.yml` location.
 
 ### Run the setup script
-Run `$sudo ./setup` from top level directory in this repository.
+Run `$ ./setup` from top level directory in this repository.
