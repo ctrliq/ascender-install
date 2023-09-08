@@ -5,14 +5,6 @@
   vars_files:
     - default.config.yml
 
-  environment:
-    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
-    NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
-    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
-
-  # roles:
-  #   - common
-
   tasks:
 
     - name: Run k8s_setup role for {{ k8s_platform }}
@@ -21,36 +13,26 @@
         tasks_from: "k8s_setup_{{ k8s_platform }}"
       when: k8s_install 
 
-    # - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
-    #   ansible.builtin.lineinfile:
-    #     path: /etc/hosts
-    #     regexp: "{{ ASCENDER_HOSTNAME }}"
-    #     line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
-    #     owner: root
-    #     group: root
-    #     mode: '0644'
-    #   become: true
-    #   delegate_to: localhost
-    #   when: use_etc_hosts
+    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "{{ ASCENDER_HOSTNAME }}"
+        line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+      delegate_to: localhost
+      when: use_etc_hosts
 
-    # - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed is using external DNS"
-    #   ansible.builtin.lineinfile:
-    #     path: /etc/hosts
-    #     regexp: "{{ ASCENDER_HOSTNAME }}"
-    #     state: absent
-    #     owner: root
-    #     group: root
-    #     mode: '0644'
-    #   become: true
-    #   delegate_to: localhost
-    #   when: not use_etc_hosts
-
-    
-
-    # - name: "Run ascender_install role for {{ k8s_platform }}"
-    #   ansible.builtin.include_role:
-    #     name: ascender_install
-    #     tasks_from: "ascender_install_{{ k8s_platform }}"
-
-    # - ansible.builtin.debug:
-    #     msg: "Ascender install complete."
+    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed is using external DNS"
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "{{ ASCENDER_HOSTNAME }}"
+        state: absent
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+      delegate_to: localhost
+      when: not use_etc_hosts
