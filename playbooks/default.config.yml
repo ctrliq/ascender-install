@@ -3,9 +3,6 @@
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
 k8s_platform: k3s # Options include k3s, eks
 
-# This variable determines whether or not to curl for a cloud loadbalancer/DNS name, or a node IP address before proceeding in setup of ledger and ascender
-# install_service_type: loadbalancer #options include loadbalancer, nodeport, or clusterip
-
 # ---Ascender install variables---
 
 # DNS resolvable hostname for Ascender service. This is required for install.
@@ -29,23 +26,23 @@ ASCENDER_VERSION: 22.7.0
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.4.0
 
-# Determines whether to keep the secrets required to encrypt within Ascender (important when backung up)
-ascender_garbage_collect_secrets: false
+# Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
+ascender_garbage_collect_secrets: true
 
-# External PostgreSQL ip or url resolvable by the cluster
-ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" 
+# # External PostgreSQL ip or url resolvable by the cluster
+# ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" 
 
-# External PostgreSQL port, this usually defaults to 5432
-ASCENDER_PGSQL_PORT: 5432 
+# # External PostgreSQL port, this usually defaults to 5432
+# ASCENDER_PGSQL_PORT: 5432 
 
-# External PostgreSQL username
-ASCENDER_PGSQL_USER: ascender
+# # External PostgreSQL username
+# ASCENDER_PGSQL_USER: ascender
 
-# External PostgreSQL password
-ASCENDER_PGSQL_PWD: mypgadminpassword
+# # External PostgreSQL password
+# ASCENDER_PGSQL_PWD: mypgadminpassword
 
-# External PostgreSQL database name used for Ascender (this DB must exist)
-ASCENDER_PGSQL_DB: ascenderdb
+# # External PostgreSQL database name used for Ascender (this DB must exist)
+# ASCENDER_PGSQL_DB: ascenderdb
 
 
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
@@ -81,17 +78,17 @@ k8s_lb_protocol: http #options include http and https
 aws_cert_arn: arn:aws:acm:< region >:< account number >:certificate/< certifitate number>
 
 # TLS Certificate file, required when deploying HTTPS in K3s
-tls_crt_path: "/tmp/ascender.crt"
+tls_crt_path: "~/ascender.crt"
 
 # TLS Private Key file, required when deploying HTTPS in K3s
-tls_key_path: "/tmp/ascender.key"
+tls_key_path: "~/ascender.key"
 
 #Installs K3s when set to true
-k3s_install: false
+k8s_install: false
 
 # Routable IP address for the K3s Master/Worker node
 # required for DNS and k3s install
-k3s_master_node_ip: "54.89.118.36"
+k3s_master_node_ip: "x.x.x.x"
 
 # Set to false if using an external DNS server for resolution
 # Set to true if not
@@ -100,11 +97,7 @@ use_etc_hosts: false
 # A directory in which to place both temporary artifacts
 # and timestamped Kubernetes Manifests to make Ascender/Ledger easy
 # to uninstall
-tmp_dir: "/tmp" 
-
-# k8s_ledger_loadbalancer_port: 443
-# k8s_loadbalancer_port: 443
-
+tmp_dir: "/tmp"
 
 
 
