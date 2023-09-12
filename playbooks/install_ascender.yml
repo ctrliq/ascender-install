@@ -14,10 +14,6 @@
 
     - name: "Run ascender_install role for {{ k8s_platform }}"
       ansible.builtin.include_role:
-        name: common
-
-    - name: "Run ascender_install role for {{ k8s_platform }}"
-      ansible.builtin.include_role:
         name: ascender_install
         tasks_from: "ascender_install_{{ k8s_platform }}"
 

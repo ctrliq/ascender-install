@@ -2,6 +2,11 @@
   ansible.builtin.wait_for_connection:
   delay: 15
 
+- name: Stop firewall service
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+
 - name: Install K3s
   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
   args:

@@ -1,3 +1,17 @@
+- hosts: localhost
+  gather_facts: no
+  become: false
+
+  vars_files:
+    - default.config.yml
+
+  tasks: 
+
+    - name: "Run ascender_install role for {{ k8s_platform }}"
+      ansible.builtin.include_role:
+        name: common
+
+
 - hosts: ascender
   gather_facts: no
   become: false
