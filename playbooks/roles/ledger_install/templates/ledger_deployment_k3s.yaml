@@ -160,7 +160,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: registry.mnslab.io:5000/ciq/ledger-db:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -221,7 +221,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-parser:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -269,7 +269,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-web:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:
@@ -430,7 +430,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: registry.mnslab.io:5000/ciq/ledger-db:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -491,7 +491,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-parser:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -539,7 +539,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-web:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:

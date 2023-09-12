@@ -6,7 +6,7 @@ k8s_platform: k3s # Options include k3s, eks
 # ---Ascender install variables---
 
 # DNS resolvable hostname for Ascender service. This is required for install.
-ASCENDER_HOSTNAME: ascender.example.com
+ASCENDER_HOSTNAME: ascender.mford.io
 
 # k8s namespace for Ascender k8s objects
 ASCENDER_NAMESPACE: ascender
@@ -56,7 +56,16 @@ ascender_image_pull_policy:
 LEDGER_INSTALL: true
 
 # DNS resolvable hostname for Ledger service. This is required for install.
-LEDGER_HOSTNAME: ledger.example.com
+LEDGER_HOSTNAME: ledger.mford.io
+
+# The OCI container image for Ledger
+LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ledger-web
+
+# The OCI container image for the Ledger Parser
+LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ledger-parser
+
+# The OCI container image for the Ledger Database
+LEDGER_DB_IMAGE: ghcr.io/ctrliq/ledger-db
 
 # The image tag indicating the version of Ledger you wish to install
 LEDGER_VERSION: latest
@@ -84,11 +93,11 @@ tls_crt_path: "~/ascender.crt"
 tls_key_path: "~/ascender.key"
 
 #Installs K3s when set to true
-k8s_install: false
+k8s_install: true
 
 # Routable IP address for the K3s Master/Worker node
 # required for DNS and k3s install
-k3s_master_node_ip: "x.x.x.x"
+k3s_master_node_ip: "35.173.233.253"
 
 # Set to false if using an external DNS server for resolution
 # Set to true if not
