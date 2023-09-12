@@ -1,12 +1,12 @@
 ---
 
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-k8s_platform: k3s # Options include k3s, eks
+k8s_platform: k3s # Options include k3s, with more to come.
 
 # ---Ascender install variables---
 
 # DNS resolvable hostname for Ascender service. This is required for install.
-ASCENDER_HOSTNAME: ascender.mford.io
+ASCENDER_HOSTNAME: ascender.example.com
 
 # k8s namespace for Ascender k8s objects
 ASCENDER_NAMESPACE: ascender
@@ -21,10 +21,10 @@ ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 
 # The image tag indicating the version of Ascender you wish to install
-ASCENDER_VERSION: 22.7.0
+ASCENDER_VERSION: 23.0.0
 
 # The version of the AWX Operator used to install Ascender and its components
-ANSIBLE_OPERATOR_VERSION: 2.4.0
+ANSIBLE_OPERATOR_VERSION: 2.5.2
 
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
@@ -46,8 +46,8 @@ ascender_garbage_collect_secrets: true
 
 
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
-ascender_replicas:
-ascender_image_pull_policy:
+ascender_replicas: 1
+ascender_image_pull_policy: Always
 
 
 # ---Ledger install variables---
@@ -56,16 +56,16 @@ ascender_image_pull_policy:
 LEDGER_INSTALL: true
 
 # DNS resolvable hostname for Ledger service. This is required for install.
-LEDGER_HOSTNAME: ledger.mford.io
+LEDGER_HOSTNAME: ledger.example.com
 
 # The OCI container image for Ledger
-LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ledger-web
+LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
 
 # The OCI container image for the Ledger Parser
-LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ledger-parser
+LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-parser
 
 # The OCI container image for the Ledger Database
-LEDGER_DB_IMAGE: ghcr.io/ctrliq/ledger-db
+LEDGER_DB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-db
 
 # The image tag indicating the version of Ledger you wish to install
 LEDGER_VERSION: latest
@@ -81,10 +81,7 @@ LEDGER_DB_PASSWORD: "mydbpassword"
 
 # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
-k8s_lb_protocol: http #options include http and https
-
-# AWS Certitifate Resource Name, required when deploying HTTPS in EKS
-aws_cert_arn: arn:aws:acm:< region >:< account number >:certificate/< certifitate number>
+k8s_lb_protocol: https #options include http and https
 
 # TLS Certificate file, required when deploying HTTPS in K3s
 tls_crt_path: "~/ascender.crt"
@@ -97,7 +94,7 @@ k8s_install: true
 
 # Routable IP address for the K3s Master/Worker node
 # required for DNS and k3s install
-k3s_master_node_ip: "35.173.233.253"
+k3s_master_node_ip: "x.x.x.x"
 
 # Set to false if using an external DNS server for resolution
 # Set to true if not
