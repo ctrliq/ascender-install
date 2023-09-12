@@ -39,7 +39,7 @@
       delegate_to: localhost
       when: use_etc_hosts
 
-    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed is using external DNS"
+    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
       ansible.builtin.lineinfile:
         path: /etc/hosts
         regexp: "{{ ASCENDER_HOSTNAME }}"
