@@ -24,17 +24,17 @@
       delegate_to: localhost
       when: use_etc_hosts
     
-    - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        regexp: "{{ LEDGER_HOSTNAME }}"
-        state: absent
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      delegate_to: localhost
-      when: not use_etc_hosts
+    # - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
+    #   ansible.builtin.lineinfile:
+    #     path: /etc/hosts
+    #     regexp: "{{ LEDGER_HOSTNAME }}"
+    #     state: absent
+    #     owner: root
+    #     group: root
+    #     mode: '0644'
+    #   become: true
+    #   delegate_to: localhost
+    #   when: not use_etc_hosts
 
     - name: Create Namespace
       kubernetes.core.k8s:
