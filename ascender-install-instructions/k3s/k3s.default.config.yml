@@ -82,7 +82,7 @@ tls_crt_path: "~/ascender.crt"
 tls_key_path: "~/ascender.key"
 
 #Installs K3s when set to true
-k8s_install: false
+kube_install: false
 
 # Routable IP address for the K3s Master/Worker node
 # required for DNS and k3s install

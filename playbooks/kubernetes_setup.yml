@@ -25,7 +25,7 @@
       ansible.builtin.include_role:
         name: k8s_setup
         tasks_from: "k8s_setup_{{ k8s_platform }}"
-      when: k8s_install 
+      when: kube_install 
 
     - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
       ansible.builtin.lineinfile:
@@ -39,14 +39,14 @@
       delegate_to: localhost
       when: use_etc_hosts
 
-    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        regexp: "{{ ASCENDER_HOSTNAME }}"
-        state: absent
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      delegate_to: localhost
-      when: not use_etc_hosts
+    # - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
+    #   ansible.builtin.lineinfile:
+    #     path: /etc/hosts
+    #     regexp: "{{ ASCENDER_HOSTNAME }}"
+    #     state: absent
+    #     owner: root
+    #     group: root
+    #     mode: '0644'
+    #   become: true
+    #   delegate_to: localhost
+    #   when: not use_etc_hosts

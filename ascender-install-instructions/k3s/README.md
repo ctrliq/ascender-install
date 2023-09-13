@@ -11,9 +11,9 @@ If you have not done so already, be sure to follow the general prerequisites fou
 
 ## K3s-specific Prerequisites
 - NOTE: The K3s install of Ascender is not yet meant for production, but rather as a sandbox on which to try Ascender. As such, the Installer expects a single-node K3s cluster which will act as both master and worker node.
-- These instructions accomodate both an existing K3s cluster, and will set one up on your behalf if needed. This behavior is determined by the variable `k8s_install`
-  - If `k8s_install` is set to true, the installer will set up K3s on the `ascender_host`in the inventory file. (`ascender_host` can be localhost)
-  - If `k8s_install` is set to false, the installer will not perform a K3s install
+- These instructions accomodate both an existing K3s cluster, and will set one up on your behalf if needed. This behavior is determined by the variable `kube_install`
+  - If `kube_install` is set to true, the installer will set up K3s on the `ascender_host`in the inventory file. (`ascender_host` can be localhost)
+  - If `kube_install` is set to false, the installer will not perform a K3s install
 - SSL Certificate and Key
   - To enable HTTPS on your website, you need to provide the Ascender installer with an SSL Certificate file, and a Private Key file. While these can be self-signed certificates, it is best practice to use a trusted certificate, issued by a Certificate Authority. A good way to generate a trusted Certificate for the purpose of sandboxing, is to use the free Certificate Authority, [Let's Encrypt](https://letsencrypt.org/getting-started/).
   - Once you have a Certificate and Private Key file, make sure they are present on the Ascender installing server, and specify their locations in the default config file, with the variables `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their content, and use the content to create a Kubernetes TLS Secret for HTTPS enablement.
