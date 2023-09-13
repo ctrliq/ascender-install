@@ -1,12 +1,8 @@
 [localhost]
-localhost ansible_host=localhost ansible_user=rocky ansible_connection=local
+localhost ansible_host=localhost ansible_user=user ansible_connection=local
 
 [ascender]
-# ascender_host ansible_host=x.x.x.x ansible_user=rocky ansible_ssh_private_key_file=private_key.pem
-ascender_host ansible_host=localhost ansible_user=rocky ansible_connection=local
-
-
-[ledger]
-# ledger_host ansible_host=x.x.x.x ansible_user=rocky ansible_ssh_private_key_file=private_key.pem
-ledger_host ansible_host=localhost ansible_user=rocky ansible_connection=local
+ascender_host ansible_host=x.x.x.x ansible_user=user ansible_ssh_pass=password
+# ascender_host ansible_host=x.x.x.x ansible_user=user ansible_ssh_private_key_file=~/.ssh/key.pem
+# ascender_host ansible_host=localhost ansible_user=user ansible_connection=local
 
