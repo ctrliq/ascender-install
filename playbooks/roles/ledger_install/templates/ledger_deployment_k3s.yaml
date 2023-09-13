@@ -202,7 +202,7 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_parser_replicas }}
   selector:
     matchLabels:
       io.kompose.service: parser
@@ -250,7 +250,7 @@ metadata:
   name: web
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_web_replicas }}
   selector:
     matchLabels:
       io.kompose.service: web
@@ -472,7 +472,7 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_parser_replicas }}
   selector:
     matchLabels:
       io.kompose.service: parser
@@ -520,7 +520,7 @@ metadata:
   name: web
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_web_replicas }}
   selector:
     matchLabels:
       io.kompose.service: web
