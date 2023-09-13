@@ -9,6 +9,12 @@
 #   ansible.posix.selinux:
 #     state: disabled
 
+- name: Retrieve the Enterprise Linux details
+  ansible.builtin.setup:
+    gather_subset:
+     - distribution_major_version
+     - os_family
+
 - name: Enable EPEL Repo (required for certbot)
   ansible.builtin.dnf:
     name: epel-release
