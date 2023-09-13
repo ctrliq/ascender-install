@@ -58,12 +58,11 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: parser-port
     port: 5000
     targetPort: 5000
-    nodePort: 30500
     protocol: TCP
   selector:
     io.kompose.service: parser
@@ -338,12 +337,11 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: parser-port
     port: 5000
     targetPort: 5000
-    nodePort: 30500
     protocol: TCP
   selector:
     io.kompose.service: parser
