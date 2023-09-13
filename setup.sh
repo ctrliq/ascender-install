@@ -31,7 +31,7 @@ check_collections() {
 check_ansible
 if [ $? -ne 0 ]; then
   echo "#### INSTALLING ANSIBLE ####"
-  dnf install ansible-core
+  dnf install -y ansible-core
 fi
 
 check_collections
