@@ -7,7 +7,7 @@
     name: firewalld
     state: stopped
 
-- name: Install K3s
+- name: Install K3s (this may take up to 5 minutes)
   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
   args:
     chdir: "{{ tmp_dir }}"
