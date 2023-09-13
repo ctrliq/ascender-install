@@ -11,13 +11,13 @@
   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
   when: kube_install
 
-- name: "Ensure that /home/{{ ansible_user }}/.kube directory exists"
+- name: Ensure that ~/.kube directory exists
   ansible.builtin.file:
     path: ~/.kube
     state: directory
   delegate_to: localhost
 
-- name: "Copy kubeconfig file from default location to user {{ ansible_user }}'s home directory"
+- name: Copy kubeconfig file from default location to the ~/.kube directory"
   ansible.builtin.fetch:
     src: /etc/rancher/k3s/k3s.yaml
     dest: ~/.kube/config
