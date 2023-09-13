@@ -48,7 +48,7 @@
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-k3s.yml') }}"
 
-- name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 5 minutes)
+- name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
   kubernetes.core.k8s_info:
     kind: Deployment
     wait: yes
