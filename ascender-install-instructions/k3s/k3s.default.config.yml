@@ -62,8 +62,14 @@ LEDGER_HOSTNAME: ledger.example.com
 # The OCI container image for Ledger
 LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
 
+# The number of ledger web pods - this is good to ensure high availability
+ledger_web_replicas: 1
+
 # The OCI container image for the Ledger Parser
 LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-parser
+
+# The number of ledger parser pods - this is good to ensure high availability
+ledger_parser_replicas: 1
 
 # The OCI container image for the Ledger Database
 LEDGER_DB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-db
