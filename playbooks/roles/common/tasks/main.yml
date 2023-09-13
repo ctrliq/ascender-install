@@ -15,7 +15,12 @@
      - distribution_major_version
      - os_family
 
-- name: Enable EPEL Repo (required for certbot)
+- name: Ensure {{ tmp_dir }} exists
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}"
+    state: directory
+    
+- name: Enable EPEL Repo
   ansible.builtin.dnf:
     name: epel-release
     state: latest
