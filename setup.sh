@@ -4,7 +4,14 @@
 if [ -t "0" ]; then
   ANSIBLE_FORCE_COLORS=True
 fi
-INVENTORY_FILE="$(dirname $0)/inventory"
+
+if [ -f "$(dirname $0)/inventory.yml" ]; then
+  INVENTORY_FILE="$(dirname $0)/inventory.yml"
+else
+  INVENTORY_FILE="$(dirname $0)/inventory"
+fi
+
+echo "Using Inventory File: ${INVENTORY_FILE}"
 
 check_ansible() {
   type -p ansible-playbook > /dev/null
