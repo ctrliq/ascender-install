@@ -5,7 +5,7 @@ projects:
   - name: Ascender Playbooks
     description: Administrative Playbooks for Rocky Linux
     scm_type: git
-    scm_url: https://git.mnslab.io/CIQ/AscenderPlaybooks.git
+    scm_url: https://github.com/ctrliq/ascender-playbooks.git
     scm_update_on_launch: false
 
   - name: Ansible Lockdown - CIS - EL9
