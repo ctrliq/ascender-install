@@ -3,7 +3,7 @@
   become: false
 
   vars_files:
-    - [ "custom.config.yml", "default.config.yml"]
+    - default.config.yml
 
   tasks: 
 
