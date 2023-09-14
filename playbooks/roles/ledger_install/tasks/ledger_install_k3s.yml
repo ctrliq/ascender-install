@@ -36,30 +36,12 @@
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
 
-- name: Set the Ledger URL for HTTPS
+- name: Set the Ledger URL
   ansible.builtin.set_fact:
       ledger_ip: "{{ LEDGER_HOSTNAME }}"
-      ledger_port: 443
+      ledger_port: "{{  '443' if k8s_lb_protocol == 'https' else '80' }}"
+      ledger_parser_ip: "{{ parser_svc.resources[0].spec.clusterIP }}"
       ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
-  when: k8s_lb_protocol == "https"
-
-- name: If SSL is NOT configured, get the hostname from DNS endpoint of the Ledger Load Balancer
-  kubernetes.core.k8s_info:
-    kind: Ingress
-    wait: yes
-    name: ledger-web-ingress
-    namespace: "{{ LEDGER_NAMESPACE }}"
-    wait_sleep: 10
-    wait_timeout: 360
-  register: ledger_ingress
-  when: k8s_lb_protocol == "http"
-
-- name: Set the Ledger URL for HTTP
-  ansible.builtin.set_fact:
-      ledger_ip: "{{ LEDGER_HOSTNAME }}"
-      ledger_port: 80
-      ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
-  when: k8s_lb_protocol == "http"
 
 - ansible.builtin.debug:
     msg: "The Ledger endpoint is {{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
@@ -118,7 +100,7 @@
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     settings:
-      LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_ip }}"
+      LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
       LOG_AGGREGATOR_TYPE: other
       LOG_AGGREGATOR_ENABLED: true
