@@ -61,17 +61,10 @@
 # - ansible.builtin.debug:
 #     var: ascender_web_deployment
 
-- name: Set the Ascender URL for HTTPS
+- name: Set the Ascender URL
   ansible.builtin.set_fact:
       ascender_ip: "{{ ASCENDER_HOSTNAME }}"
-      ascender_port: 443
-  when: k8s_lb_protocol == "https"
-
-- name: Set the Ascender URL for HTTP
-  ansible.builtin.set_fact:
-      ascender_ip: "{{ ASCENDER_HOSTNAME }}"
-      ascender_port: 80
-  when: k8s_lb_protocol == "http"
+      ascender_port: "{{ '443' if k8s_lb_protocol == 'https' else '80' }}"
 
 - ansible.builtin.debug:
     msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
