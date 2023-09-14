@@ -1,0 +1,19 @@
+- hosts: localhost
+  gather_facts: no
+  connection: local
+
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+  vars_files:
+    - default.config.yml
+
+  tasks:
+
+    - name: "Run ascender_backup role"
+      ansible.builtin.include_role:
+        name: ascender_backup
+        tasks_from: "ascender_backup"
+
+    - ansible.builtin.debug:
+        msg: "Ascender backup complete."

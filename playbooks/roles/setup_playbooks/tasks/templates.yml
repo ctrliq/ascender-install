@@ -1,9 +1,8 @@
 - name: Create Job Template - {{ template.name }}
   awx.awx.job_template:
-    controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
-    controller_username: admin
-    controller_password: "{{ ascender_password }}"
-
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     name: "{{ template.name }}"
     job_type: "{{ template.job_type | default('run') }}"
     organization: Default

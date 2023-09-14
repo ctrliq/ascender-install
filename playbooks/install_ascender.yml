@@ -1,14 +1,21 @@
-- hosts: ascender
-  gather_facts: yes
-  become: true
+- hosts: localhost
+  gather_facts: no
+  become: false
+
+  vars_files:
+    - default.config.yml
+
   environment:
-    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
     NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
+    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
 
-  roles:
-    - common
-    - k8s
-    - ascender_install
+  tasks: 
 
-- name: Display Ascender Login Info
-  ansible.builtin.import_playbook: info_ascender.yml
+    - name: "Run ascender_install role for {{ k8s_platform }}"
+      ansible.builtin.include_role:
+        name: ascender_install
+        tasks_from: "ascender_install_{{ k8s_platform }}"
+
+    - ansible.builtin.debug:
+        msg: "Ascender install complete."

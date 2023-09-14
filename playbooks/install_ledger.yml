@@ -1,13 +1,52 @@
-- hosts: ledger
-  become: true
+- hosts: localhost
+  become: false
+  gather_facts: no
+
+  vars_files:
+    - default.config.yml
+
   environment:
-    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
     NAMESPACE: "{{ LEDGER_NAMESPACE }}"
+    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
 
-  roles:
-    - common
-    - k8s
-    - ledger_install
+  tasks:
 
-- name: Display Ledger Login Info
-  ansible.builtin.import_playbook: info_ledger.yml
+    - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: "{{ LEDGER_HOSTNAME }}"
+        line: "{{ k3s_master_node_ip }}   {{ LEDGER_HOSTNAME }}"
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+      delegate_to: localhost
+      when: use_etc_hosts
+    
+    # - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
+    #   ansible.builtin.lineinfile:
+    #     path: /etc/hosts
+    #     regexp: "{{ LEDGER_HOSTNAME }}"
+    #     state: absent
+    #     owner: root
+    #     group: root
+    #     mode: '0644'
+    #   become: true
+    #   delegate_to: localhost
+    #   when: not use_etc_hosts
+
+    - name: Create Namespace
+      kubernetes.core.k8s:
+        name: "{{ LEDGER_NAMESPACE }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: "Run ascender_install role for {{ k8s_platform }}"
+      ansible.builtin.include_role:
+        name: ledger_install
+        tasks_from: "ledger_install_{{ k8s_platform }}"
+
+    - ansible.builtin.debug:
+        msg: "Ledger install complete."
