@@ -8,6 +8,7 @@
     name: "{{ ASCENDER_NAMESPACE }}"
     api_version: v1
     kind: Namespace
+    verify_ssl: false
     state: present
     
 - name: Generate manifest to install AWX Operator

@@ -13,7 +13,9 @@
 
 - name: Install K3s (this may take up to 5 minutes)
   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
-  when: kube_install
+  when:
+    - kube_install
+    - "'k3s.service' not in services"
 
 - name: Ensure that ~/.kube directory exists
   ansible.builtin.file:
