@@ -31,7 +31,7 @@
         - name: Verify RedHat OS Family architecture
           ansible.builtin.assert:
             that:
-              - ansible_distribution_major_version|int == '8' or ansible_distribution_major_version|int == '9'
+              - ansible_distribution_major_version == '8' or ansible_distribution_major_version == '9'
             fail_msg: "K3s Server OS major version must be 8 or 9"
       when: k8s_platform == "k3s"
 
