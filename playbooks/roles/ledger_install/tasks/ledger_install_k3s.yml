@@ -39,7 +39,7 @@
 - name: Set the Ledger URL
   ansible.builtin.set_fact:
       ledger_ip: "{{ LEDGER_HOSTNAME }}"
-      ledger_port: "{{  '443' if k8s_lb_protocol == 'https' else '80' }}
+      ledger_port: "{{  '443' if k8s_lb_protocol == 'https' else '80' }}"
       ledger_parser_ip: "{{ parser_svc.resources[0].spec.clusterIP }}"
       ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
 
