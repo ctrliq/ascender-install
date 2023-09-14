@@ -1,0 +1,40 @@
+- hosts: ascender
+  gather_facts: no
+  become: false
+
+ vars_files:
+    - ["custom.config.yml", "default.config.yml"]
+
+  tasks:
+
+    - name: Retrieve the Linux details
+      block:
+        - name: Retrieve the Linux details
+          ansible.builtin.setup:
+            gather_subset:
+            - distribution_major_version
+            - os_family
+            - architecture
+
+        - name: Verify x86_64 architecture
+          ansible.builtin.assert:
+            that:
+              - ansible_architecture == "x86_64"
+            fail_msg: "K3s server must be of type x86_64"
+
+        - name: Verify RedHat OS Family architecture
+          ansible.builtin.assert:
+            that:
+              - ansible_os_family == "RedHat"
+            fail_msg: "K3s Server OS Family must be of type RedHat"
+
+        - name: Verify RedHat OS Family architecture
+          ansible.builtin.assert:
+            that:
+              - ansible_distribution_major_version|int == '8' or ansible_distribution_major_version|int == '9'
+            fail_msg: "K3s Server OS major version must be 8 or 9"
+      when: k8s_platform == "k3s"
+
+      
+
+    
