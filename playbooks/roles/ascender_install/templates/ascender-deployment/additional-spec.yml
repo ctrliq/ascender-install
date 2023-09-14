@@ -1,0 +1,7 @@
+  image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
+  replicas: {{ ascender_replicas | default(1) }}
+  redis_capabilities:
+   - CHOWN
+   - SETUID
+   - SETGID
+

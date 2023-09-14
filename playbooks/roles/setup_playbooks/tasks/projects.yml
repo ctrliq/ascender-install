@@ -1,9 +1,8 @@
 - name: Create Project - {{ project.name }}
   awx.awx.project:
-    controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
-    controller_username: admin
-    controller_password: "{{ ascender_password }}"
-
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     name: "{{ project.name }}"
     description: "{{ project.description }}"
     organization: Default

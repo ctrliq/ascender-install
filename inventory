@@ -1,17 +1,7 @@
+[localhost]
+localhost ansible_host=localhost ansible_user=user ansible_connection=local
+
 [ascender]
-hostname1
-
-[ledger]
-hostname2
-
-[ascender:vars]
-ASCENDER_NAMESPACE=ascender
-ASCENDER_VERSION=22.5.0
-ANSIBLE_OPERATOR_VERSION=2.4.0
-
-[ledger:vars]
-LEDGER_VERSION=latest
-LEDGER_NAMESPACE=ledger
-
-[all:vars]
-K8S_AUTH_KUBECONFIG=/var/lib/rancher/k3s/server/cred/admin.kubeconfig
+ascender_host ansible_host=x.x.x.x ansible_user=user ansible_ssh_pass=password
+# ascender_host ansible_host=x.x.x.x ansible_user=user ansible_ssh_private_key_file=~/.ssh/key.pem
+# ascender_host ansible_host=localhost ansible_user=user ansible_connection=local
