@@ -1,3 +1,6 @@
+- name: Ensure Correct architecture for K3s Target
+  ansible.builtin.import_playbook: assertions.yml
+  
 - name: Ensure Kubernetes Cluster Access
   ansible.builtin.import_playbook: kubernetes_setup.yml
 
