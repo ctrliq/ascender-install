@@ -1,9 +1,8 @@
 - name: Create Inventory - {{ inventory.name }}
   awx.awx.inventory:
-    controller_host: "http://{{ ascender_ip }}:{{ ascender_port }}"
-    controller_username: admin
-    controller_password: "{{ ascender_password }}"
-
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     name: "{{ inventory.name }}"
     description: "{{ project.description | default('') }}"
     organization: Default

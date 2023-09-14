@@ -1,22 +1,71 @@
-- name: Ensure Firewall is disabled
-  ansible.builtin.systemd:
-    name: firewalld
-    state: stopped
-    enabled: false
-  failed_when: false
+# - name: Ensure Firewall is disabled
+#   ansible.builtin.systemd:
+#     name: firewalld
+#     state: stopped
+#     enabled: false
+#   failed_when: false
 
-- name: Disable SELinux
-  ansible.posix.selinux:
-    state: disabled
+# - name: Disable SELinux
+#   ansible.posix.selinux:
+#     state: disabled
 
-- name: Install necessary packages
+- name: Retrieve the Enterprise Linux details
+  ansible.builtin.setup:
+    gather_subset:
+     - distribution_major_version
+     - os_family
+
+- name: Ensure {{ tmp_dir }} exists
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}"
+    state: directory
+    
+- name: Enable EPEL Repo
+  ansible.builtin.dnf:
+    name: epel-release
+    state: latest
+  become: true
+
+- name: Add the Kubernetes yum repository
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/kubernetes.repo
+    content: | 
+      [kubernetes]
+      name=Kubernetes
+      baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+  become: true
+
+- name: Install necessary packages for Rocky Linux 9
   ansible.builtin.dnf:
     name:
-      - git
-      - make
       - jq
+      - python-setuptools
       - python3-pip
+      - kubectl
+    update_cache: true
+    state: present
+  become: true
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int == 9
+
+- name: Install necessary packages for Rocky Linux 8
+  ansible.builtin.dnf:
+    name:
+      - jq
+      - platform-python-setuptools
+      - python3-pip
+      - kubectl
+    update_cache: true
+    state: present
+  become: true
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version|int == 8
+
 
 - name: Install kubernetes python library
   ansible.builtin.pip:
-    name: kubernetes
+    name:
+      - kubernetes
+    state: forcereinstall
+  become: true

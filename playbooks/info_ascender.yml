@@ -1,0 +1,30 @@
+- hosts: ascender
+  gather_facts: yes
+  become: true
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
+    NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
+
+  tasks:
+    - name: Get the Admin password
+      kubernetes.core.k8s_info:
+        api: v1
+        kind: Secret
+        name: ascender-admin-password
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      register: ascender_password
+
+    - name: Get the Service Port
+      kubernetes.core.k8s_info:
+        api: v1
+        kind: Service
+        name: ascender-service
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      register: ascender_service
+
+    - name: Display results
+      ansible.builtin.debug:
+        msg:
+          - "ASCENDER USERNAME: admin"
+          - "ASCENDER PASSWORD: {{ ascender_password.resources[0].data.password | b64decode }}"
+          - "ASCENDER URL: http://{{ hostvars[groups['ascender'][0]].ansible_host }}:{{ ascender_service.resources[0].spec.ports[0].nodePort }}/"

@@ -1,40 +1,21 @@
-- name: Get Ascender Login info
-  hosts: ascender
-  environment:
-    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
-
-  tasks:
-    - name: Get the Admin password
-      kubernetes.core.k8s_info:
-        api: v1
-        kind: Secret
-        name: ascender-admin-password
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-      register: ascender_password
-
-    - name: Get the Service Port
-      kubernetes.core.k8s_info:
-        api: v1
-        kind: Service
-        name: ascender-service
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-      register: ascender_service
-
-    - name: Store Results
-      ansible.builtin.set_fact:
-         ascender_username: admin
-         ascender_password: "{{ ascender_password.resources[0].data.password | b64decode }}"
-         ascender_port: "{{ ascender_service.resources[0].spec.ports[0].nodePort }}"
-
 - hosts: localhost
   gather_facts: no
   connection: local
-  pre_tasks:
-    - name: Set Ascender IP and Port
-      ansible.builtin.set_fact:
-        ascender_ip: "{{ hostvars[groups['ascender'][0]].ansible_default_ipv4.address }}"
-        ascender_password: "{{ hostvars[groups['ascender'][0]].ascender_password }}"
-        ascender_port: "{{ hostvars[groups['ascender'][0]].ascender_port}}"
 
-  roles:
-    - setup_playbooks
+  vars_files:
+    - default.config.yml
+
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
+
+  tasks:
+
+    - name: "Run ascender_credentials_{{ k8s_platform }}.yml"
+      ansible.builtin.include_role:
+        name: setup_playbooks
+        tasks_from: "ascender_credentials_{{ k8s_platform }}"
+
+    - name: "Configure Ascender with CIQ resources"
+      ansible.builtin.include_role:
+        name: setup_playbooks

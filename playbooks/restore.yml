@@ -1,0 +1,8 @@
+- hosts: localhost
+  gather_facts: no
+  connection: local
+
+  tasks:
+
+    - ansible.builtin.debug:
+        msg: "This is the RESTORE playbook."

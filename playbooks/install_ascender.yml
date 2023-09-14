@@ -1,35 +1,21 @@
-- hosts: ascender
-  gather_facts: yes
-  become: true
+- hosts: localhost
+  gather_facts: no
+  become: false
+
+  vars_files:
+    - default.config.yml
+
   environment:
-    K8S_AUTH_KUBECONFIG: "{{ K8S_AUTH_KUBECONFIG }}"
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
     NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
+    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
 
-  roles:
-    - common
-    - k8s
-    - ascender_install
+  tasks: 
 
-  tasks:
-    - name: Get the Admin password
-      kubernetes.core.k8s_info:
-        api: v1
-        kind: Secret
-        name: ascender-admin-password
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-      register: ascender_password
+    - name: "Run ascender_install role for {{ k8s_platform }}"
+      ansible.builtin.include_role:
+        name: ascender_install
+        tasks_from: "ascender_install_{{ k8s_platform }}"
 
-    - name: Get the Service Port
-      kubernetes.core.k8s_info:
-        api: v1
-        kind: Service
-        name: ascender-service
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-      register: ascender_service
-
-    - name: Display results
-      ansible.builtin.debug:
-        msg:
-          - "ASCENDER USERNAME: admin"
-          - "ASCENDER PASSWORD: {{ ascender_password.resources[0].data.password | b64decode }}"
-          - "ASCENDER URL: http://{{ ansible_default_ipv4.address }}:{{ ascender_service.resources[0].spec.ports[0].nodePort }}/"
+    - ansible.builtin.debug:
+        msg: "Ascender install complete."
