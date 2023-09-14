@@ -2,7 +2,7 @@
   gather_facts: no
   become: false
 
- vars_files:
+  vars_files:
     - ["custom.config.yml", "default.config.yml"]
 
   tasks:
