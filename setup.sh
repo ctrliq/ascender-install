@@ -38,7 +38,7 @@ check_collections() {
 check_ansible
 if [ $? -ne 0 ]; then
   echo "#### INSTALLING ANSIBLE ####"
-  dnf install ansible-core
+  dnf install -y ansible-core
 fi
 
 check_collections
@@ -47,11 +47,38 @@ if [ $? -ne 1 ]; then
   ansible-galaxy install -r collections/requirements.yml
 fi
 
-ansible-playbook -i "${INVENTORY_FILE}" playbooks/setup.yml
+PASSED_ARG=$@
+if [[ ${#PASSED_ARG} -ne 0 ]]
+then
+  while getopts "br" ARG; do
 
-RC=$?
-if [ ${RC} -ne 0 ]; then
-  echo "ERROR OCCURRED DURING SETUP"
+    case $ARG in
+
+      b)
+      
+        echo "BACKUP"
+
+        ansible-playbook -i "${INVENTORY_FILE}" playbooks/backup.yml
+        ;;
+      r)
+
+        echo "RESTORE"
+
+        ansible-playbook -i "${INVENTORY_FILE}" playbooks/restore.yml
+        ;;
+      \?) 
+
+        exit
+        ;;
+    esac
+  done
 else
-  echo "ASCENDER SUCCESSFULLY SETUP"
+  ansible-playbook -i "${INVENTORY_FILE}" playbooks/setup.yml
+
+  RC=$?
+  if [ ${RC} -ne 0 ]; then
+    echo "ERROR OCCURRED DURING SETUP"
+  else
+    echo "ASCENDER SUCCESSFULLY SETUP"
+  fi
 fi

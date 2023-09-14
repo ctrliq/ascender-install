@@ -1,0 +1,126 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Generate manifest to install Ledger k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: ledger_deployment_k3s.yaml
+    dest: "{{ tmp_dir }}/ledger_deployment_k3s.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: "Apply ledger manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/ledger_deployment_k3s.yaml') | from_yaml_all }}"
+
+- name: Wait for Ledger web Deployment to complete setting up
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: web
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+
+- name: Wait for Ledger parser Service to be up
+  kubernetes.core.k8s_info:
+    kind: Service
+    wait: yes
+    name: parser
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+  register: parser_svc
+      
+- ansible.builtin.debug:
+    var: parser_svc.resources[0].spec.ports[0].port
+
+- name: Set the Ledger URL for HTTPS
+  ansible.builtin.set_fact:
+      ledger_ip: "{{ LEDGER_HOSTNAME }}"
+      ledger_port: 443
+      ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
+  when: k8s_lb_protocol == "https"
+
+- name: If SSL is NOT configured, get the hostname from DNS endpoint of the Ledger Load Balancer
+  kubernetes.core.k8s_info:
+    kind: Ingress
+    wait: yes
+    name: ledger-web-ingress
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+  register: ledger_ingress
+  when: k8s_lb_protocol == "http"
+
+- name: Set the Ledger URL for HTTP
+  ansible.builtin.set_fact:
+      ledger_ip: "{{ LEDGER_HOSTNAME }}"
+      ledger_port: 80
+      ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
+  when: k8s_lb_protocol == "http"
+
+- ansible.builtin.debug:
+    msg: "The Ledger endpoint is {{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
+
+- name: Wait until Ledger endpoint is Up
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
+    return_content: yes
+    validate_certs: no
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 200
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Ledger webpage is up"
+
+- name: Set the Ascender URL and Credentials for HTTPS
+  ansible.builtin.set_fact:
+    ascender_username: "{{ ASCENDER_ADMIN_USER }}"
+    ascender_ip: "{{ ASCENDER_HOSTNAME }}"
+    ascender_port: 443
+    ascender_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+  when: k8s_lb_protocol == "https"
+
+- name: Set the Ascender URL and Credentials for HTTP
+  ansible.builtin.set_fact:
+      ascender_username: "{{ ASCENDER_ADMIN_USER }}"
+      ascender_ip: "{{ ASCENDER_HOSTNAME }}"
+      ascender_port: 80
+  when: k8s_lb_protocol == "http"
+
+- ansible.builtin.debug:
+    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+
+- name: Wait until Ascender API is Up
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    return_content: yes
+    validate_certs: no
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 60
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Ascender API is up"
+
+- name: Set all the logging parameters
+  awx.awx.settings:
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    settings:
+      LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_ip }}"
+      LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
+      LOG_AGGREGATOR_TYPE: other
+      LOG_AGGREGATOR_ENABLED: true
+      LOG_AGGREGATOR_VERIFY_CERT: false
+      LOG_AGGREGATOR_LEVEL: INFO

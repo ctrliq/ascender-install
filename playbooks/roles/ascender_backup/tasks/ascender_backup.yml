@@ -1,0 +1,30 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- ansible.builtin.debug:
+    var: ansible_date_time
+
+- name: Generate manifest to install AWXBackup k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: "ascender-backup.yml"
+    dest: "{{ tmp_dir }}/ascender-backup.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+
+- name: "Apply AWXBackup k8s manifest"
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'ascender-backup.yml') }}"
+
+# - name: Wait for ascender-app-web Deployment to complete setting up
+#   kubernetes.core.k8s_info:
+#     kind: Deployment
+#     wait: yes
+#     name: ascender-app-web
+#     namespace: "{{ ASCENDER_NAMESPACE }}"
+#     wait_sleep: 10
+#     wait_timeout: 360
+#   register: ascender_web_deployment
+
+# - ansible.builtin.debug:
+#     var: ascender_web_deployment
