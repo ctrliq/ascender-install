@@ -14,9 +14,3 @@
 
 - name: Configure Initial Playbooks
   ansible.builtin.import_playbook: setup_playbooks.yml
-
-- name: Display Ascender Login Info
-  ansible.builtin.import_playbook: info_ascender.yml
-
-- name: Display Ledger Login Info
-  ansible.builtin.import_playbook: info_ledger.yml
