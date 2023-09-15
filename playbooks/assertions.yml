@@ -1,20 +1,14 @@
 - hosts: ascender
-  gather_facts: no
+  gather_facts: yes
   become: false
 
   vars_files:
-    - ["custom.config.yml", "default.config.yml"]
+    - ["../custom.config.yml", "../default.config.yml"]
 
   tasks:
 
     - name: Retrieve the Linux details
       block:
-        - name: Retrieve the Linux details
-          ansible.builtin.setup:
-            gather_subset:
-            - distribution_major_version
-            - os_family
-            - architecture
 
         - name: Verify x86_64 architecture
           ansible.builtin.assert:
@@ -22,7 +16,23 @@
               - ansible_architecture == "x86_64"
             fail_msg: "K3s server must be of type x86_64"
 
-        - name: Verify RedHat OS Family architecture
+        - name: Verify minimum processor count when Ledger is not being installed
+          ansible.builtin.assert:
+            that:
+              - ansible_processor_vcpus >= 2
+              - ansible_memtotal_mb >= 3500
+            fail_msg: "K3s server requires at least 2 vCPUs and 4000 MB of memory; target server has {{ ansible_processor_vcpus }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
+          when: not LEDGER_INSTALL
+
+        - name: Verify minimum processor count when Ledger is being installed
+          ansible.builtin.assert:
+            that:
+              - ansible_processor_vcpus >= 2
+              - ansible_memtotal_mb >= 7500
+            fail_msg: "K3s server requires at least 2 vCPUs and 8000 MB of memory; target server has {{ ansible_processor_vcpus }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
+          when: LEDGER_INSTALL
+
+        - name: Verify Enterprise Linux OS Family architecture
           ansible.builtin.assert:
             that:
               - ansible_os_family == "RedHat"
@@ -33,6 +43,12 @@
             that:
               - ansible_distribution_major_version == '8' or ansible_distribution_major_version == '9'
             fail_msg: "K3s Server OS major version must be 8 or 9"
+        
+        - name: Verify that LEDGER_HOSTNAME and ASCENDER_HOSTNAME are different
+          ansible.builtin.assert:
+            that:
+              - LEDGER_HOSTNAME != ASCENDER_HOSTNAME
+            fail_msg: "LEDGER_HOSTNAME ({{ LEDGER_HOSTNAME }}) and ASCENDER_HOSTNAME ({{ ASCENDER_HOSTNAME }}) must be different"
       when: k8s_platform == "k3s"
 
       

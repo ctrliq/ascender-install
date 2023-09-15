@@ -96,12 +96,12 @@ tls_crt_path: "~/ascender.crt"
 # TLS Private Key file, required when deploying HTTPS in K3s
 tls_key_path: "~/ascender.key"
 
-#Sets up a new kubernetes cluster when set to true
+# Sets up a new kubernetes cluster when set to true
 kube_install: false
 
 # Routable IP address for the K3s Master/Worker node
 # required for DNS and k3s install
-k3s_master_node_ip: "x.x.x.x"
+k3s_master_node_ip: "127.0.0.1"
 
 # Set to false if using an external DNS server for resolution
 # Set to true if not
