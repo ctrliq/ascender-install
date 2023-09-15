@@ -1,3 +1,5 @@
+# Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
+
 - name: Ensure Correct architecture for K3s Target
   ansible.builtin.import_playbook: assertions.yml
   

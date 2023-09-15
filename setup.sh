@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
+
 # Verify that the CPU architecture of the local machine is x86_64
 LINUX_ARCH=$(arch)
 if [[ $LINUX_ARCH != "x86_64" ]]; then
