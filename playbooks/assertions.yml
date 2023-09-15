@@ -20,7 +20,7 @@
           ansible.builtin.assert:
             that:
               - ansible_processor_vcpus >= 2
-              - ansible_memtotal_mb >= 4000
+              - ansible_memtotal_mb >= 3500
             fail_msg: "K3s server requires at least 2 vCPUs and 4000 MB of memory; target server has {{ ansible_processor_vcpus }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
           when: not LEDGER_INSTALL
 
@@ -28,7 +28,7 @@
           ansible.builtin.assert:
             that:
               - ansible_processor_vcpus >= 2
-              - ansible_memtotal_mb >= 8000
+              - ansible_memtotal_mb >= 7500
             fail_msg: "K3s server requires at least 2 vCPUs and 8000 MB of memory; target server has {{ ansible_processor_vcpus }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
           when: LEDGER_INSTALL
 
@@ -49,8 +49,6 @@
             that:
               - LEDGER_HOSTNAME != ASCENDER_HOSTNAME
             fail_msg: "LEDGER_HOSTNAME ({{ LEDGER_HOSTNAME }}) and ASCENDER_HOSTNAME ({{ ASCENDER_HOSTNAME }}) must be different"
-      when: k8s_platform == "k3s"
-
       when: k8s_platform == "k3s"
 
       
