@@ -24,6 +24,9 @@ While Ascender installs on Kubernetes, you don't need to be a guru in Kubernetes
 - On `ascender_host`, the following is required:
   - If Kubernetes is already installed.  You will need the [kubeconfig](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) file, located at `~/.kube/config`. The server IP address in the [cluster](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context) section of this file will determine the cluster where Ascender will be installed. This cluster must be up and running at the time of install.
   - If Kubernetes is to be installed, then it will create the kubeconfig for you automatically.
+  - Minimal System Requirements:
+    - CPUs: 2
+    - Memory: 8Gb (if installing both Ascender and Ledger)
 
 ## Optional Components
 - An external PostgreSQL server that the Ascender application can access. If not specified, the AWX Operator responsible for installing Ascender will create a managed PostgreSQL server.
