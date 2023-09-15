@@ -32,7 +32,7 @@ While Ascender installs on Kubernetes, you don't need to be a guru in Kubernetes
 - An external PostgreSQL server that the Ascender application can access. If not specified, the AWX Operator responsible for installing Ascender will create a managed PostgreSQL server.
 
 ## Configuration File
-There is a [default configuration file](playbooks/default.config.yml) that will hold all of the options required to set up your installation properly. While this file is comprehensive, you can find more platform-specific config file templates in the respective Kubernetes platform install instructions directory.
+There is a [default configuration file](default.config.yml) that will hold all of the options required to set up your installation properly. While this file is comprehensive, you can find more platform-specific config file templates in the respective Kubernetes platform install instructions directory.
 
 The [**Uninstall**](#uninstall) section of this tutorial references two of the variables that need to be set:
 - `k8s_platform`: The Kubernetes platform Ascender is being installed on. This could be K3s, EKS, GKE, or AKS.
@@ -56,7 +56,7 @@ Remove the timestamp from the filename and then run the following commands from 
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
-Running the Ascender deletion will remove all related deployments and statefulsets, however, persistent volumes and secrets will remain. To enforce secrets also getting removed, you can use `ascender_garbage_collect_secrets: true` in the `playbooks/default.config.yml` file.
+Running the Ascender deletion will remove all related deployments and statefulsets, however, persistent volumes and secrets will remain. To enforce secrets also getting removed, you can use `ascender_garbage_collect_secrets: true` in the `default.config.yml` file.
 
 ## Reporting Issues
 If you're experiencing a problem that you feel is a bug in the installer or have ideas for improving the installer, we encourage you to open a Github issue and share your feedback.
