@@ -21,7 +21,9 @@ If you have not done so already, be sure to follow the general prerequisites fou
 ## Install Instructions
 
 ### Set the configuration variables for a K3s Install
-You can use the README.md in this directory as a K3s reference, but the file used by the script must be located at the `playbooks/default.config.yml` location.
+You can use the README.md in this directory as a K3s reference, but the file used by the script must be located at the `default.config.yml` location.
 
 ### Run the setup script
-Run `$ ./setup` from top level directory in this repository.
+Run `./setup.sh` from top level directory in this repository.
+
+The setup must run as root, so you may need to utilize `sudo` to execute it. Example: `sudo ./setup.sh`
