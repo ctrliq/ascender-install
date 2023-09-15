@@ -32,7 +32,7 @@
             fail_msg: "K3s server requires at least 2 vCPUs and 8000 MB of memory; target server has {{ ansible_processor_vcpus }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
           when: LEDGER_INSTALL
 
-        - name: Verify RedHat OS Family architecture
+        - name: Verify Enterprise Linux OS Family architecture
           ansible.builtin.assert:
             that:
               - ansible_os_family == "RedHat"
