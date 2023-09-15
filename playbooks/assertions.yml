@@ -1,5 +1,5 @@
 - hosts: ascender
-  gather_facts: no
+  gather_facts: yes
   become: false
 
   vars_files:
@@ -9,14 +9,6 @@
 
     - name: Retrieve the Linux details
       block:
-        - name: Retrieve the Linux details
-          ansible.builtin.setup:
-            gather_subset:
-            - distribution_major_version
-            - os_family
-            - architecture
-            - memtotal_mb
-            - processor_count
 
         - name: Verify x86_64 architecture
           ansible.builtin.assert:
@@ -27,17 +19,17 @@
         - name: Verify minimum processor count when Ledger is not being installed
           ansible.builtin.assert:
             that:
-              - ansible_processor_count >= 2
+              - ansible_processor_corest >= 2
               - ansible_memtotal_mb >= 4000
-            fail_msg: "K3s server requires at least 2 vCPUs and 4000 MB of memory; target server has {{ ansible_processor_count }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
+            fail_msg: "K3s server requires at least 2 vCPUs and 4000 MB of memory; target server has {{ ansible_processor_cores }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
           when: not LEDGER_INSTALL
 
         - name: Verify minimum processor count when Ledger is being installed
           ansible.builtin.assert:
             that:
-              - ansible_processor_count >= 2
+              - ansible_processor_cores >= 2
               - ansible_memtotal_mb >= 8000
-            fail_msg: "K3s server requires at least 2 vCPUs and 8000 MB of memory; target server has {{ ansible_processor_count }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
+            fail_msg: "K3s server requires at least 2 vCPUs and 8000 MB of memory; target server has {{ ansible_processor_cores }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
           when: LEDGER_INSTALL
 
         - name: Verify RedHat OS Family architecture
