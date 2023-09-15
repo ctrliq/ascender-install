@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# Verify that the CPU architecture of the local machine is x86_64
+LINUX_ARCH=$(arch)
+if [[ $LINUX_ARCH != "x86_64" ]]; then
+  echo "CPU architecture must be x86_64."; exit $ERRCODE;
+fi 
+
+# Verify that the Operating system of the local machine is in the centos/rocky family
+OS_FAMILY=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release)
+if !([[ "$OS_FAMILY" =~ "rhel" || "$STR" =~ "fedora" || "$STR" =~ "centos" ]]); then
+  echo "The OS family must be rocky, rhel, fedora or centos"; exit $ERRCODE;
+fi
+
+# Verify that the Operating System major version of the local machine is either 8 or 9
+LINUX_VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"' | cut -d. -f1)
+if [[ $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
+  echo "Linux major version must be 8 or 9."; exit $ERRCODE;
+fi 
+
 # COLORIZE THE ANSIBLE SHELL
 if [ -t "0" ]; then
   ANSIBLE_FORCE_COLORS=True
