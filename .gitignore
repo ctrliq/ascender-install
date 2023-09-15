@@ -1,5 +1,5 @@
 collections/
 inventory
 inventory.yml
-playbooks/default.config.yml
-playbooks/custom.config.yml
+default.config.yml
+custom.config.yml
