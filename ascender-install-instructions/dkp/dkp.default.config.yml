@@ -1,0 +1,124 @@
+---
+# ---Kubernetes-specific variables---
+
+# This variable specificies which Kubernetes platform Ascender and its components will be installed on.
+k8s_platform: dkp # Options include k3s and dkp, with more to come.
+
+# Sets up a new kubernetes cluster when set to true
+kube_install: false
+
+# The name of the dkp cluster you wish to deploy Ascender to and/or create
+# See a list of all dkp clusters with the command 
+# # kubectl get clusters -A
+# NOTE: This must be done while pointing to the DKP Bootstrap Cluster
+DKP_CLUSTER_NAME: dkp-pov
+
+# ---Ascender install variables---
+
+# DNS resolvable hostname for Ascender service. This is required for install.
+ASCENDER_HOSTNAME: ascender.example.com
+
+# k8s namespace for Ascender k8s objects
+ASCENDER_NAMESPACE: ascender
+
+# Administrator username for Ascender
+ASCENDER_ADMIN_USER: admin
+
+# Administrator password for Ascender
+# NOTE: Do NOT use the character `!` in the password, of the Ascender install will fail.
+ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+
+# The OCI container image for Ascender
+ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
+
+# The image tag indicating the version of Ascender you wish to install
+ASCENDER_VERSION: 23.1.0
+
+# The version of the AWX Operator used to install Ascender and its components
+ANSIBLE_OPERATOR_VERSION: 2.5.2
+
+# Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
+ascender_garbage_collect_secrets: true
+
+# # External PostgreSQL ip or url resolvable by the cluster
+# ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" 
+
+# # External PostgreSQL port, this usually defaults to 5432
+# ASCENDER_PGSQL_PORT: 5432 
+
+# # External PostgreSQL username
+# ASCENDER_PGSQL_USER: ascender
+
+# # External PostgreSQL password
+# ASCENDER_PGSQL_PWD: mypgadminpassword
+
+# # External PostgreSQL database name used for Ascender (this DB must exist)
+# ASCENDER_PGSQL_DB: ascenderdb
+
+
+### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
+ascender_replicas: 1
+ascender_image_pull_policy: Always
+
+
+# ---Ledger install variables---
+
+# Determines whether or not Ledger will be installed
+LEDGER_INSTALL: true
+
+# DNS resolvable hostname for Ledger service. This is required for install.
+LEDGER_HOSTNAME: ledger.example.com
+
+# The OCI container image for Ledger
+LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
+
+# The number of ledger web pods - this is good to ensure high availability
+ledger_web_replicas: 1
+
+# The OCI container image for the Ledger Parser
+LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-parser
+
+# The number of ledger parser pods - this is good to ensure high availability
+ledger_parser_replicas: 1
+
+# The OCI container image for the Ledger Database
+LEDGER_DB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-db
+
+# The image tag indicating the version of Ledger you wish to install
+LEDGER_VERSION: latest
+
+# The Kubernetes namespace in which Ledger objects will live
+LEDGER_NAMESPACE: ledger
+
+# Admin password for Ledger (the username is admin by default)
+LEDGER_ADMIN_PASSWORD: "myadminpassword"
+
+# Password for Ledger database
+LEDGER_DB_PASSWORD: "mydbpassword"
+
+# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+# If set to https, you MUST provide certificate/key options for the Installer to use.
+k8s_lb_protocol: http #options include http and https
+
+# TLS Certificate file, required when deploying HTTPS in K3s
+tls_crt_path: "~/ascender.crt"
+
+# TLS Private Key file, required when deploying HTTPS in K3s
+tls_key_path: "~/ascender.key"
+
+# Routable IP address for the K3s Master/Worker node
+# required for DNS and k3s install
+k3s_master_node_ip: "127.0.0.1"
+
+# Set to false if using an external DNS server for resolution
+# Set to true if not
+use_etc_hosts: true
+
+# A directory in which to place both temporary artifacts
+# and timestamped Kubernetes Manifests to make Ascender/Ledger easy
+# to uninstall
+tmp_dir: "/tmp/ascender_install_artifacts"
+
+
+
+
