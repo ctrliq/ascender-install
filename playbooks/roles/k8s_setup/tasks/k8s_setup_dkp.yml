@@ -67,7 +67,7 @@
   ansible.builtin.lineinfile:
     path: /etc/hosts
     regexp: "{{ LEDGER_HOSTNAME }}"
-    line: "{{ svc_output.resources[0].status.loadBalancer.ingress[0].ip }}   {{ ASCENDER_HOSTNAME }}"
+    line: "{{ svc_output.resources[0].status.loadBalancer.ingress[0].ip }}   {{ LEDGER_HOSTNAME }}"
     owner: root
     group: root
     mode: '0644'
