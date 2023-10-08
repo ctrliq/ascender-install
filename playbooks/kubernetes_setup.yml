@@ -1,17 +1,17 @@
 # Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
 
-- hosts: localhost
-  gather_facts: no
-  become: false
+# - hosts: localhost
+#   gather_facts: no
+#   become: false
 
-  vars_files:
-    - ["../custom.config.yml", "../default.config.yml"]
+#   vars_files:
+#     - ["../custom.config.yml", "../default.config.yml"]
 
-  tasks: 
+#   tasks: 
 
-    - name: "Run ascender_install role for {{ k8s_platform }}"
-      ansible.builtin.include_role:
-        name: common
+#     - name: "Run ascender_install role for {{ k8s_platform }}"
+#       ansible.builtin.include_role:
+#         name: common
 
 
 - hosts: ascender
@@ -28,27 +28,3 @@
         name: k8s_setup
         tasks_from: "k8s_setup_{{ k8s_platform }}"
       when: kube_install 
-
-    - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
-      ansible.builtin.lineinfile:
-        path: /etc/hosts
-        regexp: "{{ ASCENDER_HOSTNAME }}"
-        line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
-        owner: root
-        group: root
-        mode: '0644'
-      become: true
-      delegate_to: localhost
-      when: use_etc_hosts
-
-    # - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
-    #   ansible.builtin.lineinfile:
-    #     path: /etc/hosts
-    #     regexp: "{{ ASCENDER_HOSTNAME }}"
-    #     state: absent
-    #     owner: root
-    #     group: root
-    #     mode: '0644'
-    #   become: true
-    #   delegate_to: localhost
-    #   when: not use_etc_hosts
