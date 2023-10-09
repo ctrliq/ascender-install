@@ -8,8 +8,9 @@ Github repository.
 ## Table of Contents
 
 - [General Prerequisites](#general-prerequisites)
-- [K3s-specific Prerequisites](#k3s-specific-prerequisites)
-- [Install Instructions](#install-instructions)
+- [DKP-specific Install Notes](#dkp-specific-install-notes)
+- [DKP-specific Prerequisites](#dkp-specific-prerequisites)
+- [Ascender Install Instructions](#ascender-install-instructions)
 
 ## General Prerequisites
 
@@ -24,8 +25,8 @@ README](../../README.md#general-prerequisites)
 - The DKP installer has been tested with the following parameters: 
   - [DKP version 2.5](https://docs.d2iq.com/dkp/2.5/day-0-basic-installs-by-infrastructure).
     - Whether you are working with an existing DKP cluster, or have to create a new one, you will have to [download the DKP binary](https://docs.d2iq.com/dkp/2.5/download-dkp) for either MacOS or Linux, whichever you are managing the DKP cluster from.
-  - [DKP Essential](https://d2iq.com/products/essential), for a single cluster deployment
-  - [Traefik Labs ingress controller](https://traefik.io/solutions/kubernetes-ingress/)
+  - [DKP Essential](https://d2iq.com/products/essential) License, for a single cluster deployment
+  - [Traefik Labs ingress controller](https://traefik.io/solutions/kubernetes-ingress/) - this is provided by the [Kommander](https://d2iq.com/products/kommander) Management Plane as part of DKP.
   - vSphere 7.0.3 with appropriate [user permissions](https://docs.d2iq.com/dkp/2.5/vsphere-minimum-user-permissions)
 - SSL Certificate and Key
   - To enable HTTPS on your website, you need to provide the Ascender
@@ -58,8 +59,12 @@ Keep in mind that these intructions, while some general, will help primarily wit
   - NOTE: While the instructions result in a KUBECONFIG file being place at `$HOME/.kube/config`, it would be useful to create another file called `$HOME/.kube/config_bootstrap` and place its contents there as well. The DKP cluster will generate its own KUBECONFIG file, and you can change the contents of `$HOME/.kube/config` to whichever cluster you wish to connect to.
 - Create DKP cluster
   - [vSphere DKP cluster creation](https://docs.d2iq.com/dkp/2.5/create-new-vsphere-cluster)
-- Configure MetalLB Loadbalancer address pool
+- For on-premise deploymebConfigure MetalLB Loadbalancer address pool
+  - [vSphere MetalLB Configuration](https://docs.d2iq.com/dkp/2.5/configure-metallb-for-a-vsphere-managed-cluster)
 - Set up Traefik Ingress Controller
+  - [vSphere Kommander Install Instructions](https://docs.d2iq.com/dkp/2.5/vsphere-install-kommander)
+  - [Kommander Install Customizations](https://docs.d2iq.com/dkp/2.5/dkp-install-configuration) - specifies how to select Traefik to install
+  - [DKP 2.5 Components and Applications](https://docs.d2iq.com/dkp/2.5/dkp-2-5-0-components-and-applications)
 
 
 ## Ascender Install Instructions
