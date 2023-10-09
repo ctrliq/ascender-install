@@ -1,7 +1,42 @@
 ---
+# ---Kubernetes-specific variables---
 
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-k8s_platform: k3s # Options include k3s, with more to come.
+k8s_platform: k3s # Options include k3s and dkp, with more to come.
+
+# The name of the dkp cluster you wish to deploy Ascender to and/or create
+# See a list of all dkp clusters with the command 
+# # kubectl get clusters -A
+# NOTE: This must be done while pointing to the DKP Bootstrap Cluster
+DKP_CLUSTER_NAME: dkp-cluster
+
+# Sets up a new kubernetes cluster when set to true
+kube_install: false
+
+# Routable IP address for the K3s Master/Worker node
+# required for DNS and k3s install
+k3s_master_node_ip: "127.0.0.1"
+
+# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+# If set to https, you MUST provide certificate/key options for the Installer to use.
+k8s_lb_protocol: http #options include http and https
+
+# ---Local artifact variables---
+
+# TLS Certificate file, required when deploying HTTPS in K3s
+tls_crt_path: "~/ascender.crt"
+
+# TLS Private Key file, required when deploying HTTPS in K3s
+tls_key_path: "~/ascender.key"
+
+# Set to false if using an external DNS server for resolution
+# Set to true if not
+use_etc_hosts: true
+
+# A directory in which to place both temporary artifacts
+# and timestamped Kubernetes Manifests to make Ascender/Ledger easy
+# to uninstall
+tmp_dir: "/tmp/ascender_install_artifacts"
 
 # ---Ascender install variables---
 
@@ -85,32 +120,6 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
-
-# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
-# If set to https, you MUST provide certificate/key options for the Installer to use.
-k8s_lb_protocol: http #options include http and https
-
-# TLS Certificate file, required when deploying HTTPS in K3s
-tls_crt_path: "~/ascender.crt"
-
-# TLS Private Key file, required when deploying HTTPS in K3s
-tls_key_path: "~/ascender.key"
-
-# Sets up a new kubernetes cluster when set to true
-kube_install: false
-
-# Routable IP address for the K3s Master/Worker node
-# required for DNS and k3s install
-k3s_master_node_ip: "127.0.0.1"
-
-# Set to false if using an external DNS server for resolution
-# Set to true if not
-use_etc_hosts: true
-
-# A directory in which to place both temporary artifacts
-# and timestamped Kubernetes Manifests to make Ascender/Ledger easy
-# to uninstall
-tmp_dir: "/tmp/ascender_install_artifacts"
 
 
 
