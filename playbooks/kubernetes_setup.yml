@@ -1,17 +1,17 @@
 # Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
 
-# - hosts: localhost
-#   gather_facts: no
-#   become: false
+- hosts: localhost
+  gather_facts: no
+  become: false
 
-#   vars_files:
-#     - ["../custom.config.yml", "../default.config.yml"]
+  vars_files:
+    - ["../custom.config.yml", "../default.config.yml"]
 
-#   tasks: 
+  tasks: 
 
-#     - name: "Run ascender_install role for {{ k8s_platform }}"
-#       ansible.builtin.include_role:
-#         name: common
+    - name: "Install prerequisite packages on localhost"
+      ansible.builtin.include_role:
+        name: common
 
 
 - hosts: ascender
