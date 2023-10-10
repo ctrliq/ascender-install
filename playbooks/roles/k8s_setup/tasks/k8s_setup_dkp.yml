@@ -1,0 +1,104 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+# - name: Ensure that ~/.kube directory exists
+#   ansible.builtin.file:
+#     path: ~/.kube
+#     state: directory
+#   delegate_to: localhost
+
+# - name: Check for an existing ~/.kube/config file
+#   ansible.builtin.stat:
+#     path: "~/.kube/config"
+#   register: kubeconfig_data
+#   delegate_to: localhost
+
+# - name: Back up existing ~/.kube/config if there is one
+#   ansible.builtin.copy: 
+#     src: ~/.kube/config
+#     dest: "~/.kube/config.{{ ansible_date_time.iso8601_basic_short }}"
+#   when: kubeconfig_data.stat
+#   delegate_to: localhost
+
+# - name: Retrieve DKP cluster KUBECONFIG
+#   ansible.builtin.command: "dkp get kubeconfig -c {{ DKP_CLUSTER_NAME }} > ~/.kube/config_dkp"
+#   # delegate_to: localhost
+
+
+- name: Get a list of all nodes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    validate_certs: false
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config_dkp"
+
+
+- name: Get Traefik LoadBalancer IP Address, to add to /etc/hosts
+  kubernetes.core.k8s_info:
+    kind: Service
+    wait: yes
+    name: traefik
+    namespace: default
+    wait_sleep: 10
+    wait_timeout: 360
+    validate_certs: false
+  delegate_to: localhost
+  register: svc_output
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config_dkp"
+
+- name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ ASCENDER_HOSTNAME }}"
+    line: "{{ svc_output.resources[0].status.loadBalancer.ingress[0].ip }}   {{ ASCENDER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: use_etc_hosts
+
+- name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ LEDGER_HOSTNAME }}"
+    line: "{{ svc_output.resources[0].status.loadBalancer.ingress[0].ip }}   {{ LEDGER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: 
+    - use_etc_hosts
+    - LEDGER_INSTALL
+    
+  # - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
+  #   ansible.builtin.lineinfile:
+  #     path: /etc/hosts
+  #     regexp: "{{ LEDGER_HOSTNAME }}"
+  #     state: absent
+  #     owner: root
+  #     group: root
+  #     mode: '0644'
+  #   become: true
+  #   delegate_to: localhost
+  #   when: 
+  #     - not use_etc_hosts
+  #     - LEDGER_INSTALL
+
+# - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
+#   ansible.builtin.lineinfile:
+#     path: /etc/hosts
+#     regexp: "{{ ASCENDER_HOSTNAME }}"
+#     state: absent
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   become: true
+#   delegate_to: localhost
+#   when: not use_etc_hosts
