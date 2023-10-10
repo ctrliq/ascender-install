@@ -24,6 +24,7 @@
 - name: Install AWX Operator with Kustomize
   kubernetes.core.k8s:
     definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
+    verify_ssl: false
 
 - name: delete Kustomization file
   ansible.builtin.file:
@@ -38,6 +39,7 @@
     namespace: "{{ ASCENDER_NAMESPACE }}"
     wait_sleep: 10
     wait_timeout: 360
+    verify_ssl: false
   
 - name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
@@ -48,6 +50,7 @@
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-k3s.yml') }}"
+    verify_ssl: false
 
 - name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
   kubernetes.core.k8s_info:
@@ -57,6 +60,7 @@
     namespace: "{{ ASCENDER_NAMESPACE }}"
     wait_sleep: 10
     wait_timeout: 360
+    verify_ssl: false
   register: ascender_web_deployment
 
 # - ansible.builtin.debug:
