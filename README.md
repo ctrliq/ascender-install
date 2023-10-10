@@ -84,6 +84,7 @@ description/proper usage directly present in the comments.
 ## Installation Instructions by Kubernetes Platform
 
 - [K3s](ascender-install-instructions/k3s/README.md)
+- [D2IQ Kubernetes Platform](ascender-install-instructions/dkp/README.md)
 
 ## Uninstall
 
