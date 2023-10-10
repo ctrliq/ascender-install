@@ -13,6 +13,7 @@
     state: present
     namespace: "{{ LEDGER_NAMESPACE }}"
     definition: "{{ lookup('template', 'templates/ledger_deployment_k3s.yaml') | from_yaml_all }}"
+    verify_ssl: false
 
 - name: Wait for Ledger web Deployment to complete setting up
   kubernetes.core.k8s_info:
@@ -22,6 +23,7 @@
     namespace: "{{ LEDGER_NAMESPACE }}"
     wait_sleep: 10
     wait_timeout: 360
+    verify_ssl: false
 
 - name: Wait for Ledger parser Service to be up
   kubernetes.core.k8s_info:
@@ -31,6 +33,7 @@
     namespace: "{{ LEDGER_NAMESPACE }}"
     wait_sleep: 10
     wait_timeout: 360
+    verify_ssl: false
   register: parser_svc
       
 - ansible.builtin.debug:
