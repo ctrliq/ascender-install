@@ -1,5 +1,21 @@
 # Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
 
+- hosts: localhost
+  gather_facts: no
+  connection: local
+  become: false
+
+  vars_files:
+    - ["../custom.config.yml", "../default.config.yml"]
+
+  tasks:
+
+    - name: Verify that LEDGER_HOSTNAME and ASCENDER_HOSTNAME are different
+      ansible.builtin.assert:
+        that:
+          - LEDGER_HOSTNAME != ASCENDER_HOSTNAME
+        fail_msg: "LEDGER_HOSTNAME ({{ LEDGER_HOSTNAME }}) and ASCENDER_HOSTNAME ({{ ASCENDER_HOSTNAME }}) must be different"
+
 - hosts: ascender
   gather_facts: yes
   become: false
@@ -45,12 +61,6 @@
             that:
               - ansible_distribution_major_version == '8' or ansible_distribution_major_version == '9'
             fail_msg: "K3s Server OS major version must be 8 or 9"
-        
-        - name: Verify that LEDGER_HOSTNAME and ASCENDER_HOSTNAME are different
-          ansible.builtin.assert:
-            that:
-              - LEDGER_HOSTNAME != ASCENDER_HOSTNAME
-            fail_msg: "LEDGER_HOSTNAME ({{ LEDGER_HOSTNAME }}) and ASCENDER_HOSTNAME ({{ ASCENDER_HOSTNAME }}) must be different"
       when: k8s_platform == "k3s"
 
       
