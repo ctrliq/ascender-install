@@ -48,15 +48,98 @@ README](../../README.md#general-prerequisites)
 
 ## Install Instructions
 
+### Obtain the sources
+
+You can use the `git` command to clone the ascender-install repository or you can download the zipped archive. 
+
+To use git to clone the repository run:
+
+```
+git clone https://github.com/ctrliq/ascender-install.git
+```
+This will create a directory named `ascender-install` in your present working directory (PWD).
+
+We will refer to this directory as the <ASCENDER-INSTALL-SOURCE> in the remainder of this instructions.
+
 ### Set the configuration variables for a K3s Install
 
-You can use the README.md in this directory as a K3s reference, but
-the file used by the script must be located at the
-`default.config.yml` location.
+You can use the README.md in the ASCENDER-INSTALL-SOURCE directory as a K3s reference, but
+the file used by the `setup.sh` script must be located at in this path:
+
+```
+<ASCENDER-INSTALL-SOURCE>/default.config.yml
+```
+
+Because these are instructions to install Ascender on a k3s single-node K3s cluster, you'll need set the value of kube_install variable 
+to from the default value of `false` to `true` in <ASCENDER-INSTALL-SOURCE>/default.config.yml
+
+Use your favorite text editor or the quick `sed` command below to quickly make the change inplace. 
+
+```
+sed -i.bak 's/kube_install: false/kube_install: true/' default.config.yml
+```
 
 ### Run the setup script
 
 Run `./setup.sh` from top level directory in this repository.
 
-The setup must run as root, so you may need to utilize `sudo` to
-execute it. Example: `sudo ./setup.sh`
+The setup must run as a user with Administrative or sudo priviledges.  
+
+To begin the setup process, type:
+
+```
+sudo ./setup.sh
+```
+
+Once the setup is completed successfully, you should see a final output similar to:
+
+```
+...<OUTPUT TRUNCATED>...
+PLAY RECAP *************************************************************************************************************************
+ascender_host              : ok=14   changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
+localhost                  : ok=72   changed=27   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0
+
+ASCENDER SUCCESSFULLY SETUP
+```
+
+
+### Connecting to Ascender Web UI
+
+This is a quick and temporary work-around for connecting to your new Ascender installation. 
+By default the Ascender web service is accessible over its internal CLUSTER IP address. 
+You can use SSH forwarding from any remote host to connect to the internal CLUSTER IP.
+
+For the example here, you'll use the kubectl utility to query for the CLUSTER IP and store the value in a variable named "ASCENDER_WEB_INTERNAL_IP". 
+
+While still logged on to the server running Ascender, type:
+
+```
+export ASCENDER_WEB_INTERNAL_IP=$(kubectl -n ascender get service/ascender-app-service -o jsonpath='{.spec.clusterIP}')
+```
+
+To see the value of ASCENDER_WEB_INTERNAL_IP type:
+
+```
+echo $ASCENDER_WEB_INTERNAL_IP
+```
+
+Now, to use SSH forwarding to connect to your Ascender installation from any remote workstation you can use a command like:
+
+```
+$ ssh -L 80:<ASCENDER_WEB_INTERNAL_IP>:80   user@ASCENDER_SERVER_IP
+```
+
+For example, if your the value of $ASCENDER_WEB_INTERNAL_IP is `10.43.9.224`, and the ASCENDER_SERVER_IP is `1.2.3.4`, the full command to connect as the root user will be:
+
+```
+$ ssh -L 80:10.43.9.224:80 root@1.2.3.4
+```
+
+With forwarding successfully, you can visit/Browse/Administer your Ascender instance by pointing your web browser to:
+
+https://localhost
+
+
+Username is "Admin" and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/default.config.yml under the `ASCENDER_ADMIN_PASSWORD` variable.
+
+
