@@ -140,6 +140,6 @@ With forwarding successfully, you can visit/Browse/Administer your Ascender inst
 https://localhost
 
 
-
+Username is "Admin" and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/default.config.yml under the `ASCENDER_ADMIN_PASSWORD` variable.
 
 
