@@ -75,15 +75,14 @@
             var: ansible_mounts
 
         - name: "Ensure that free space on {{ mount_location.stdout_lines[1].split()[0] }} is greater than 20GB"
-          ansible.builtin.debug:
-          assert:
+          ansible.builtin.assert:
             that: item.size_available >= 21474836480
             fail_msg: "Free disk space for /var must be at least 20GB"
           when: 
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
           with_items: "{{ ansible_mounts }}"
-          
+
       when: k8s_platform == "k3s"
 
       
