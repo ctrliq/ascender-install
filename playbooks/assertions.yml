@@ -70,9 +70,9 @@
         #   ansible.builtin.debug:
         #     var: mount_location.stdout_lines[1].split()[0]
 
-        - name: "Get available disk of {{ mount_location.stdout_lines[1].split()[0] }}"
-          ansible.builtin.debug:
-            var: ansible_mounts
+        # - name: "Get available disk of {{ mount_location.stdout_lines[1].split()[0] }}"
+        #   ansible.builtin.debug:
+        #     var: ansible_mounts
 
         - name: "Ensure that free space on {{ mount_location.stdout_lines[1].split()[0] }} is greater than 20GB"
           ansible.builtin.assert:
