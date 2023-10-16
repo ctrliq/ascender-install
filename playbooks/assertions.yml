@@ -61,6 +61,29 @@
             that:
               - ansible_distribution_major_version == '8' or ansible_distribution_major_version == '9'
             fail_msg: "K3s Server OS major version must be 8 or 9"
+
+        - name: Get mount location of /var directory
+          ansible.builtin.command: df -h /var
+          register: mount_location
+
+        # - name: Print mount location 
+        #   ansible.builtin.debug:
+        #     var: mount_location.stdout_lines[1].split()[0]
+
+        - name: "Get available disk of {{ mount_location.stdout_lines[1].split()[0] }}"
+          ansible.builtin.debug:
+            var: ansible_mounts
+
+        - name: "Ensure that free space on {{ mount_location.stdout_lines[1].split()[0] }} is greater than 20GB"
+          ansible.builtin.debug:
+          assert:
+            that: item.size_available >= 21474836480
+            fail_msg: "Free disk space for /var must be at least 20GB"
+          when: 
+            - item.device is match(mount_location.stdout_lines[1].split()[0])
+            - item.mount == "/"
+          with_items: "{{ ansible_mounts }}"
+          
       when: k8s_platform == "k3s"
 
       
