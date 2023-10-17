@@ -50,7 +50,6 @@ ASCENDER_NAMESPACE: ascender
 ASCENDER_ADMIN_USER: admin
 
 # Administrator password for Ascender
-# NOTE: Do NOT use the character `!` in the password, of the Ascender install will fail.
 ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 
 # The OCI container image for Ascender
@@ -75,6 +74,7 @@ ascender_garbage_collect_secrets: true
 # ASCENDER_PGSQL_USER: ascender
 
 # # External PostgreSQL password
+# NOTE: Do NOT use the special characters in the postgres password (Django requirement)
 # ASCENDER_PGSQL_PWD: mypgadminpassword
 
 # # External PostgreSQL database name used for Ascender (this DB must exist)

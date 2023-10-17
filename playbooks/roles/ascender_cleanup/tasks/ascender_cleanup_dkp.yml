@@ -13,17 +13,17 @@
 - ansible.builtin.debug:
     msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
     
-- name: Wait until Ascender API is Up
-  ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
-    return_content: yes
-    validate_certs: no
-    status_code:
-      - 200
-  until: uri_output.status == 200
+- name: Wait until Ascender API is Up and the Database is populated
+  awx.awx.organization:
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    name: Default
+    state: exists
+  until: org.id == 1
   retries: 200
   delay: 10
-  register: uri_output
+  register: org
 
 - name: Disable the Next UI
   awx.awx.settings:
