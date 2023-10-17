@@ -44,10 +44,3 @@
     update_cache: true
     state: present
   become: true
-
-#- name: Install kubernetes python library
-#  ansible.builtin.pip:
-#    name:
-#      - kubernetes
-#    state: forcereinstall
-#  become: true

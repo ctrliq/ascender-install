@@ -26,7 +26,6 @@
 #   ansible.builtin.command: "dkp get kubeconfig -c {{ DKP_CLUSTER_NAME }} > ~/.kube/config_dkp"
 #   # delegate_to: localhost
 
-
 - name: Get a list of all nodes
   kubernetes.core.k8s_info:
     api_version: v1
@@ -35,7 +34,6 @@
   delegate_to: localhost
   environment:
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config_dkp"
-
 
 - name: Get Traefik LoadBalancer IP Address, to add to /etc/hosts
   kubernetes.core.k8s_info:
@@ -77,19 +75,19 @@
     - use_etc_hosts
     - LEDGER_INSTALL
     
-  # - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
-  #   ansible.builtin.lineinfile:
-  #     path: /etc/hosts
-  #     regexp: "{{ LEDGER_HOSTNAME }}"
-  #     state: absent
-  #     owner: root
-  #     group: root
-  #     mode: '0644'
-  #   become: true
-  #   delegate_to: localhost
-  #   when: 
-  #     - not use_etc_hosts
-  #     - LEDGER_INSTALL
+# - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
+#   ansible.builtin.lineinfile:
+#     path: /etc/hosts
+#     regexp: "{{ LEDGER_HOSTNAME }}"
+#     state: absent
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   become: true
+#   delegate_to: localhost
+#   when: 
+#     - not use_etc_hosts
+#     - LEDGER_INSTALL
 
 # - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
 #   ansible.builtin.lineinfile:

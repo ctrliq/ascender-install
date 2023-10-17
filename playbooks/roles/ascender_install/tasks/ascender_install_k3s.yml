@@ -88,5 +88,3 @@
 
 - ansible.builtin.debug:
     msg: "Ascender API is up"
-
-
