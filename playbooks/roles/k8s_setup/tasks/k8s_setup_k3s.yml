@@ -9,6 +9,7 @@
   ansible.builtin.service:
     name: firewalld
     state: stopped
+    enabled: false
   when: "'firewalld.service' in services"
 
 - name: Install K3s (this may take up to 5 minutes)
@@ -38,7 +39,6 @@
   delegate_to: localhost
   when: ansible_host != "localhost"
   
-
 - name: Get a list of all nodes
   kubernetes.core.k8s_info:
     api_version: v1

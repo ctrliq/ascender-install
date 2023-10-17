@@ -50,17 +50,16 @@ ASCENDER_NAMESPACE: ascender
 ASCENDER_ADMIN_USER: admin
 
 # Administrator password for Ascender
-# NOTE: Do NOT use the character `!` in the password, of the Ascender install will fail.
 ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 
 # The OCI container image for Ascender
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 
 # The image tag indicating the version of Ascender you wish to install
-ASCENDER_VERSION: 23.1.0
+ASCENDER_VERSION: 23.3.0
 
 # The version of the AWX Operator used to install Ascender and its components
-ANSIBLE_OPERATOR_VERSION: 2.5.2
+ANSIBLE_OPERATOR_VERSION: 2.7.0
 
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
@@ -75,6 +74,7 @@ ascender_garbage_collect_secrets: true
 # ASCENDER_PGSQL_USER: ascender
 
 # # External PostgreSQL password
+# NOTE: Do NOT use the special characters in the postgres password (Django requirement)
 # ASCENDER_PGSQL_PWD: mypgadminpassword
 
 # # External PostgreSQL database name used for Ascender (this DB must exist)
