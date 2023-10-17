@@ -9,6 +9,7 @@
   ansible.builtin.service:
     name: firewalld
     state: stopped
+    enabled: false
   when: "'firewalld.service' in services"
 
 - name: Install K3s (this may take up to 5 minutes)
