@@ -54,7 +54,7 @@
           ansible.builtin.assert:
             that:
               - ansible_os_family == "RedHat"
-            fail_msg: "K3s Server OS Family must be of type RedHat"
+            fail_msg: "K3s Server OS Family must be of type Rocky/CentOS"
 
         - name: Verify RedHat OS Family architecture
           ansible.builtin.assert:
