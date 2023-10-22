@@ -23,10 +23,13 @@ README](../../README.md#general-prerequisites)
   but rather as a sandbox on which to try Ascender. As such, the
   Installer expects a single-node K3s cluster which will act as both
   master and worker node.
+- Operating System Requirements for the k3s server:
+  - The OS Family must be the same as Rocky Linux (indicated by the ansible_os_family ansible fact), and the major version must be 8 or 9.
+    - While this includes other distributions, the installer is primarily tested with Rocky Linux
 - Minimal System Requirements for the k3s server:
-    - CPUs: 2
-    - Memory: 8Gb (if installing both Ascender and Ledger)
-    - 20GB of free disk (for Ascender and Ledger Volumes)
+  - CPUs: 2
+  - Memory: 8Gb (if installing both Ascender and Ledger)
+  - 20GB of free disk (for Ascender and Ledger Volumes)
 - These instructions accomodate both an existing K3s cluster, and will
   set one up on your behalf if needed. This behavior is determined by
   the variable `kube_install`
