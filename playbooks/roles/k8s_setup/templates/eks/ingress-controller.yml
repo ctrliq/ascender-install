@@ -600,7 +600,7 @@ metadata:
     app.kubernetes.io/component: controller
     app.kubernetes.io/name: aws-load-balancer-controller
   annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::980128770015:role/eksctl-ascender-cluster-existing-vpc-addon-i-Role1-1TWLPKKR7KJ7Q
+    {{ alb_sa.resources[0].metadata.annotations }}
   name: aws-load-balancer-controller
   namespace: kube-system
 ---

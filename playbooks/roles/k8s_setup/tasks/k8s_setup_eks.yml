@@ -77,6 +77,23 @@
   ansible.builtin.set_fact:
     aws_lb_controller_policy_arn: "{{ policy_arn.stdout[2:] }}"
 
+- name: Get an existing Service object
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: serviceaccount
+    name: aws-load-balancer-controller
+    namespace: kube-system
+  register: alb_sa
+
+- name: debug
+  ansible.builtin.debug:
+    var: alb_sa
+
+- name: debug
+  ansible.builtin.debug:
+    var: alb_sa.resources[0].metadata.annotations
+
+
 - name: create aws-load-balancer-controller iamserviceaccount
   ansible.builtin.command:
     cmd: "eksctl create iamserviceaccount --cluster={{ EKS_CLUSTER_NAME }} --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn= {{ aws_lb_controller_policy_arn }} --override-existing-serviceaccounts --approve"
