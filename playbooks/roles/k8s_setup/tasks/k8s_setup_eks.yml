@@ -1,0 +1,106 @@
+# Check for existing eks cluster
+
+
+
+
+- name: Wait 600 seconds for target connection to become reachable/usable
+  ansible.builtin.wait_for_connection:
+  delay: 15
+
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+- name: Stop firewall service
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: false
+  when: "'firewalld.service' in services"
+
+- name: Install K3s (this may take up to 5 minutes)
+  ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
+  when:
+    - kube_install
+    - "'k3s.service' not in services"
+
+- name: Ensure that ~/.kube directory exists
+  ansible.builtin.file:
+    path: ~/.kube
+    state: directory
+  delegate_to: localhost
+
+- name: Copy kubeconfig file from default location to the ~/.kube directory"
+  ansible.builtin.fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ~/.kube/config
+    flat: true
+  become: true
+
+- name: "Replace the kubeconfig cluster kube-api server IP with the public IP address, if the cluster is remote "
+  ansible.builtin.replace:
+    path: ~/.kube/config
+    regexp: '127.0.0.1'
+    replace: "{{ k3s_master_node_ip }}"
+  delegate_to: localhost
+  when: ansible_host != "localhost"
+  
+- name: Get a list of all nodes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    validate_certs: false
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+- name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ ASCENDER_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: use_etc_hosts
+
+# - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
+#   ansible.builtin.lineinfile:
+#     path: /etc/hosts
+#     regexp: "{{ ASCENDER_HOSTNAME }}"
+#     state: absent
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   become: true
+#   delegate_to: localhost
+#   when: not use_etc_hosts
+
+- name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ LEDGER_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ LEDGER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: 
+    - use_etc_hosts
+    - LEDGER_INSTALL
+    
+# - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
+#   ansible.builtin.lineinfile:
+#     path: /etc/hosts
+#     regexp: "{{ LEDGER_HOSTNAME }}"
+#     state: absent
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   become: true
+#   delegate_to: localhost
+#   when: 
+#     - not use_etc_hosts
+#     - LEDGER_INSTALL
