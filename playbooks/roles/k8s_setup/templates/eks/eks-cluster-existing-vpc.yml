@@ -1,0 +1,45 @@
+--- 
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: {{ EKS_CLUSTER_NAME }}
+  region: {{ EKS_CLUSTER_REGION }}
+  version: "{{ EKS_K8S_VERSION }}"
+vpc:
+  id: vpc-xxxxxxxxxxxxxxxx
+  subnets:
+    public:
+      us-east-1a:
+        id: subnet-xxxxxxxxxxxxxxxx
+      us-east-1b:
+        id: subnet-xxxxxxxxxxxxxxxx
+      us-east-1c:
+        id: subnet-xxxxxxxxxxxxxxxx
+      us-east-1d:
+        id: subnet-xxxxxxxxxxxxxxxx
+      us-east-1f:
+        id: subnet-xxxxxxxxxxxxxxxx
+managedNodeGroups:
+- name: ascender-nodes
+  instanceType: t3.large
+  minSize: 2
+  maxSize: 6
+  desiredCapacity: 2
+  volumeSize: 50
+  securityGroups:
+    attachIDs: ["sg-xxxxxxxxxxxxxxxx"]
+  ssh: 
+    allow: true
+    publicKeyName: ascender-useast-1-key #Existing AWS Public Key
+  tags:
+    nodegroup-role: worker
+iam:
+  withOIDC: true
+addons:
+- name: kube-proxy
+- name: coredns
+- name: vpc-cni
+- name: aws-ebs-csi-driver
+  version: v1.21.0
+  attachPolicyARNs:
+  - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy

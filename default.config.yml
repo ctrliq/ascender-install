@@ -2,24 +2,42 @@
 # ---Kubernetes-specific variables---
 
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-k8s_platform: k3s # Options include k3s and dkp, with more to come.
-
-# The name of the dkp cluster you wish to deploy Ascender to and/or create
-# See a list of all dkp clusters with the command 
-# # kubectl get clusters -A
-# NOTE: This must be done while pointing to the DKP Bootstrap Cluster
-DKP_CLUSTER_NAME: dkp-cluster
+k8s_platform: k3s # Options include k3s, eks and dkp, with more to come.
 
 # Sets up a new kubernetes cluster when set to true
 kube_install: false
+
+# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+# If set to https, you MUST provide certificate/key options for the Installer to use.
+k8s_lb_protocol: http #options include http and https
+
+# ---k3s variables---
 
 # Routable IP address for the K3s Master/Worker node
 # required for DNS and k3s install
 k3s_master_node_ip: "127.0.0.1"
 
-# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
-# If set to https, you MUST provide certificate/key options for the Installer to use.
-k8s_lb_protocol: http #options include http and https
+# ---eks variables---
+# The name of the eks cluster to set up
+EKS_CLUSTER_NAME: dkp-cluster
+
+# The AWS region hosting the eks cluster
+EKS_CLUSTER_REGION: us-east-1
+
+# The kubernetes version for the eks cluster; available kubernetes versions can be found here:
+# https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
+EKS_K8S_VERSION: "1.27"
+
+EKS_VPC_ID: vpc-0c58d2eab0c9238bd
+
+SUBNET_IDS: 
+
+# ---dkp variables---
+# The name of the dkp cluster you wish to deploy Ascender to and/or create
+# See a list of all dkp clusters with the command 
+# # kubectl get clusters -A
+# NOTE: This must be done while pointing to the DKP Bootstrap Cluster
+DKP_CLUSTER_NAME: dkp-cluster
 
 # ---Local artifact variables---
 
