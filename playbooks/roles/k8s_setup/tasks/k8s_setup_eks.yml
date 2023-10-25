@@ -27,6 +27,11 @@
     - name: Set up new eks cluster (this will take upwards of 30 mins)
       ansible.builtin.command:
         cmd: "eksctl create cluster -f {{ tmp_dir }}/eks-cluster-manifest.yml"
+
+    - name: Delete eks cluster manifest
+      ansible.builtin.file:
+        path: "{{ tmp_dir }}/eks-cluster-manifest.yml"
+        state: absent
     
   when: not EKS_CLUSTER_EXISTS or eks_cluster_status.failed
 
@@ -45,6 +50,7 @@
   ansible.builtin.file:
     path: ~/.kube/config
     state: absent
+  when: existing_kubeconfig.stat.exists
 
 - name: "Retrieve kubeconfig for new eks cluster {{ EKS_CLUSTER_NAME }}"
   ansible.builtin.command:
@@ -59,9 +65,9 @@
     var: policy_query
 
 - name: Ensure IAM AWS Load Balancer Controller Policy exists
-  ansible.builtin.cmd:
-    cmd: "aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam-policy.json"
-  when: policy_query.stdout != "[]"
+  ansible.builtin.command:
+    cmd: "aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document {{ lookup('ansible.builtin.template', 'templates/eks/iam-policy.json') }}"
+  when: policy_query.stdout == "[]"
   
 - name: Retrieve AWSLoadBalancerControllerIAMPolicy policy ARN
   ansible.builtin.command:
@@ -73,9 +79,13 @@
     msg: "ARN is {{ policy_arn.stdout[2:] }}"
   when: policy_arn.stdout != "[]"
 
-- name:
+- name: Set fact aws_lb_controller_policy_arn
   ansible.builtin.set_fact:
     aws_lb_controller_policy_arn: "{{ policy_arn.stdout[2:] }}"
+
+- name: create aws-load-balancer-controller iamserviceaccount
+  ansible.builtin.command:
+    cmd: "eksctl create iamserviceaccount --cluster={{ EKS_CLUSTER_NAME }} --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn={{ aws_lb_controller_policy_arn }} --override-existing-serviceaccounts --approve"
 
 - name: Get an existing Service object
   kubernetes.core.k8s_info:
@@ -93,25 +103,20 @@
   ansible.builtin.debug:
     var: alb_sa.resources[0].metadata.annotations
 
-
-- name: create aws-load-balancer-controller iamserviceaccount
-  ansible.builtin.command:
-    cmd: "eksctl create iamserviceaccount --cluster={{ EKS_CLUSTER_NAME }} --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn= {{ aws_lb_controller_policy_arn }} --override-existing-serviceaccounts --approve"
-
 - name: Install cert-manager in the cluster
   kubernetes.core.k8s:
-  state: present
-  definition: "{{ lookup('ansible.builtin.template', 'templates/eks/cert-manager.yaml') }}"
-
-- name: install the ingress class params
-  kubernetes.core.k8s:
-  state: present
-  definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-class-params.yml') }}"
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'templates/eks/cert-manager.yml') }}"
 
 - name: install the ingress controller
   kubernetes.core.k8s:
-  state: present
-  definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-controller.yml') }}"
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-controller.yml') }}"
+
+- name: install the ingress class params
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-class-params.yml') }}"
 
 # - name: Create IAM Policy that allows the AWS Load Balancer Controller to make calls to the AWS APIs on your behalf
 # curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json

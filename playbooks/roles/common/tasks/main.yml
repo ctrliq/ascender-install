@@ -45,6 +45,13 @@
     state: present
   become: true
 
+- name: Install aws python packages
+  ansible.builtin.pip:
+    name:
+      - boto3
+      - botocore
+  when: k8s_platform == "eks"
+
 - name: Check for existing eksctl installation
   ansible.builtin.stat:
     path: /usr/local/bin/eksctl

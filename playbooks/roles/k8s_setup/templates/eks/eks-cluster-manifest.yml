@@ -15,8 +15,8 @@ nodeGroups:
 - name: ascender-nodes
   instanceType: {{ EKS_INSTANCE_TYPE }}
   # instanceName: custom-node-name
-  minSize: 2
-  maxSize: 6
+  minSize: {{ EKS_MIN_WORKER_NODES }}
+  maxSize: {{ EKS_MAX_WORKER_NODES }}
   desiredCapacity: {{ EKS_NUM_WORKER_NODES }}
   volumeSize: {{ EKS_WORKER_VOLUME_SIZE }}
   ssh: 
