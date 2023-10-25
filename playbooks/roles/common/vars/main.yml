@@ -1,15 +1,11 @@
 common_packages:
   8:
-    - boto3
-    - botocore
     - jq
     - platform-python-setuptools
     - python3-pip
     - kubectl
     - python3-kubernetes
   9:
-    - boto3
-    - botocore
     - jq
     - python-setuptools
     - python3-pip
