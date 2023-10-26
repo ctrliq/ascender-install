@@ -5,6 +5,10 @@
 k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
 
 # Sets up a new kubernetes cluster when set to true
+# - When k8s_platform is:
+#   - k3s: k3s will be installed on that target server (ascender_host in the inventory)
+#   - eks: an eks cluster will be instantiated in the aws account indicated in the aws-cli
+#          config file (~/.aws/credentials)
 kube_install: false
 
 # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
@@ -21,24 +25,29 @@ k3s_master_node_ip: "127.0.0.1"
 # The name of the eks cluster to set up
 EKS_CLUSTER_NAME: ascender-eks-cluster
 
-EKS_CLUSTER_EXISTS: true
-
 # The AWS region hosting the eks cluster
 EKS_CLUSTER_REGION: us-east-1
 
+# The eks cluster subnet in CIDR notation
 EKS_CLUSTER_CIDR: "10.10.0.0/16"
 
 # The kubernetes version for the eks cluster; available kubernetes versions can be found here:
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
-EKS_K8S_VERSION: "1.27"
+EKS_K8S_VERSION: "1.28"
 
-EKS_INSTANCE_TYPE: t3.xlarge
+# The worker node instance types 
+EKS_INSTANCE_TYPE: t3.large
+
+EKS_MIN_WORKER_NODES: 2
+
+EKS_MAX_WORKER_NODES: 6
 
 EKS_NUM_WORKER_NODES: 3
 
-EKS_WORKER_VOLUME_SIZE: 50
+EKS_WORKER_VOLUME_SIZE: 100
 
-EKS_PUBLIC_KEY: ascender-useast-1-key
+EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx
+EKS_PUBLIC_KEY: <aws-public-key>
 
 EKS_EBS_CSI_DRIVER_VERSION: "v1.24.0"
 
@@ -70,6 +79,8 @@ tmp_dir: "/tmp/ascender_install_artifacts"
 
 # DNS resolvable hostname for Ascender service. This is required for install.
 ASCENDER_HOSTNAME: ascender.example.com
+
+ASCENDER_DOMAIN: example.com
 
 # k8s namespace for Ascender k8s objects
 ASCENDER_NAMESPACE: ascender
