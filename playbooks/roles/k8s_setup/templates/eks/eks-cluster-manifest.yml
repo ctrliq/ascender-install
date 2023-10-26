@@ -33,4 +33,4 @@ addons:
 - name: aws-ebs-csi-driver
   version: {{ EKS_EBS_CSI_DRIVER_VERSION }}
   attachPolicyARNs:
-  - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+  - {{ ebs_scsi_driver_policy_arn }}

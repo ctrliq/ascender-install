@@ -43,13 +43,13 @@
   
 - name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
-    src: "ascender-deployment/ascender-deployment-k3s.yml"
-    dest: "{{ tmp_dir }}/ascender-deployment-k3s.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+    src: "ascender-deployment/ascender-deployment-eks.yml"
+    dest: "{{ tmp_dir }}/ascender-deployment-eks.yml.{{ ansible_date_time.iso8601_basic_short }}" 
 
 - name: "Apply AWX ascender-app manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-k3s.yml') }}"
+    definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-eks.yml') }}"
     verify_ssl: false
 
 - name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
@@ -65,6 +65,37 @@
 
 # - ansible.builtin.debug:
 #     var: ascender_web_deployment
+
+
+- name: Retrieve the ascender-app-ingress Ingress object
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Ingress
+    name: ascender-app-ingress
+    namespace: ascender
+  register: ascender_ingress
+
+- ansible.builtin.debug: 
+    var: ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname
+
+- name: Get The Canonical Hosted Zone ID of the Ascender AWS Load Balancer
+  ansible.builtin.command:
+    cmd: "aws elbv2 describe-load-balancers --query 'LoadBalancers[?DNSName==`{{ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname}}`].CanonicalHostedZoneId'"
+  register: hosted_zone
+
+# - ansible.builtin.debug: 
+#     msg: "{{ hosted_zone.stdout [2:] }}"
+
+- name: "Add an alias record for the Ascender Loadbalancer to map to {{ ASCENDER_HOSTNAME }}"
+  amazon.aws.route53:
+    state: present
+    zone: "{{ ASCENDER_DOMAIN }}"
+    record: "{{ ASCENDER_HOSTNAME }}"
+    type: A
+    value: "{{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+    alias: True
+    alias_hosted_zone_id: "{{ hosted_zone.stdout [2:]}}"
+    overwrite: true
 
 - name: Set the Ascender URL
   ansible.builtin.set_fact:

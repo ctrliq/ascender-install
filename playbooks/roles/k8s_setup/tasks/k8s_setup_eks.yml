@@ -14,6 +14,34 @@
 #Set up new eks cluster
 - name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
   block: 
+
+    - name: Query for AmazonEBSCSIDriverPolicy policy ARN
+      ansible.builtin.command:
+        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
+      register: policy_query
+        
+    - ansible.builtin.debug:
+        var: policy_query
+
+    - name: Ensure IAM AmazonEBSCSIDriverPolicy exists
+      ansible.builtin.command:
+        cmd: "aws iam create-policy --policy-name AmazonEBSCSIDriverPolicy --policy-document {{ lookup('ansible.builtin.template', 'templates/eks/ebs-scsi-driver-policy.json') }}"
+      when: policy_query.stdout == "[]"
+      
+    - name: Retrieve AmazonEBSCSIDriverPolicy policy ARN
+      ansible.builtin.command:
+        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
+      register: policy_arn
+
+    - name: Print out the arn for the policy AmazonEBSCSIDriverPolicy
+      ansible.builtin.debug:
+        msg: "ARN is {{ policy_arn.stdout[2:] }}"
+      when: policy_arn.stdout != "[]"
+
+    - name: Set fact ebs_scsi_driver_policy_arn
+      ansible.builtin.set_fact:
+        ebs_scsi_driver_policy_arn: "{{ policy_arn.stdout[2:] }}"
+
     - name: Generate manifest to set up new eks cluster
       ansible.builtin.template:
         src: templates/eks/eks-cluster-manifest.yml
@@ -33,7 +61,7 @@
         path: "{{ tmp_dir }}/eks-cluster-manifest.yml"
         state: absent
     
-  when: not EKS_CLUSTER_EXISTS or eks_cluster_status.failed
+  when: kube_install or eks_cluster_status.failed
 
 - name: Determine if ~/.kube/config already exists
   ansible.builtin.stat:
@@ -95,146 +123,31 @@
     namespace: kube-system
   register: alb_sa
 
-- name: debug
-  ansible.builtin.debug:
-    var: alb_sa
+# - name: debug
+#   ansible.builtin.debug:
+#     var: alb_sa
 
-- name: debug
-  ansible.builtin.debug:
-    var: alb_sa.resources[0].metadata.annotations
+# - name: debug
+#   ansible.builtin.debug:
+#     var: alb_sa.resources[0].metadata.annotations
 
 - name: Install cert-manager in the cluster
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/cert-manager.yml') }}"
+  retries: 3
+  delay: 5
 
 - name: install the ingress controller
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-controller.yml') }}"
+  retries: 3
+  delay: 5
 
 - name: install the ingress class params
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-class-params.yml') }}"
-
-# - name: Create IAM Policy that allows the AWS Load Balancer Controller to make calls to the AWS APIs on your behalf
-# curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
-
-# - name: Create IAM AWS Load Balancer Controller Policy
-# aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam-policy.json
-
-# - name: Copy the ARN of this policy
-
-# - name: Create an iamserviceaccount
-# eksctl create iamserviceaccount --cluster={{ EKS_CLUSTER_NAME }} --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn= {{arn for IAM AWSLoadBalancerControllerIAMPolicy}} --override-existing-serviceaccounts --approve
-
-# - name: Install cert-manager
-# For releases: https://github.com/cert-manager/cert-manager
-# kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/{{ version }}/cert-manager.yaml
-
-# - name: Download the ingress controller manifest
-# curl -Lo ingress-controller.yaml https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/{{ version }}/{{ version }}.yaml
-
-# - name: modify the contents of the manifest file to include the policy and cluster name
-# - name: Wait 600 seconds for target connection to become reachable/usable
-#   ansible.builtin.wait_for_connection:
-#   delay: 15
-
-# - name: Populate service facts
-#   ansible.builtin.service_facts:
-
-# - name: Stop firewall service
-#   ansible.builtin.service:
-#     name: firewalld
-#     state: stopped
-#     enabled: false
-#   when: "'firewalld.service' in services"
-
-# - name: Install K3s (this may take up to 5 minutes)
-#   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
-#   when:
-#     - kube_install
-#     - "'k3s.service' not in services"
-
-# - name: Ensure that ~/.kube directory exists
-#   ansible.builtin.file:
-#     path: ~/.kube
-#     state: directory
-#   delegate_to: localhost
-
-# - name: Copy kubeconfig file from default location to the ~/.kube directory"
-#   ansible.builtin.fetch:
-#     src: /etc/rancher/k3s/k3s.yaml
-#     dest: ~/.kube/config
-#     flat: true
-#   become: true
-
-# - name: "Replace the kubeconfig cluster kube-api server IP with the public IP address, if the cluster is remote "
-#   ansible.builtin.replace:
-#     path: ~/.kube/config
-#     regexp: '127.0.0.1'
-#     replace: "{{ k3s_master_node_ip }}"
-#   delegate_to: localhost
-#   when: ansible_host != "localhost"
-  
-# - name: Get a list of all nodes
-#   kubernetes.core.k8s_info:
-#     api_version: v1
-#     kind: Node
-#     validate_certs: false
-#   delegate_to: localhost
-#   environment:
-#     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
-
-# - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
-#   ansible.builtin.lineinfile:
-#     path: /etc/hosts
-#     regexp: "{{ ASCENDER_HOSTNAME }}"
-#     line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
-#     owner: root
-#     group: root
-#     mode: '0644'
-#   become: true
-#   delegate_to: localhost
-#   when: use_etc_hosts
-
-# # - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
-# #   ansible.builtin.lineinfile:
-# #     path: /etc/hosts
-# #     regexp: "{{ ASCENDER_HOSTNAME }}"
-# #     state: absent
-# #     owner: root
-# #     group: root
-# #     mode: '0644'
-# #   become: true
-# #   delegate_to: localhost
-# #   when: not use_etc_hosts
-
-# - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
-#   ansible.builtin.lineinfile:
-#     path: /etc/hosts
-#     regexp: "{{ LEDGER_HOSTNAME }}"
-#     line: "{{ k3s_master_node_ip }}   {{ LEDGER_HOSTNAME }}"
-#     owner: root
-#     group: root
-#     mode: '0644'
-#   become: true
-#   delegate_to: localhost
-#   when: 
-#     - use_etc_hosts
-#     - LEDGER_INSTALL
-    
-# # - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
-# #   ansible.builtin.lineinfile:
-# #     path: /etc/hosts
-# #     regexp: "{{ LEDGER_HOSTNAME }}"
-# #     state: absent
-# #     owner: root
-# #     group: root
-# #     mode: '0644'
-# #   become: true
-# #   delegate_to: localhost
-# #   when: 
-# #     - not use_etc_hosts
-# #     - LEDGER_INSTALL
+  retries: 3
+  delay: 5
