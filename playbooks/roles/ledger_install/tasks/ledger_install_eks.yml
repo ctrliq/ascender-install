@@ -54,6 +54,7 @@
   ansible.builtin.command:
     cmd: "aws elbv2 describe-load-balancers --query 'LoadBalancers[?DNSName==`{{ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname}}`].CanonicalHostedZoneId'"
   register: hosted_zone
+  when: USE_ROUTE_53
 
 # - ansible.builtin.debug: 
 #     msg: "{{ hosted_zone.stdout [2:] }}"
@@ -68,7 +69,13 @@
     alias: True
     alias_hosted_zone_id: "{{ hosted_zone.stdout [2:]}}"
     overwrite: true
-#############
+  when: USE_ROUTE_53
+
+- name: Indicate Instructions for non-Route53 Domain Management
+  ansible.builtin.debug: 
+    msg: "Please manually create a CNAME record in your DNS Manager of choice, mapping to {{ ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+  when: not USE_ROUTE_53
+
 - name: Set the Ledger URL
   ansible.builtin.set_fact:
       ledger_ip: "{{ LEDGER_HOSTNAME }}"

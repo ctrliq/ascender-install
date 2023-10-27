@@ -24,6 +24,13 @@ k3s_master_node_ip: "127.0.0.1"
 
 # ---eks variables---
 
+# Determines whether to use Route53's Domain Management (which is automated)
+# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
+#If this value is set to false, you will have to manually set a CNAME record for 
+# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the AWS 
+# Loadbalancers
+USE_ROUTE_53: yes
+
 # The name of the eks cluster to set up
 EKS_CLUSTER_NAME: ascender-eks-cluster
 
