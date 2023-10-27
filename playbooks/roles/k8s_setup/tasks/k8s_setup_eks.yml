@@ -134,6 +134,7 @@
 - name: Install cert-manager in the cluster
   kubernetes.core.k8s:
     state: present
+    apply: yes
     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/cert-manager.yml') }}"
   retries: 3
   delay: 5
@@ -141,6 +142,7 @@
 - name: install the ingress controller
   kubernetes.core.k8s:
     state: present
+    apply: yes
     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-controller.yml') }}"
   retries: 3
   delay: 5
@@ -148,6 +150,7 @@
 - name: install the ingress class params
   kubernetes.core.k8s:
     state: present
+    apply: yes
     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-class-params.yml') }}"
   retries: 3
   delay: 5
