@@ -8,10 +8,65 @@
 - name: "Check the status of target eks cluster named {{ EKS_CLUSTER_NAME }}"
   ansible.builtin.command:
     cmd: "eksctl get cluster -n {{ EKS_CLUSTER_NAME }}"
+    oidc_id=$(aws eks describe-cluster --name {{ EKS_CLUSTER_NAME }} --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
   register: eks_cluster_status
   ignore_errors: true
 
-#Set up new eks cluster
+# If EKS_CLUSTER_NAME does exist, Ensure an IAM OIDC provider exists for it, and apply AmazonEBSCSIDriverPolicy
+- name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
+  block: 
+    - name: Determine the OIDC issuer ID for your cluster
+      ansible.builtin.shell:
+        cmd: "aws eks describe-cluster --name {{ EKS_CLUSTER_NAME }} --query \"cluster.identity.oidc.issuer\" --output text | cut -d '/' -f 5"
+      register: oidc_query
+
+    - name: Determine whether an IAM OIDC provider with your cluster's issuer ID is already in your account
+      ansible.builtin.shell:
+        cmd: "aws iam list-open-id-connect-providers | grep {{ oidc_query.stdout }} | cut -d \"/\" -f4"
+      register: oidc_provider_query
+
+    - name: Print out OIDC identity provider
+      ansible.builtin.debug: 
+        var: oidc_provider_query
+
+    - name: Create an IAM OIDC identity provider for your cluster if one does not exist
+      ansible.builtin.shell:
+        cmd: "eksctl utils associate-iam-oidc-provider --cluster {{ EKS_CLUSTER_NAME }} --approve"
+      when: oidc_provider_query.stdout == ""
+
+    - name: Query for AmazonEBSCSIDriverPolicy policy ARN
+      ansible.builtin.command:
+        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
+      register: policy_query
+        
+    - ansible.builtin.debug:
+        var: policy_query
+
+    - name: Ensure IAM AmazonEBSCSIDriverPolicy exists
+      ansible.builtin.command:
+        cmd: "aws iam create-policy --policy-name AmazonEBSCSIDriverPolicy --policy-document {{ lookup('ansible.builtin.template', 'templates/eks/ebs-scsi-driver-policy.json') }}"
+      when: policy_query.stdout == "[]"
+      
+    - name: Retrieve AmazonEBSCSIDriverPolicy policy ARN
+      ansible.builtin.command:
+        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
+      register: policy_arn
+
+    - name: Print out the arn for the policy AmazonEBSCSIDriverPolicy
+      ansible.builtin.debug:
+        msg: "ARN is {{ policy_arn.stdout[2:] }}"
+      when: policy_arn.stdout != "[]"
+
+    - name: Set fact ebs_scsi_driver_policy_arn
+      ansible.builtin.set_fact:
+        ebs_scsi_driver_policy_arn: "{{ policy_arn.stdout[2:] }}"
+
+    - name: add the Amazon EBS CSI add-on using eksctl
+      ansible.builtin.shell:
+        cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn {{ ebs_scsi_driver_policy_arn }} --force"
+  when: not eks_cluster_status.failed
+
+# If EKS_CLUSTER_NAME does not exist, set up new eks cluster
 - name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
   block: 
 
@@ -61,7 +116,7 @@
         path: "{{ tmp_dir }}/eks-cluster-manifest.yml"
         state: absent
     
-  when: kube_install or eks_cluster_status.failed
+  when: eks_cluster_status.failed
 
 - name: Determine if ~/.kube/config already exists
   ansible.builtin.stat:
