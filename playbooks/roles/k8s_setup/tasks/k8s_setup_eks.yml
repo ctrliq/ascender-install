@@ -8,13 +8,18 @@
 - name: "Check the status of target eks cluster named {{ EKS_CLUSTER_NAME }}"
   ansible.builtin.command:
     cmd: "eksctl get cluster -n {{ EKS_CLUSTER_NAME }}"
-    oidc_id=$(aws eks describe-cluster --name {{ EKS_CLUSTER_NAME }} --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
+    # oidc_id=$(aws eks describe-cluster --name {{ EKS_CLUSTER_NAME }} --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
   register: eks_cluster_status
   ignore_errors: true
 
 # If EKS_CLUSTER_NAME does exist, Ensure an IAM OIDC provider exists for it, and apply AmazonEBSCSIDriverPolicy
 - name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
   block: 
+
+    - name: Indicate that the cluster has been found
+      ansible.builtin.debug:
+        msg: "The eks cluster {{ EKS_CLUSTER_NAME }} is present."  
+    
     - name: Determine the OIDC issuer ID for your cluster
       ansible.builtin.shell:
         cmd: "aws eks describe-cluster --name {{ EKS_CLUSTER_NAME }} --query \"cluster.identity.oidc.issuer\" --output text | cut -d '/' -f 5"
@@ -34,36 +39,37 @@
         cmd: "eksctl utils associate-iam-oidc-provider --cluster {{ EKS_CLUSTER_NAME }} --approve"
       when: oidc_provider_query.stdout == ""
 
-    - name: Query for AmazonEBSCSIDriverPolicy policy ARN
+    - name: Query for AmazonEKS_EBS_CSI_DriverRole role ARN
       ansible.builtin.command:
-        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
-      register: policy_query
+        cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
+      register: role_query
         
     - ansible.builtin.debug:
-        var: policy_query
+        var: role_query
 
-    - name: Ensure IAM AmazonEBSCSIDriverPolicy exists
+    - name: Ensure IAM AmazonEKS_EBS_CSI_DriverRole exists
       ansible.builtin.command:
-        cmd: "aws iam create-policy --policy-name AmazonEBSCSIDriverPolicy --policy-document {{ lookup('ansible.builtin.template', 'templates/eks/ebs-scsi-driver-policy.json') }}"
-      when: policy_query.stdout == "[]"
-      
-    - name: Retrieve AmazonEBSCSIDriverPolicy policy ARN
-      ansible.builtin.command:
-        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
-      register: policy_arn
+        cmd: "aws iam create-role --role-name AmazonEKS_EBS_CSI_DriverRole --assume-role-policy-document {{ lookup('ansible.builtin.template', 'templates/eks/ebs-scsi-driver-role.json') }}"
+      when: role_query.stdout == "[]"
 
-    - name: Print out the arn for the policy AmazonEBSCSIDriverPolicy
+    - name: Retrieve AmazonEKS_EBS_CSI_DriverRole role ARN
+      ansible.builtin.command:
+        cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
+      register: role_arn
+
+    - name: Print out the arn for the policy AmazonEKS_EBS_CSI_DriverRole
       ansible.builtin.debug:
-        msg: "ARN is {{ policy_arn.stdout[2:] }}"
-      when: policy_arn.stdout != "[]"
+        msg: "ARN is {{ role_arn.stdout[2:] }}"
+      when: role_arn.stdout != "[]"
 
-    - name: Set fact ebs_scsi_driver_policy_arn
+    - name: Set fact ebs_scsi_driver_role_arn
       ansible.builtin.set_fact:
-        ebs_scsi_driver_policy_arn: "{{ policy_arn.stdout[2:] }}"
+        ebs_scsi_driver_role_arn: "{{ role_arn.stdout[2:] }}"
 
     - name: add the Amazon EBS CSI add-on using eksctl
       ansible.builtin.shell:
-        cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn {{ ebs_scsi_driver_policy_arn }} --force"
+        cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn {{ ebs_scsi_driver_role_arn }} --force"
+
   when: not eks_cluster_status.failed
 
 # If EKS_CLUSTER_NAME does not exist, set up new eks cluster
