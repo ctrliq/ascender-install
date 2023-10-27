@@ -57,9 +57,15 @@ the file used by the `setup.sh` script must be located at in this path:
 
 The following variables should be changed in the file with your favorite text editor:
 
-- `ASCENDER_HOSTNAME`: The Route53-managed DNS resolvable hostname for Ascender service.
-- `LEDGER_HOSTNAME`: The Route53-managed DNS resolvable hostname for Ascender service.
-- `ASCENDER_DOMAIN`: The Route53-managed Hosted Zone/Domain for all Ascender components. 
+# Determines whether to use Route53's Domain Management (which is automated)
+# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
+#If this value is set to false, you will have to manually set a CNAME record for 
+# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the AWS 
+# Loadbalancers
+- `USE_ROUTE_53`: Determines whether to use Route53's Domain Management (which is automated), or a third-party service (e.g., Cloudflare, GoDaddy, etc.). If this value is set to false, you will have to manually set a CNAME record for {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the AWS Loadbalancers that the installer creates.
+- `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
+- `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
+- `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
   - this must be the domain for both Ascender AND Ledger.
 - `EKS_CLUSTER_NAME`: The name of the eks cluster on which Ascender will be installed. This can be an existing eks cluster, or the name of the one to create, should the `eksctl` tool not find this name amongst its existing clusters.
 - `EKS_CLUSTER_REGION`: The AWS region hosting the eks cluster
