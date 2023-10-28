@@ -70,7 +70,7 @@
       ansible.builtin.shell:
         cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn {{ ebs_scsi_driver_role_arn }} --force"
 
-  when: not eks_cluster_status.failed and kube_install
+  when: not eks_cluster_status.failed and not kube_install
 
 # If EKS_CLUSTER_NAME does not exist, set up new eks cluster
 - name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
