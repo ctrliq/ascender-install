@@ -30,9 +30,9 @@
         cmd: "aws iam list-open-id-connect-providers | grep {{ oidc_query.stdout }} | cut -d \"/\" -f4"
       register: oidc_provider_query
 
-    - name: Print out OIDC identity provider
-      ansible.builtin.debug: 
-        var: oidc_provider_query
+    # - name: Print out OIDC identity provider
+    #   ansible.builtin.debug: 
+    #     var: oidc_provider_query
 
     - name: Create an IAM OIDC identity provider for your cluster if one does not exist
       ansible.builtin.shell:
@@ -44,8 +44,8 @@
         cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
       register: role_query
         
-    - ansible.builtin.debug:
-        var: role_query
+    # - ansible.builtin.debug:
+    #     var: role_query
 
     - name: Ensure IAM AmazonEKS_EBS_CSI_DriverRole exists
       ansible.builtin.command:
@@ -57,10 +57,10 @@
         cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
       register: role_arn
 
-    - name: Print out the arn for the policy AmazonEKS_EBS_CSI_DriverRole
-      ansible.builtin.debug:
-        msg: "ARN is {{ role_arn.stdout[2:] }}"
-      when: role_arn.stdout != "[]"
+    # - name: Print out the arn for the policy AmazonEKS_EBS_CSI_DriverRole
+    #   ansible.builtin.debug:
+    #     msg: "ARN is {{ role_arn.stdout[2:] }}"
+    #   when: role_arn.stdout != "[]"
 
     - name: Set fact ebs_scsi_driver_role_arn
       ansible.builtin.set_fact:
@@ -70,7 +70,7 @@
       ansible.builtin.shell:
         cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn {{ ebs_scsi_driver_role_arn }} --force"
 
-  when: not eks_cluster_status.failed
+  when: not eks_cluster_status.failed and kube_install
 
 # If EKS_CLUSTER_NAME does not exist, set up new eks cluster
 - name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
@@ -81,8 +81,8 @@
         cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
       register: policy_query
         
-    - ansible.builtin.debug:
-        var: policy_query
+    # - ansible.builtin.debug:
+    #     var: policy_query
 
     - name: Ensure IAM AmazonEBSCSIDriverPolicy exists
       ansible.builtin.command:
@@ -94,10 +94,10 @@
         cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
       register: policy_arn
 
-    - name: Print out the arn for the policy AmazonEBSCSIDriverPolicy
-      ansible.builtin.debug:
-        msg: "ARN is {{ policy_arn.stdout[2:] }}"
-      when: policy_arn.stdout != "[]"
+    # - name: Print out the arn for the policy AmazonEBSCSIDriverPolicy
+    #   ansible.builtin.debug:
+    #     msg: "ARN is {{ policy_arn.stdout[2:] }}"
+    #   when: policy_arn.stdout != "[]"
 
     - name: Set fact ebs_scsi_driver_policy_arn
       ansible.builtin.set_fact:
@@ -150,8 +150,8 @@
     cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].Arn'"
   register: policy_query
     
-- ansible.builtin.debug:
-    var: policy_query
+# - ansible.builtin.debug:
+#     var: policy_query
 
 - name: Ensure IAM AWS Load Balancer Controller Policy exists
   ansible.builtin.command:
@@ -163,10 +163,10 @@
     cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].Arn'"
   register: policy_arn
 
-- name: Print out the arn for the policy AWSLoadBalancerControllerIAMPolicy
-  ansible.builtin.debug:
-    msg: "ARN is {{ policy_arn.stdout[2:] }}"
-  when: policy_arn.stdout != "[]"
+# - name: Print out the arn for the policy AWSLoadBalancerControllerIAMPolicy
+#   ansible.builtin.debug:
+#     msg: "ARN is {{ policy_arn.stdout[2:] }}"
+#   when: policy_arn.stdout != "[]"
 
 - name: Set fact aws_lb_controller_policy_arn
   ansible.builtin.set_fact:
@@ -200,6 +200,18 @@
   retries: 3
   delay: 5
 
+- name: Query for CertificateRequest objects (ensure that the API is active in the cluster before proceeding)
+  kubernetes.core.k8s_info:
+    api_version: cert-manager.io/v1
+    kind: CertificateRequest
+  register: certificaterequest_list
+  retries: 3
+  delay: 3
+  until: certificaterequest_list.api_found
+
+- ansible.builtin.pause:
+    seconds: 30
+
 - name: install the ingress controller
   kubernetes.core.k8s:
     state: present
@@ -208,10 +220,47 @@
   retries: 3
   delay: 5
 
+- name: Query for IngressClassParams objects (ensure that the API is active in the cluster before proceeding)
+  kubernetes.core.k8s_info:
+    api_version: elbv2.k8s.aws/v1beta1
+    kind: IngressClassParams
+  register: ingressclassparams_list
+  retries: 3
+  delay: 3
+  until: ingressclassparams_list.api_found
+
+- ansible.builtin.pause:
+    seconds: 30
+    
 - name: install the ingress class params
   kubernetes.core.k8s:
     state: present
     apply: yes
     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-class-params.yml') }}"
   retries: 3
+  delay: 5
+
+# kubectl get pod -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+- name: Query for aws-load-balancer-controller
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    label_selectors: 
+      - app.kubernetes.io/name = aws-load-balancer-controller
+    namespace: kube-system
+  register: albc_query
+
+# - ansible.builtin.debug:
+#     var: albc_query.resources[0].metadata.name 
+
+# kubectl get pod -n kube-system -l aws-load-balancer-controller-dbb8df444-msld4
+- name: Query for aws-load-balancer-controller
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    name: "{{ albc_query.resources[0].metadata.name }}"
+    namespace: kube-system
+  register: albc_pod
+  until: albc_pod.resources[0].status.containerStatuses[0].ready | bool
+  retries: 20
   delay: 5

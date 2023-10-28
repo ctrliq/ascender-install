@@ -5566,7 +5566,7 @@ webhooks:
     # Equivalent matchPolicy ensures that non-v1 resource requests are sent to
     # this webhook (after the resources have been converted to v1).
     matchPolicy: Equivalent
-    timeoutSeconds: 10
+    timeoutSeconds: 30
     failurePolicy: Fail
     # Only include 'sideEffects' field in Kubernetes 1.12+
     sideEffects: None
