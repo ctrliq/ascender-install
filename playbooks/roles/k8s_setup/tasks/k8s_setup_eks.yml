@@ -39,37 +39,48 @@
         cmd: "eksctl utils associate-iam-oidc-provider --cluster {{ EKS_CLUSTER_NAME }} --approve"
       when: oidc_provider_query.stdout == ""
 
-    - name: Query for AmazonEKS_EBS_CSI_DriverRole role ARN
-      ansible.builtin.command:
-        cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
-      register: role_query
+    # - name: Query for AmazonEKS_EBS_CSI_DriverRole role ARN
+    #   ansible.builtin.command:
+    #     cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
+    #   register: role_query
         
     # - ansible.builtin.debug:
     #     var: role_query
 
-    - name: Ensure IAM AmazonEKS_EBS_CSI_DriverRole exists
-      ansible.builtin.command:
-        cmd: "aws iam create-role --role-name AmazonEKS_EBS_CSI_DriverRole --assume-role-policy-document {{ lookup('ansible.builtin.template', 'templates/eks/ebs-scsi-driver-role.json') }}"
-      when: role_query.stdout == "[]"
+    # - name: Ensure IAM AmazonEKS_EBS_CSI_DriverRole exists
+    #   ansible.builtin.command:
+    #     cmd: "aws iam create-role --role-name AmazonEKS_EBS_CSI_DriverRole --assume-role-policy-document {{ lookup('ansible.builtin.template', 'templates/eks/ebs-scsi-driver-role.json') }}"
+    #   when: role_query.stdout == "[]"
 
-    - name: Retrieve AmazonEKS_EBS_CSI_DriverRole role ARN
-      ansible.builtin.command:
-        cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
-      register: role_arn
+    # - name: Retrieve AmazonEKS_EBS_CSI_DriverRole role ARN
+    #   ansible.builtin.command:
+    #     cmd: "aws iam list-roles --query 'Roles[?RoleName==`AmazonEKS_EBS_CSI_DriverRole`].Arn'"
+    #   register: role_arn
 
     # - name: Print out the arn for the policy AmazonEKS_EBS_CSI_DriverRole
     #   ansible.builtin.debug:
     #     msg: "ARN is {{ role_arn.stdout[2:] }}"
     #   when: role_arn.stdout != "[]"
 
-    - name: Set fact ebs_scsi_driver_role_arn
-      ansible.builtin.set_fact:
-        ebs_scsi_driver_role_arn: "{{ role_arn.stdout[2:] }}"
+    # - name: Set fact ebs_scsi_driver_role_arn
+    #   ansible.builtin.set_fact:
+    #     ebs_scsi_driver_role_arn: "{{ role_arn.stdout[2:] }}"
+
+    # - name: add the Amazon EBS CSI add-on using eksctl
+    #   ansible.builtin.shell:
+    #     cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn {{ ebs_scsi_driver_role_arn }} --force"
+
+    - name: Query for aws account number
+      amazon.aws.aws_caller_info:
+      register: caller_info
 
     - name: add the Amazon EBS CSI add-on using eksctl
       ansible.builtin.shell:
-        cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn {{ ebs_scsi_driver_role_arn }} --force"
+        cmd: "eksctl create iamserviceaccount --name ebs-csi-controller-sa --namespace kube-system --cluster {{ EKS_CLUSTER_NAME }} --role-name AmazonEKS_EBS_CSI_DriverRole1 --role-only --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy  --override-existing-serviceaccounts --approve"
 
+    - name: add the Amazon EBS CSI add-on using eksctl
+      ansible.builtin.shell:
+        cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn arn:aws:iam::{{ caller_info.account }}:role/AmazonEKS_EBS_CSI_DriverRole1 --force"
   when: not eks_cluster_status.failed and not kube_install
 
 # If EKS_CLUSTER_NAME does not exist, set up new eks cluster
