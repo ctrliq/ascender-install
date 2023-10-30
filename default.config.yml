@@ -31,8 +31,13 @@ k3s_master_node_ip: "127.0.0.1"
 # Loadbalancers
 USE_ROUTE_53: yes
 
+EKS_USER: ascenderuser
+
 # The name of the eks cluster to set up
 EKS_CLUSTER_NAME: ascender-eks-cluster
+
+# provision, configure, no_action
+EKS_CLUSTER_STATUS: provision
 
 # The AWS region hosting the eks cluster
 EKS_CLUSTER_REGION: us-east-1
