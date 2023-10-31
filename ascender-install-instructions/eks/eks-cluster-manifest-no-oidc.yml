@@ -17,11 +17,11 @@ nodeGroups:
   # instanceName: custom-node-name
   minSize: 2
   maxSize: 6
-  desiredCapacity: 4
+  desiredCapacity: 3
   volumeSize: 100
   ssh: 
     allow: true
-    publicKeyName: mford-useast-1-key #Existing AWS Public Key
+    publicKeyName: aws-public-key #Existing AWS Public Key
   tags:
     nodegroup-role: worker
 addons:

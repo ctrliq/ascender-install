@@ -4,18 +4,14 @@
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
 k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
 
-# Sets up a new kubernetes cluster when set to true
-# - When k8s_platform is:
-#   - k3s: k3s will be installed on that target server (ascender_host in the inventory)
-#   - eks: an eks cluster will be instantiated in the aws account indicated in the aws-cli
-#          config file (~/.aws/credentials)
-kube_install: false
-
 # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
 k8s_lb_protocol: http #options include http and https
 
 # ---k3s variables---
+
+# Sets up a new k3s cluster when set to true
+kube_install: false
 
 # IP address for the K3s Master/Worker node
 # Required for local DNS and k3s install
@@ -27,22 +23,30 @@ k3s_master_node_ip: "127.0.0.1"
 # Determines whether to use Route53's Domain Management (which is automated)
 # Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
 #If this value is set to false, you will have to manually set a CNAME record for 
-# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the AWS 
-# Loadbalancers
+# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to their corresponding
+# AWS Loadbalancers
 USE_ROUTE_53: yes
 
+# If desired, this indicates an AWS IAM user that can be set up in order to have minimum 
+# permissions to set up a new eks cluster and install Ascender and its associoated components
 EKS_USER: ascenderuser
 
 # The name of the eks cluster to set up
 EKS_CLUSTER_NAME: ascender-eks-cluster
 
-# provision, configure, no_action
-EKS_CLUSTER_STATUS: provision
+# Determines what to do with the eks cluster Ascender wil be installed on:
+# provision: Provision a new EKS cluster from scratch
+# configure: use the cluster specified by the variable EKS_CLUSTER_NAME, and configure it with 
+#            policies for loa balancer creation and elastic block service access
+# no_action: use the cluster specified by the variable EKS_CLUSTER_NAME, but make no changes to it before
+#            installing Ascender.
+EKS_CLUSTER_STATUS: no_action
 
 # The AWS region hosting the eks cluster
 EKS_CLUSTER_REGION: us-east-1
 
 # The eks cluster subnet in CIDR notation
+# Only required if EKS_CLUSTER_STATUS is set to provision.
 EKS_CLUSTER_CIDR: "10.10.0.0/16"
 
 # The kubernetes version for the eks cluster; available kubernetes versions can be found here:
@@ -71,7 +75,7 @@ EKS_WORKER_VOLUME_SIZE: 100
 EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx
 
 # The AWS public key that will allow SSH access to the worker nodes
-EKS_PUBLIC_KEY: <aws-public-key>
+EKS_PUBLIC_KEY: aws-public-key
 
 # The Amazon Elastic Block Store Container Storage Interface (CSI) Driver provides
 # a CSI interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes.
@@ -82,8 +86,6 @@ EKS_EBS_CSI_DRIVER_VERSION: "v1.24.0"
 # ---dkp variables---
 # The name of the dkp cluster you wish to deploy Ascender to and/or create
 # See a list of all dkp clusters with the command 
-# # kubectl get clusters -A
-
 # NOTE: This must be done while pointing to the DKP Bootstrap Cluster
 DKP_CLUSTER_NAME: dkp-cluster
 
