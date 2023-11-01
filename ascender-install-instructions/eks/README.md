@@ -82,12 +82,11 @@ The following variables should be changed in the file with your favorite text ed
 - `EKS_CLUSTER_CIDR`: The eks cluster subnet in CIDR notation
 - `EKS_K8S_VERSION`: The kubernetes version for the eks cluster; available kubernetes versions can be found [here](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html)
 - `EKS_INSTANCE_TYPE`: The worker node instance type. 
- - `EKS_MIN_WORKER_NODES`: The minimum number of worker nodes that the cluster will run
+- `EKS_MIN_WORKER_NODES`: The minimum number of worker nodes that the cluster will run
 - `EKS_MAX_WORKER_NODES`: The maximum number of worker nodes that the cluster will run
 - `EKS_NUM_WORKER_NODES`: The desired number of worker nodes for the eks cluster
 - `EKS_WORKER_VOLUME_SIZE`: The size of the Elastic Block Storage volume for each worker node
 - `EKS_SSL_CERT`: The ARN for the SSL certificate; required when k8s_lb_protocol is https. The same certificate is used for all components (currently Ascender and Ledger); as such, we recommend that the certificate is set for a wildcard domain, (e.g., *.example.com).
-- `EKS_PUBLIC_KEY`: The AWS public key that will allow SSH access to the worker nodes
 - `EKS_EBS_CSI_DRIVER_VERSION`: Amazon Elastic Block Store Container Storage Interface (CSI) Driver release
 
 ### Run the setup script
