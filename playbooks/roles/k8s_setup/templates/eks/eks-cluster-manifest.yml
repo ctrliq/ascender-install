@@ -19,9 +19,6 @@ nodeGroups:
   maxSize: {{ EKS_MAX_WORKER_NODES }}
   desiredCapacity: {{ EKS_NUM_WORKER_NODES }}
   volumeSize: {{ EKS_WORKER_VOLUME_SIZE }}
-  ssh: 
-    allow: true
-    publicKeyName: {{ EKS_PUBLIC_KEY }} #Existing AWS Public Key
   tags:
     nodegroup-role: worker
 iam:

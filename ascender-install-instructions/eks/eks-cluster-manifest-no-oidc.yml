@@ -19,9 +19,6 @@ nodeGroups:
   maxSize: 6
   desiredCapacity: 3
   volumeSize: 100
-  ssh: 
-    allow: true
-    publicKeyName: aws-public-key #Existing AWS Public Key
   tags:
     nodegroup-role: worker
 addons:
