@@ -72,11 +72,6 @@ the file used by the `setup.sh` script must be located at in this path:
 
 The following variables should be changed in the file with your favorite text editor:
 
-# Determines whether to use Route53's Domain Management (which is automated)
-# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
-#If this value is set to false, you will have to manually set a CNAME record for 
-# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the AWS 
-# Loadbalancers
 - `USE_ROUTE_53`: Determines whether to use Route53's Domain Management (which is automated), or a third-party service (e.g., Cloudflare, GoDaddy, etc.). If this value is set to false, you will have to manually set a CNAME record for {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the AWS Loadbalancers that the installer creates.
 - `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
 - `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
