@@ -74,9 +74,6 @@ EKS_WORKER_VOLUME_SIZE: 100
 # (e.g., *.example.com)
 EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx
 
-# The AWS public key that will allow SSH access to the worker nodes
-EKS_PUBLIC_KEY: aws-public-key
-
 # The Amazon Elastic Block Store Container Storage Interface (CSI) Driver provides
 # a CSI interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes.
 # This variable specifies the version in use by the cluster; all releases can be found here:

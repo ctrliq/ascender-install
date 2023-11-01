@@ -20,15 +20,30 @@ README](../../README.md#general-prerequisites)
 ## EKS-specific Prerequisites
 
 ### AWS User, policy and tool requirements
-- aws permissions: [Specific permissions to be added]
 - The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
   - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender installer will look for it there.
   - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
-- The Ascender installer for EKS will look for certain Policies, and create them if they are not present. These Policies are:
-  - AmazonEBSCSIDriverPolicy: Allows the EKS Cluster to create, delete and manage EBS Volumes for worker nodes and pods.
-    - The JSON file for the policy is [here](../../playbooks/roles/k8s_setup/templates/eks/ebs-scsi-driver-policy.json).
-  - AWSLoadBalancerControllerIAMPolicy: Allows the EKS Cluster to manage all resources required to create Load Balancers for external access.
-    - The JSON file for the policy is [here](../../playbooks/roles/k8s_setup/templates/eks/iam-policy.json)
+- Required IAM user permissions:
+  - The Ascender installer for EKS requires minimum IAM AWS policies in order to manipulate EKS. 
+  - An AWS administrator can apply these minimum permissions to a user (indicated by the variable `EKS_USER`), via a playbook that can be run from the top level directory of this repository, with the command (and with `k8s_platform` set to `eks`): 
+    - `$ ansible-playbook playbooks/apply_cloud_permissions.yml`
+  - The following permissions will be applied:
+    - (AWS Managed Policy) [AmazonEC2FullAccess](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonEC2FullAccess.html): Provides full access to Amazon EC2
+    - (AWS Managed Policy) [AWSCloudFormationFullAccess](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AWSCloudFormationFullAccess.html): Provides full access to AWS CloudFormation
+    - [ascender_eks_all_access](../../playbooks/roles/apply_permissions/templates/eks/iam_policies/eksallaccess.json): 
+      - EKS Full Access
+      - Systems Manager: GetParameter, GetParameters
+      - KMS: DescribeKey, Create Grant
+      - CloudWatch Logs: PutRetentionPolicy
+    - [ascender_iam_limited_access](../../playbooks/roles/apply_permissions/templates/eks/iam_policies/iamlimitedaccess.json)
+      - IAM: Limited List and Write Permissions
+    - [ascender_install_permissions](../../playbooks/roles/apply_permissions/templates/eks/iam_policies/ascenderinstallpermissions.json)
+      - IAM: ListPolicies
+      - Route53: ChangeResourceRecordSets, ListHostedZones, ListResourceRecordSets
+- Required IAM EKS cluster permissions:
+  - The Ascender installer for EKS will look for certain Policies to add to the cluster, and create them if they are not present. These Policies are:
+    - (AWS Managed Policy) [AmazonEBSCSIDriverPolicy](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/AmazonEBSCSIDriverPolicy.html): Allows the CSI driver service account to make calls to related services such as EC2 on your behalf
+    - [AWSLoadBalancerControllerIAMPolicy](../../playbooks/roles/k8s_setup/templates/eks/iam-policy.json): Allows the EKS Cluster to manage all resources required to create Load Balancers for external access.
 - Although not required before install, The Ascender installer for EKS will set up and use the EKS CLI tool, `eksctl`, in order to set up and/or manage your eks cluster.
 
 ## Install Instructions
