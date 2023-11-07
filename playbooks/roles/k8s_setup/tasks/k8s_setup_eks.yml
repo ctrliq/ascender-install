@@ -74,7 +74,7 @@
       
     - name: Retrieve AmazonEBSCSIDriverPolicy policy ARN
       ansible.builtin.command:
-        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn'"
+        cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn' --output yaml"
       register: policy_arn
 
     # - name: Print out the arn for the policy AmazonEBSCSIDriverPolicy
