@@ -71,6 +71,21 @@
       ansible.builtin.command:
         cmd: "aws iam create-policy --policy-name AmazonEBSCSIDriverPolicy --policy-document {{ lookup('ansible.builtin.template', 'templates/eks/ebs-scsi-driver-policy.json') }}"
       when: policy_query.stdout == "[]"
+    
+    ansible.builtin.template:
+      src: templates/eks/ebs-scsi-driver-policy.json
+      dest: {{ playbook_dir }}/ebs-scsi-driver-policy.json
+
+    - name: Ensure IAM AmazonEBSCSIDriverPolicy exists
+      ansible.builtin.command:
+        chdir: "{{ playbook_dir }}"
+        cmd: "aws iam create-policy --policy-name AmazonEBSCSIDriverPolicy --policy-document file://ebs-scsi-driver-policy.json"
+      when: policy_query.stdout == "[]"
+
+    - name:
+      ansible.builtin.file:
+        path: {{ playbook_dir }}/ebs-scsi-driver-policy.json
+        state: absent
       
     - name: Retrieve AmazonEBSCSIDriverPolicy policy ARN
       ansible.builtin.command:
@@ -136,11 +151,20 @@
 # - ansible.builtin.debug:
 #     var: policy_query
 
+ansible.builtin.template:
+  src: templates/eks/iam-policy.json
+  dest: {{ playbook_dir }}/iam-policy.json
+
 - name: Ensure IAM AWS Load Balancer Controller Policy exists
   ansible.builtin.command:
-    cmd: "aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document {{ lookup('ansible.builtin.template', 'templates/eks/iam-policy.json') }}"
+    chdir: "{{ playbook_dir }}"
+    cmd: "aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam-policy.json"
   when: policy_query.stdout == "[]"
-  
+
+ansible.builtin.file: 
+  path:  {{ playbook_dir }}/iam-policy.json
+  state: absent 
+
 - name: Retrieve AWSLoadBalancerControllerIAMPolicy policy ARN
   ansible.builtin.command:
     cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].Arn'"
