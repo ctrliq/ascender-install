@@ -80,7 +80,7 @@
 
 - name: Get The Canonical Hosted Zone ID of the Ascender AWS Load Balancer
   ansible.builtin.command:
-    cmd: "aws elbv2 describe-load-balancers --query 'LoadBalancers[?DNSName==`{{ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname}}`].CanonicalHostedZoneId'"
+    cmd: "aws elbv2 describe-load-balancers --query 'LoadBalancers[?DNSName==`{{ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname}}`].CanonicalHostedZoneId' --output yaml"
   register: hosted_zone
   when: USE_ROUTE_53
 
