@@ -6,6 +6,7 @@
             "Effect": "Allow",
             "Action": [
                 "iam:ListPolicies",
+                "iam:CreatePolicy",
                 "route53:ListHostedZones",
                 "route53:ChangeResourceRecordSets",
                 "route53:ListResourceRecordSets"
