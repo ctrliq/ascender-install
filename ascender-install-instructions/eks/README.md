@@ -23,6 +23,9 @@ README](../../README.md#general-prerequisites)
 - The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
   - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender installer will look for it there.
   - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
+- IF INSTALLING ASCENDER ON AN EXISTING EKS CLUSTER, the aws user that will be performing the installation must have appropriate access to the cluster. This can be given by editing the aws-auth ConfigMap, in the kube-system namespace:
+  - Use the following command to access the configmap: `$ kubectl edit -n kube-system configmap/aws-auth`
+  - An example of the entry to give the {{ EKS_USER }} access to the cluster, is [here](./aws-auth.yml).
 - Required IAM user permissions:
   - The Ascender installer for EKS requires minimum IAM AWS policies in order to manipulate EKS. 
   - An AWS administrator can apply these minimum permissions to a user (indicated by the variable `EKS_USER`), via a playbook that can be run from the top level directory of this repository, with the command (and with `k8s_platform` set to `eks`): 
