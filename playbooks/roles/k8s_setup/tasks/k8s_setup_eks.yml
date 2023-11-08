@@ -24,6 +24,10 @@
         cmd: "aws eks describe-cluster --name {{ EKS_CLUSTER_NAME }} --query \"cluster.identity.oidc.issuer\" --output text | cut -d '/' -f 5"
       register: oidc_query
 
+    # - name: Print out OIDC issuer
+    #   ansible.builtin.debug: 
+    #     var: oidc_query
+
     - name: Determine whether an IAM OIDC provider with your cluster's issuer ID is already in your account
       ansible.builtin.shell:
         cmd: "aws iam list-open-id-connect-providers | grep {{ oidc_query.stdout }} | cut -d \"/\" -f4"
@@ -42,10 +46,15 @@
       amazon.aws.aws_caller_info:
       register: caller_info
       no_log: true
+    
+    # - debug:
+    #     var: caller_info
 
-    - name: add the Amazon EBS CSI add-on using eksctl
+    - name: Create the ebs-csi-controller-sa iamserviceaccount for the cluster
       ansible.builtin.shell:
         cmd: "eksctl create iamserviceaccount --name ebs-csi-controller-sa --namespace kube-system --cluster {{ EKS_CLUSTER_NAME }} --role-name Ascender_EBS_CSI_DriverRole --role-only --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy  --override-existing-serviceaccounts --approve"
+        # cmd: "eksctl create iamserviceaccount --name ebs-csi-controller-sa --namespace kube-system --cluster ascender-eks-cluster --role-name Ascender_EBS_CSI_DriverRole --role-only --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy  --override-existing-serviceaccounts --approve"
+
 
     - name: add the Amazon EBS CSI add-on using eksctl
       ansible.builtin.shell:
@@ -145,8 +154,8 @@
     cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].Arn' --output yaml"
   register: policy_query
     
-- ansible.builtin.debug:
-    var: policy_query
+# - ansible.builtin.debug:
+#     var: policy_query
 
 - name: Create the IAM Policy Json file
   ansible.builtin.template:
@@ -171,8 +180,8 @@
     cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].Arn' --output yaml"
   register: policy_arn
 
-- ansible.builtin.debug:
-    var: policy_arn
+# - ansible.builtin.debug:
+#     var: policy_arn
 
 # - name: Print out the arn for the policy AWSLoadBalancerControllerIAMPolicy
 #   ansible.builtin.debug:
@@ -186,6 +195,7 @@
 - name: create aws-load-balancer-controller iamserviceaccount
   ansible.builtin.command:
     cmd: "eksctl create iamserviceaccount --cluster={{ EKS_CLUSTER_NAME }} --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn={{ aws_lb_controller_policy_arn }} --override-existing-serviceaccounts --approve"
+    # cmd: "eksctl create iamserviceaccount --cluster=ascender-eks-cluster --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn=arn:aws:iam::980128770015:policy/AWSLoadBalancerControllerIAMPolicy --override-existing-serviceaccounts --approve"
 
 - name: Get an existing Service object
   kubernetes.core.k8s_info:
