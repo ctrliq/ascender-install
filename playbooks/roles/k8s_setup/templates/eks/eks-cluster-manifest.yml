@@ -14,7 +14,6 @@ vpc:
 nodeGroups:
 - name: ascender-nodes
   instanceType: {{ EKS_INSTANCE_TYPE }}
-  # instanceName: custom-node-name
   minSize: {{ EKS_MIN_WORKER_NODES }}
   maxSize: {{ EKS_MAX_WORKER_NODES }}
   desiredCapacity: {{ EKS_NUM_WORKER_NODES }}
@@ -28,6 +27,5 @@ addons:
 - name: coredns
 - name: vpc-cni
 - name: aws-ebs-csi-driver
-  version: {{ EKS_EBS_CSI_DRIVER_VERSION }}
   attachPolicyARNs:
   - {{ ebs_scsi_driver_policy_arn }}
