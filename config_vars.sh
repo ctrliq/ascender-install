@@ -117,7 +117,7 @@ if [ $k8s_platform == "eks" ]; then
 
    #EKS_K8S_VERSION
    echo $'\n'
-   read -p "The kubernetes version for the eks cluster [1.28]; available kubernetes versions can be found here: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html [1.28]:" e_k8s_version
+   read -p "The kubernetes version for the eks cluster; available kubernetes versions can be found here: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html [1.28]:" e_k8s_version
    eks_k8s_version=${e_k8s_version:-1.28}
    echo "# The kubernetes version for the eks cluster; available kubernetes versions can be found here:" >> custom.config.yml
    echo "EKS_K8S_VERSION: "\"$eks_k8s_version\" >> custom.config.yml
@@ -160,7 +160,7 @@ if [ $k8s_platform == "eks" ]; then
    if [ $k8s_lb_protocol == "https" ]; then
       # EKS_SSL_CERT
       echo $'\n'
-      read -p "The ARN of the SSL Certificate of the AWS domain, from AWS Certificate Manager [arn:aws:acm:us-east-1:xxxxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]:" e_ssl_cert
+      read -p "The ARN of the SSL Certificate of the AWS domain, from AWS Certificate Manager (must exist for the domain before running the installer) [arn:aws:acm:us-east-1:xxxxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]:" e_ssl_cert
       eks_ssl_cert=${e_ssl_cert:-arn:aws:acm:us-east-1:xxxxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} 
       echo "# The volume size of eks worker nodes in GB" >> custom.config.yml
       echo "EKS_SSL_CERT: "$eks_ssl_cert >> custom.config.yml
@@ -176,20 +176,13 @@ if [ $k8s_platform == "dkp" ]; then
    echo "DKP_CLUSTER_NAME: "$dkp_cluster_name >> custom.config.yml
 fi
 
-if [ ($k8s_platform == "k3s" || $k8s_platform == "dkp") && ($k8s_lb_protocol == "https")]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
    echo $'\n'
    read -p "TLS Certificate file location on the local installing machine [~/ascender.crt]:" t_cert_path
    tls_cert_path=${t_cert_path:-~/ascender.crt} 
    echo "# TLS Certificate file location on the local installing machine" >> custom.config.yml
    echo "tls_cert_path: "\"$tls_cert_path\" >> custom.config.yml
-
-   #tls_key_path
-   echo $'\n'
-   read -p "TLS Private Key file location on the local installing machine [~/ascender.key]:" t_key_path
-   tls_key_path=${t_key_path:-~/ascender.key} 
-   echo "# TLS Private Key file location on the local installing machine" >> custom.config.yml
-   echo "tls_key_path: "\"$tls_key_path\" >> custom.config.yml
 
    #tls_key_path
    echo $'\n'
@@ -369,6 +362,21 @@ done
 ledger_install=${selected[@]}
 echo "# Determines whether or not Ledger will be installed" >> custom.config.yml
 echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
+
+
+# echo $'\n'
+# l_install=(true false)
+# selected=()
+# PS3='Boolean indicating whether to install Ledger: '
+# select name in "${l_install[@]}" ; do
+#     for reply in $REPLY ; do
+#         selected+=(${l_install[reply - 1]})
+#     done
+#     [[ $selected ]] && break
+# done
+# ledger_install=${selected[@]}
+# echo "# Determines whether or not Ledger will be installed" >> custom.config.yml
+# echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
 
 # LEDGER_HOSTNAME
 echo $'\n'
