@@ -175,6 +175,20 @@ if [ $k8s_platform == "dkp" ]; then
    echo "# The name of the dkp cluster you wish to deploy Ascender to and/or create" >> custom.config.yml
    echo "DKP_CLUSTER_NAME: "$dkp_cluster_name >> custom.config.yml
 fi
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) ]]; then
+   u_etc_hosts=(true false)
+   selected=()
+   PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender:'
+   select name in "${u_etc_hosts[@]}" ; do
+       for reply in $REPLY ; do
+           selected+=(${u_etc_hosts[reply - 1]})
+       done
+       [[ $selected ]] && break
+   done
+   use_etc_hosts=${selected[@]}
+   echo "# Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender" >> custom.config.yml
+   echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
+fi
 
 if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
@@ -190,19 +204,6 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) && $k8s_lb_protocol =
    tls_key_path=${t_key_path:-~/ascender.key} 
    echo "# TLS Private Key file location on the local installing machine" >> custom.config.yml
    echo "tls_key_path: "\"$tls_key_path\" >> custom.config.yml
-
-   u_etc_hosts=(true false)
-   selected=()
-   PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender:'
-   select name in "${u_etc_hosts[@]}" ; do
-       for reply in $REPLY ; do
-           selected+=(${u_etc_hosts[reply - 1]})
-       done
-       [[ $selected ]] && break
-   done
-   use_etc_hosts=${selected[@]}
-   echo "# Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender" >> custom.config.yml
-   echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
 fi
 
 # tmp_dir
@@ -233,7 +234,7 @@ fi
 # ASCENDER_NAMESPACE
 echo $'\n'
 read -p "Namespace for Ascender Kubernetes objects [ascender]: " a_namespace
-ascender_namespace=${a_namespace:-ascender.example.com}
+ascender_namespace=${a_namespace:-ascender}
 echo "# Namespace for Ascender Kubernetes objects" >> custom.config.yml
 echo "ASCENDER_NAMESPACE: "$ascender_namespace >> custom.config.yml
 
@@ -270,7 +271,7 @@ echo $'\n'
 echo "# The version of the AWX Operator used to install Ascender and its components" >> custom.config.yml
 read -p "The version of the AWX Operator used to install Ascender and its components [2.7.0]: " a_operator_version
 ascender_operator_version=${a_version:-2.7.0}
-echo "ASCENDER_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
+echo "ANSIBLE_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
 
 # ascender_garbage_collect_secrets
 echo $'\n'
