@@ -130,6 +130,6 @@ ASCENDER SUCCESSFULLY SETUP
 
 You can connect to the Ascender UI at https://`ASCENDER_HOST`
 
-The username is and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/custom.config.yml under the `ASCENDER_ADMIN_USER` and `ASCENDER_ADMIN_PASSWORD` variables, respectively.
+The username is and the corresponding password is stored in `< ASCENDER-INSTALL-SOURCE >`/custom.config.yml under the `ASCENDER_ADMIN_USER` and `ASCENDER_ADMIN_PASSWORD` variables, respectively.
 
 
