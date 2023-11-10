@@ -25,7 +25,7 @@ README](../../README.md#general-prerequisites)
   - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
 - IF INSTALLING ASCENDER ON AN EXISTING EKS CLUSTER, the aws user that will be performing the installation must have appropriate access to the kubernetes cluster itself. This can be given by editing the aws-auth ConfigMap, in the kube-system namespace:
   - Use the following command to access the configmap: `$ kubectl edit -n kube-system configmap/aws-auth`
-  - An example of the entry to give the `EKS_USER`` access to the cluster, is [here](./aws-auth.yml).
+  - An example of the entry to give the `EKS_USER` access to the cluster, is [here](./aws-auth.yml).
 - Required IAM user permissions:
   - The Ascender installer script for EKS requires minimum IAM AWS policies in order to manipulate EKS, EC2, and other relevant AWS Services.
   - An AWS administrator can apply these minimum permissions to a user (indicated by the variable `EKS_USER`), via a playbook that can be run from the top level directory of this repository, with the command (and with `k8s_platform` set to `eks`): 
@@ -62,26 +62,26 @@ git clone https://github.com/ctrliq/ascender-install.git
 ```
 This will create a directory named `ascender-install` in your present working directory (PWD).
 
-We will refer to this directory as the <ASCENDER-INSTALL-SOURCE> in the remainder of this instructions.
+We will refer to this directory as the < ASCENDER-INSTALL-SOURCE > in the remainder of this instructions.
 
 ### Set the configuration variables for an eks Install
 
 #### inventory file
 
-You can copy the contents of [eks.inventory](./eks.inventory) in this directory, to <ASCENDER-INSTALL-SOURCE>/inventory.
+You can copy the contents of [eks.inventory](./eks.inventory) in this directory, to < ASCENDER-INSTALL-SOURCE >/inventory.
 
 #### custom.config.yml file
 
 You can run the bash script at 
 
 ```
-<ASCENDER-INSTALL-SOURCE>/config_vars.sh
+< ASCENDER-INSTALL-SOURCE >/config_vars.sh
 ```
 
 The script will take you through a series of questions, that will populate the variables file requires to install Ascender. This variables file will be located at:
 
 ```
-<ASCENDER-INSTALL-SOURCE>/custom.config.yml
+< ASCENDER-INSTALL-SOURCE >/custom.config.yml
 ```
 
 Afterward, you can simply edit this file should you not want to run the script again before installing Ascender.
@@ -128,8 +128,7 @@ ASCENDER SUCCESSFULLY SETUP
 
 ### Connecting to Ascender Web UI
 
-You can connect to the Ascender UI at https://{{ASCENDER_HOST }}"
-
+You can connect to the Ascender UI at https://`ASCENDER_HOST`
 
 The username is and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/custom.config.yml under the `ASCENDER_ADMIN_USER` and `ASCENDER_ADMIN_PASSWORD` variables, respectively.
 
