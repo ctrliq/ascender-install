@@ -20,7 +20,20 @@ echo "---"$'\n'"# This variable specificies which Kubernetes platform Ascender a
 echo "k8s_platform: "$k8s_platform >> custom.config.yml
 
 # kube_install
-#echo $'\n'
+echo $'\n'
+k_install=(true false)
+   selected=()
+   PS3='Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false): '
+   select name in "${k_install[@]}" ; do
+       for reply in $REPLY ; do
+           selected+=(${k_install[reply - 1]})
+       done
+       [[ $selected ]] && break
+   done
+
+   kube_install=${selected[@]}
+   echo "# Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false)" >> custom.config.yml
+   echo "kube_install: "$kube_install >> custom.config.yml
 
 # k8s_lb_protocol
 echo $'\n'
