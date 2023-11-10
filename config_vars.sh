@@ -54,7 +54,7 @@ if [ $k8s_platform == "eks" ]; then
    echo $'\n'
    use_r53=(true false)
    selected=()
-   PS3='Boolean indicating Determines whether to use Route53 Domain Management (which is automated) Or a third-party service (e.g., Cloudflare, GoDaddy, etc.). If this value is set to false, you will have to manually set a CNAME record for Ascender/Ledger to point to their respective AWS Load Balancers: '
+   PS3='Boolean indicating Determines whether to use Route53 Domain Management (true) Or a third-party service such as Cloudflare or GoDaddy (false). If this value is set to false, you will have to manually set a CNAME record for Ascender/Ledger to point to their respective AWS Load Balancers: '
    select name in "${use_r53[@]}" ; do
        for reply in $REPLY ; do
            selected+=(${use_r53[reply - 1]})

@@ -23,11 +23,11 @@ README](../../README.md#general-prerequisites)
 - The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
   - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender installer will look for it there.
   - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
-- IF INSTALLING ASCENDER ON AN EXISTING EKS CLUSTER, the aws user that will be performing the installation must have appropriate access to the cluster. This can be given by editing the aws-auth ConfigMap, in the kube-system namespace:
+- IF INSTALLING ASCENDER ON AN EXISTING EKS CLUSTER, the aws user that will be performing the installation must have appropriate access to the kubernetes cluster itself. This can be given by editing the aws-auth ConfigMap, in the kube-system namespace:
   - Use the following command to access the configmap: `$ kubectl edit -n kube-system configmap/aws-auth`
-  - An example of the entry to give the {{ EKS_USER }} access to the cluster, is [here](./aws-auth.yml).
+  - An example of the entry to give the `EKS_USER`` access to the cluster, is [here](./aws-auth.yml).
 - Required IAM user permissions:
-  - The Ascender installer for EKS requires minimum IAM AWS policies in order to manipulate EKS. 
+  - The Ascender installer script for EKS requires minimum IAM AWS policies in order to manipulate EKS, EC2, and other relevant AWS Services.
   - An AWS administrator can apply these minimum permissions to a user (indicated by the variable `EKS_USER`), via a playbook that can be run from the top level directory of this repository, with the command (and with `k8s_platform` set to `eks`): 
     - `$ ansible-playbook playbooks/apply_cloud_permissions.yml`
   - The following permissions will be applied:
@@ -66,20 +66,35 @@ We will refer to this directory as the <ASCENDER-INSTALL-SOURCE> in the remainde
 
 ### Set the configuration variables for an eks Install
 
-You can use the eks.custom.config.yml in the ASCENDER-INSTALL-SOURCE directory as an eks reference, but
-the file used by the `setup.sh` script must be located at in this path:
+#### inventory file
+
+You can copy the contents of [eks.inventory](./eks.inventory) in this directory, to <ASCENDER-INSTALL-SOURCE>/inventory.
+
+#### custom.config.yml file
+
+You can run the bash script at 
+
+```
+<ASCENDER-INSTALL-SOURCE>/config_vars.sh
+```
+
+The script will take you through a series of questions, that will populate the variables file requires to install Ascender. This variables file will be located at:
 
 ```
 <ASCENDER-INSTALL-SOURCE>/custom.config.yml
 ```
 
-The following variables should be changed in the file with your favorite text editor:
+Afterward, you can simply edit this file should you not want to run the script again before installing Ascender.
 
-- `USE_ROUTE_53`: Determines whether to use Route53's Domain Management (which is automated), or a third-party service (e.g., Cloudflare, GoDaddy, etc.). If this value is set to false, you will have to manually set a CNAME record for {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the AWS Loadbalancers that the installer creates.
+The following variables will be present after running the script:
+
+- `k8s_platform`: This variable specificies which Kubernetes platform Ascender and its components will be installed on.
+- `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+- `USE_ROUTE_53`: Determines whether to use Route53's Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
 - `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
 - `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
 - `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
-  - this must be the domain for both Ascender AND Ledger.
+  - this is a SINGLE domain for both Ascender AND Ledger.
 - `EKS_CLUSTER_NAME`: The name of the eks cluster on which Ascender will be installed. This can be an existing eks cluster, or the name of the one to create, should the `eksctl` tool not find this name amongst its existing clusters.
 - `EKS_CLUSTER_REGION`: The AWS region hosting the eks cluster
 - `EKS_CLUSTER_CIDR`: The eks cluster subnet in CIDR notation
@@ -90,15 +105,10 @@ The following variables should be changed in the file with your favorite text ed
 - `EKS_NUM_WORKER_NODES`: The desired number of worker nodes for the eks cluster
 - `EKS_WORKER_VOLUME_SIZE`: The size of the Elastic Block Storage volume for each worker node
 - `EKS_SSL_CERT`: The ARN for the SSL certificate; required when k8s_lb_protocol is https. The same certificate is used for all components (currently Ascender and Ledger); as such, we recommend that the certificate is set for a wildcard domain, (e.g., *.example.com).
-- `EKS_EBS_CSI_DRIVER_VERSION`: Amazon Elastic Block Store Container Storage Interface (CSI) Driver release
 
 ### Run the setup script
 
-Run `./setup.sh` from top level directory in this repository.
-
-The setup must run as a user with Administrative or sudo privileges.  
-
-To begin the setup process, type:
+To begin the setup process, from the <ASCENDER-INSTALL-SOURCE> directory in this repository, type:
 
 ```
 sudo ./setup.sh
@@ -121,6 +131,6 @@ ASCENDER SUCCESSFULLY SETUP
 You can connect to the Ascender UI at https://{{ASCENDER_HOST }}"
 
 
-The username is and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/default.config.yml under the `ASCENDER_ADMIN_USER` and `ASCENDER_ADMIN_PASSWORD` variables, respectively.
+The username is and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/custom.config.yml under the `ASCENDER_ADMIN_USER` and `ASCENDER_ADMIN_PASSWORD` variables, respectively.
 
 
