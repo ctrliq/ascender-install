@@ -62,13 +62,13 @@ git clone https://github.com/ctrliq/ascender-install.git
 ```
 This will create a directory named `ascender-install` in your present working directory (PWD).
 
-We will refer to this directory as the < ASCENDER-INSTALL-SOURCE > in the remainder of this instructions.
+We will refer to this directory as the `< ASCENDER-INSTALL-SOURCE >` in the remainder of this instructions.
 
 ### Set the configuration variables for an eks Install
 
 #### inventory file
 
-You can copy the contents of [eks.inventory](./eks.inventory) in this directory, to < ASCENDER-INSTALL-SOURCE >/inventory.
+You can copy the contents of [eks.inventory](./eks.inventory) in this directory, to `< ASCENDER-INSTALL-SOURCE >`/inventory.
 
 #### custom.config.yml file
 
