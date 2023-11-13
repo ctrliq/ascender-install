@@ -56,7 +56,6 @@
   ansible.builtin.stat:
     path: /usr/local/bin/eksctl
   register: eksctl_file
-  when: k8s_platform == "eks"
 
 # - ansible.builtin.debug:
 #     var: eksctl_file
