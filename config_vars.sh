@@ -20,20 +20,22 @@ echo "---"$'\n'"# This variable specificies which Kubernetes platform Ascender a
 echo "k8s_platform: "$k8s_platform >> custom.config.yml
 
 # kube_install
-echo $'\n'
-k_install=(true false)
-   selected=()
-   PS3='Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false): '
-   select name in "${k_install[@]}" ; do
-       for reply in $REPLY ; do
-           selected+=(${k_install[reply - 1]})
-       done
-       [[ $selected ]] && break
-   done
+if [ $k8s_platform == "k3s" ]; then
+   echo $'\n'
+   k_install=(true false)
+      selected=()
+      PS3='Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false): '
+      select name in "${k_install[@]}" ; do
+          for reply in $REPLY ; do
+              selected+=(${k_install[reply - 1]})
+          done
+          [[ $selected ]] && break
+      done
 
-   kube_install=${selected[@]}
-   echo "# Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false)" >> custom.config.yml
-   echo "kube_install: "$kube_install >> custom.config.yml
+      kube_install=${selected[@]}
+      echo "# Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false)" >> custom.config.yml
+      echo "kube_install: "$kube_install >> custom.config.yml
+fi
 
 # k8s_lb_protocol
 echo $'\n'
@@ -121,55 +123,58 @@ if [ $k8s_platform == "eks" ]; then
    echo "# The AWS region hosting the eks cluster" >> custom.config.yml
    echo "EKS_CLUSTER_REGION: "$eks_cluster_region >> custom.config.yml
 
-   #EKS_CLUSTER_CIDR
-   echo $'\n'
-   read -p "The eks cluster subnet in CIDR notation [10.10.0.0/16]: " e_cluster_cidr
-   eks_cluster_cidr=${e_cluster_cidr:-10.10.0.0/16}
-   echo "# The eks cluster subnet in CIDR notation" >> custom.config.yml
-   echo "EKS_CLUSTER_CIDR: "\"$eks_cluster_cidr\" >> custom.config.yml
+   if [ $eks_cluster_status == "provision" ]; then
+      #EKS_CLUSTER_CIDR
+      echo $'\n'
+      read -p "The eks cluster subnet in CIDR notation [10.10.0.0/16]: " e_cluster_cidr
+      eks_cluster_cidr=${e_cluster_cidr:-10.10.0.0/16}
+      echo "# The eks cluster subnet in CIDR notation" >> custom.config.yml
+      echo "EKS_CLUSTER_CIDR: "\"$eks_cluster_cidr\" >> custom.config.yml
 
-   #EKS_K8S_VERSION
-   echo $'\n'
-   read -p "The kubernetes version for the eks cluster; available kubernetes versions can be found here: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html [1.28]:" e_k8s_version
-   eks_k8s_version=${e_k8s_version:-1.28}
-   echo "# The kubernetes version for the eks cluster; available kubernetes versions can be found here:" >> custom.config.yml
-   echo "EKS_K8S_VERSION: "\"$eks_k8s_version\" >> custom.config.yml
+      #EKS_K8S_VERSION
+      echo $'\n'
+      read -p "The kubernetes version for the eks cluster; available kubernetes versions can be found here: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html [1.28]:" e_k8s_version
+      eks_k8s_version=${e_k8s_version:-1.28}
+      echo "# The kubernetes version for the eks cluster; available kubernetes versions can be found here:" >> custom.config.yml
+      echo "EKS_K8S_VERSION: "\"$eks_k8s_version\" >> custom.config.yml
  
-   #EKS_INSTANCE_TYPE
-   echo $'\n'
-   read -p "The eks worker node instance types [t3.large]:" e_instance_type
-   eks_instance_type=${e_instance_type:-t3.large}
-   echo "# The eks worker node instance types" >> custom.config.yml
-   echo "EKS_INSTANCE_TYPE: "\"$eks_instance_type\" >> custom.config.yml
+      #EKS_INSTANCE_TYPE
+      echo $'\n'
+      read -p "The eks worker node instance types [t3.large]:" e_instance_type
+      eks_instance_type=${e_instance_type:-t3.large}
+      echo "# The eks worker node instance types" >> custom.config.yml
+      echo "EKS_INSTANCE_TYPE: "\"$eks_instance_type\" >> custom.config.yml
 
-   #EKS_MIN_WORKER_NODES
-   echo $'\n'
-   read -p "The minimum number of eks worker nodes [2]:" e_min_worker_nodes
-   eks_min_worker_nodes=${e_min_worker_nodes:-2}
-   echo "# The minimum number of eks worker nodes" >> custom.config.yml
-   echo "EKS_MIN_WORKER_NODES: "$eks_min_worker_nodes >> custom.config.yml
+      #EKS_MIN_WORKER_NODES
+      echo $'\n'
+      read -p "The minimum number of eks worker nodes [2]:" e_min_worker_nodes
+      eks_min_worker_nodes=${e_min_worker_nodes:-2}
+      echo "# The minimum number of eks worker nodes" >> custom.config.yml
+      echo "EKS_MIN_WORKER_NODES: "$eks_min_worker_nodes >> custom.config.yml
 
-   #EKS_MAX_WORKER_NODES: 6
-   echo $'\n'
-   read -p "The maximum number of eks worker nodes [6]:" e_max_worker_nodes
-   eks_max_worker_nodes=${e_max_worker_nodes:-6}
-   echo "# The maximum number of eks worker nodes" >> custom.config.yml
-   echo "EKS_MAX_WORKER_NODES: "$eks_max_worker_nodes >> custom.config.yml
+      #EKS_MAX_WORKER_NODES: 6
+      echo $'\n'
+      read -p "The maximum number of eks worker nodes [6]:" e_max_worker_nodes
+      eks_max_worker_nodes=${e_max_worker_nodes:-6}
+      echo "# The maximum number of eks worker nodes" >> custom.config.yml
+      echo "EKS_MAX_WORKER_NODES: "$eks_max_worker_nodes >> custom.config.yml
 
-   #EKS_NUM_WORKER_NODES: 3
-   echo $'\n'
-   read -p "The desired number of eks worker nodes [3]:" e_num_worker_nodes
-   eks_num_worker_nodes=${e_num_worker_nodes:-3}
-   echo "# The desired number of eks worker nodes" >> custom.config.yml
-   echo "EKS_NUM_WORKER_NODES: "$eks_num_worker_nodes >> custom.config.yml
+      #EKS_NUM_WORKER_NODES: 3
+      echo $'\n'
+      read -p "The desired number of eks worker nodes [3]:" e_num_worker_nodes
+      eks_num_worker_nodes=${e_num_worker_nodes:-3}
+      echo "# The desired number of eks worker nodes" >> custom.config.yml
+      echo "EKS_NUM_WORKER_NODES: "$eks_num_worker_nodes >> custom.config.yml
 
-   #EKS_WORKER_VOLUME_SIZE
-   echo $'\n'
-   read -p "The volume size of eks worker nodes in GB [100]:" e_worker_volume_size
-   eks_worker_volume_size=${e_worker_volume_size:-100}
-   echo "# The volume size of eks worker nodes in GB" >> custom.config.yml
-   echo "EKS_WORKER_VOLUME_SIZE: "$eks_worker_volume_size >> custom.config.yml
+      #EKS_WORKER_VOLUME_SIZE
+      echo $'\n'
+      read -p "The volume size of eks worker nodes in GB [100]:" e_worker_volume_size
+      eks_worker_volume_size=${e_worker_volume_size:-100}
+      echo "# The volume size of eks worker nodes in GB" >> custom.config.yml
+      echo "EKS_WORKER_VOLUME_SIZE: "$eks_worker_volume_size >> custom.config.yml
    
+   fi 
+
    if [ $k8s_lb_protocol == "https" ]; then
       # EKS_SSL_CERT
       echo $'\n'
