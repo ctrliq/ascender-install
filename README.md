@@ -30,8 +30,7 @@ admins rejoice!
   - The [ansible inventory file](inventory) file needs to be changed
     to:
     - `ascender_host`
-      - `ansible_host` needs to be a set to a server that hosts the [kube-apiserver](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/) kubernetes cluster access or that you want kubernetes
-        installed on
+      - `ansible_host` needs to be a set to a server that hosts the [kube-apiserver](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/) kubernetes cluster access or that you want to eventually host the kube-apiserver.
       - `ansible_user` needs to set to a user that can escalate to
         root with `become` (if different than your logged in user)
       - A port needs to be open for SSH access (typically TCP port
