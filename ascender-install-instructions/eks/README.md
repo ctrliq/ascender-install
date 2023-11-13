@@ -23,7 +23,7 @@ README](../../README.md#general-prerequisites)
 - The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
   - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender installer will look for it there.
   - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
-- IF INSTALLING ASCENDER ON AN EXISTING EKS CLUSTER, the aws user that will be performing the installation must have appropriate access to the kubernetes cluster itself. This can be given by editing the aws-auth ConfigMap, in the kube-system namespace:
+- IF INSTALLING ASCENDER ON AN EXISTING EKS CLUSTER, the aws user that will be performing the installation must have appropriate permissions for the kubernetes cluster itself. This can be given by editing the aws-auth [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/), in the kube-system namespace:
   - Assuming you have the correct kubeconfig file already, use the following command to access the configmap: 
     - `$ kubectl edit -n kube-system configmap/aws-auth`
   - An example of the entry to give the `EKS_USER` access to the cluster, is [here](./aws-auth.yml).
@@ -42,7 +42,7 @@ README](../../README.md#general-prerequisites)
     - [ascender_iam_limited_access](../../playbooks/roles/apply_permissions/templates/eks/iam_policies/iamlimitedaccess.json)
       - IAM: Limited List and Write Permissions
     - [ascender_install_permissions](../../playbooks/roles/apply_permissions/templates/eks/iam_policies/ascenderinstallpermissions.json)
-      - IAM: ListPolicies
+      - IAM: ListPolicies, CreatePolicy, PassRole, ListOpenIDConnectProviders, CreateRole, AttachRolePolicy
       - Route53: ChangeResourceRecordSets, ListHostedZones, ListResourceRecordSets
 - Required IAM EKS cluster permissions:
   - The Ascender installer for EKS will look for certain Policies to add to the cluster, and create them if they are not present. These Policies are:
