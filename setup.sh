@@ -10,7 +10,7 @@ fi
 
 # Verify that the Operating system of the local machine is in the centos/rocky family
 OS_FAMILY=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release)
-if !([[ "$OS_FAMILY" =~ "rhel" || "$STR" =~ "fedora" || "$STR" =~ "centos" ]]); then
+if !([[ "$OS_FAMILY" =~ "rhel" || "$OS_FAMILY" =~ "fedora" || "$OS_FAMILY" =~ "centos" ]]); then
   echo "The OS family must be rocky, rhel, fedora or centos"; exit $ERRCODE;
 fi
 
