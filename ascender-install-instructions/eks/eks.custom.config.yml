@@ -8,16 +8,6 @@ k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
 k8s_lb_protocol: http #options include http and https
 
-# ---k3s variables---
-
-# Sets up a new k3s cluster when set to true
-kube_install: false
-
-# IP address for the K3s Master/Worker node
-# Required for local DNS and k3s install
-# This IP Address must be close reachable by the server from which this installer is running
-k3s_master_node_ip: "127.0.0.1"
-
 # ---eks variables---
 
 # Determines whether to use Route53's Domain Management (which is automated)
@@ -79,12 +69,6 @@ EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxx
 # This variable specifies the version in use by the cluster; all releases can be found here:
 # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
 EKS_EBS_CSI_DRIVER_VERSION: "v1.24.0"
-
-# ---dkp variables---
-# The name of the dkp cluster you wish to deploy Ascender to and/or create
-# See a list of all dkp clusters with the command 
-# NOTE: This must be done while pointing to the DKP Bootstrap Cluster
-DKP_CLUSTER_NAME: dkp-cluster
 
 # ---Local artifact variables---
 

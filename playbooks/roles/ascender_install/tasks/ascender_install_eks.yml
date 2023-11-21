@@ -1,0 +1,128 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ ASCENDER_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    verify_ssl: false
+    state: present
+    
+- name: Generate manifest to install AWX Operator
+  ansible.builtin.template:
+    src: templates/awx-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/kustomization.yml"
+
+- name: Generate manifest to install AWX Operator with timestamp attached, for purposes of operator deletion later
+  ansible.builtin.template:
+    src: templates/awx-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Install AWX Operator with Kustomize
+  kubernetes.core.k8s:
+    definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
+    verify_ssl: false
+
+- name: delete Kustomization file
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}/kustomization.yml"
+    state: absent
+
+- name: Wait for Operator deployment to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: awx-operator-controller-manager
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+  
+- name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: "ascender-deployment/ascender-deployment-eks.yml"
+    dest: "{{ tmp_dir }}/ascender-deployment-eks.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+
+- name: "Apply AWX ascender-app manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-eks.yml') }}"
+    verify_ssl: false
+
+- name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: ascender-app-web
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+  register: ascender_web_deployment
+
+# - ansible.builtin.debug:
+#     var: ascender_web_deployment
+
+
+- name: Retrieve the ascender-app-ingress Ingress object
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Ingress
+    name: ascender-app-ingress
+    namespace: ascender
+  register: ascender_ingress
+
+- ansible.builtin.debug: 
+    var: ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname
+
+- name: Get The Canonical Hosted Zone ID of the Ascender AWS Load Balancer
+  ansible.builtin.command:
+    cmd: "aws elbv2 describe-load-balancers --query 'LoadBalancers[?DNSName==`{{ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname}}`].CanonicalHostedZoneId' --output yaml"
+  register: hosted_zone
+  when: USE_ROUTE_53
+
+# - ansible.builtin.debug: 
+#     msg: "{{ hosted_zone.stdout [2:] }}"
+
+- name: "Add an alias record for the Ascender Loadbalancer to map to {{ ASCENDER_HOSTNAME }}"
+  amazon.aws.route53:
+    state: present
+    zone: "{{ ASCENDER_DOMAIN }}"
+    record: "{{ ASCENDER_HOSTNAME }}"
+    type: A
+    value: "{{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+    alias: True
+    alias_hosted_zone_id: "{{ hosted_zone.stdout [2:]}}"
+    overwrite: true
+  when: USE_ROUTE_53
+
+- name: Indicate Instructions for non-Route53 Domain Management
+  ansible.builtin.debug: 
+    msg: "Please manually create a CNAME record in your DNS Manager of choice, mapping to {{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+  when: not USE_ROUTE_53
+
+- name: Set the Ascender URL
+  ansible.builtin.set_fact:
+      ascender_ip: "{{ ASCENDER_HOSTNAME }}"
+      ascender_port: "{{ '443' if k8s_lb_protocol == 'https' else '80' }}"
+
+- ansible.builtin.debug:
+    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    
+- name: Wait until Ascender API is Up (This may take between 10-20 mins)
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    return_content: yes
+    validate_certs: no
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 200
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Ascender API is up"

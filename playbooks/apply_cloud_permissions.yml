@@ -14,22 +14,7 @@
   
   tasks: 
 
-    - name: "Install prerequisite packages on localhost"
+    - name: "Apply minimum permissions to install Ascender in a Kubernetes cluster of type {{ k8s_platform }}"
       ansible.builtin.include_role:
-        name: common
-
-
-- hosts: ascender
-  gather_facts: no
-  become: false
-
-  vars_files:
-    - ["../custom.config.yml", "../default.config.yml"]
-
-  tasks:
-
-    - name: Run k8s_setup role for {{ k8s_platform }}
-      ansible.builtin.include_role:
-        name: k8s_setup
-        tasks_from: "k8s_setup_{{ k8s_platform }}"
-      # when: kube_install 
+        name: apply_permissions
+        tasks_from: "apply_permissions_{{ k8s_platform }}"
