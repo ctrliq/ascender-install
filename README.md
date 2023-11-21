@@ -30,9 +30,7 @@ admins rejoice!
   - The [ansible inventory file](inventory) file needs to be changed
     to:
     - `ascender_host`
-      - `ansible_host` needs to be a set to a server that has
-        kubernetes cluster access or that you want kubernetes
-        installed on
+      - `ansible_host` needs to be a set to a server that hosts the [kube-apiserver](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/) kubernetes cluster access or that you want to eventually host the kube-apiserver.
       - `ansible_user` needs to set to a user that can escalate to
         root with `become` (if different than your logged in user)
       - A port needs to be open for SSH access (typically TCP port
@@ -42,16 +40,13 @@ admins rejoice!
   - [ansible-core][] will have to be installed, but the setup script
     will install it if it is not already there.
 - On `ascender_host`, the following is required:
-  - If Kubernetes is already installed.  You will need the
+  - If a Kubernetes cluster is already up, you will need the
     [kubeconfig][] file, located at `~/.kube/config`. The server IP
     address in the [cluster][] section of this file will determine the
     cluster where Ascender will be installed. This cluster must be up
     and running at the time of install.
-  - If Kubernetes is to be installed, then it will create the
+  - If a kubernetes cluster is to be set up, then the installer script it will create the
     kubeconfig for you automatically.
-  - Minimal System Requirements:
-    - CPUs: 2
-    - Memory: 8Gb (if installing both Ascender and Ledger)
 
 [ansible-core]: https://github.com/ansible/ansible
 [kubeconfig]: https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/
@@ -71,6 +66,8 @@ properly. While this file is comprehensive, you can find more
 platform-specific config file templates in the respective Kubernetes
 platform install instructions directory.
 
+Additionally, there is an executable script in this directory called [config_vars.sh](./config_vars.sh) that will generate a config file based on user input.
+
 The [**Uninstall**](#uninstall) section of this tutorial references
 two of the variables that need to be set:
 
@@ -85,6 +82,7 @@ description/proper usage directly present in the comments.
 ## Installation Instructions by Kubernetes Platform
 
 - [K3s](ascender-install-instructions/k3s/README.md)
+- [Elastic Kubernetes Service](ascender-install-instructions/eks/README.md)
 - [D2IQ Kubernetes Platform](ascender-install-instructions/dkp/README.md)
 
 ## Uninstall
