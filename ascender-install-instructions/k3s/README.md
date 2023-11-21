@@ -70,21 +70,21 @@ We will refer to this directory as the <ASCENDER-INSTALL-SOURCE> in the remainde
 
 ### Set the configuration variables for a K3s Install
 
-You can use the README.md in the ASCENDER-INSTALL-SOURCE directory as a K3s reference, but
-the file used by the `setup.sh` script must be located at in this path:
+#### custom.config.yml file
+
+You can run the bash script at 
 
 ```
-<ASCENDER-INSTALL-SOURCE>/default.config.yml
+< ASCENDER-INSTALL-SOURCE >/config_vars.sh
 ```
 
-Because these are instructions to install Ascender on a k3s single-node K3s cluster, you'll need set the value of kube_install variable 
-to from the default value of `false` to `true` in <ASCENDER-INSTALL-SOURCE>/default.config.yml
-
-Use your favorite text editor or the quick `sed` command below to quickly make the change inplace. 
+The script will take you through a series of questions, that will populate the variables file requires to install Ascender. This variables file will be located at:
 
 ```
-sed -i.bak 's/kube_install: false/kube_install: true/' default.config.yml
+< ASCENDER-INSTALL-SOURCE >/custom.config.yml
 ```
+
+Afterward, you can simply edit this file should you not want to run the script again before installing Ascender.
 
 ### Run the setup script
 

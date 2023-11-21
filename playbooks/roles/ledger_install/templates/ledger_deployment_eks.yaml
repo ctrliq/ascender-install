@@ -48,12 +48,11 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: parser-port
     port: 5000
     targetPort: 5000
-    nodePort: 30500
     protocol: TCP
   selector:
     io.kompose.service: parser
@@ -67,11 +66,10 @@ metadata:
   name: web-svc
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: web-port
     port: 80
-    nodePort: 30080
     targetPort: 80
   selector:
     io.kompose.service: web
@@ -79,33 +77,29 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  namespace: {{ LEDGER_NAMESPACE }}
-  name: ledger-web-ingress
   annotations:
-    kubernetes.io/ingress.class: "alb"
-    alb.ingress.kubernetes.io/scheme: "internet-facing"
-    alb.ingress.kubernetes.io/target-type: "ip"
-    alb.ingress.kubernetes.io/certificate-arn: {{ aws_cert_arn }}
-    alb.ingress.kubernetes.io/ssl-redirect: '{{ k8s_loadbalancer_port }}'
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":{{ k8s_loadbalancer_port }}}, {"HTTP":80}]'
+    alb.ingress.kubernetes.io/certificate-arn: {{ EKS_SSL_CERT }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/target-type: ip
+    kubernetes.io/ingress.class: alb
+  finalizers:
+  - ingress.k8s.aws/resources
+  name: ledger-web-ingress
+  namespace: {{ LEDGER_NAMESPACE }}
 spec:
   ingressClassName: alb
   rules:
-    - http:
-        paths:
-          # - path: /* # SSL Redirect Setting
-          #   backend:
-          #     service:
-          #       name: : ssl-redirect
-          #       port: 
-          #         name: use-annotation
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: web-svc
-                port:
-                  number: 80
+  - http:
+      paths:
+      - backend:
+          service:
+            name: web-svc
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -116,7 +110,6 @@ metadata:
   name: mysql-data
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  storageClassName: eks-standard
   accessModes:
   - ReadWriteOnce
   resources:
@@ -154,7 +147,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: registry.mnslab.io:5000/ciq/ledger-db:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -196,7 +189,7 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_parser_replicas }}
   selector:
     matchLabels:
       io.kompose.service: parser
@@ -215,7 +208,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-parser:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -244,7 +237,7 @@ metadata:
   name: web
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_web_replicas }}
   selector:
     matchLabels:
       io.kompose.service: web
@@ -263,7 +256,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-web:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:
@@ -332,12 +325,11 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: parser-port
     port: 5000
     targetPort: 5000
-    nodePort: 30500
     protocol: TCP
   selector:
     io.kompose.service: parser
@@ -351,11 +343,10 @@ metadata:
   name: web-svc
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
   - name: web-port
     port: 80
-    nodePort: 30080
     targetPort: 80
   selector:
     io.kompose.service: web
@@ -363,24 +354,26 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  namespace: {{ LEDGER_NAMESPACE }}
-  name: ledger-web-ingress
   annotations:
-    kubernetes.io/ingress.class: "alb"
-    alb.ingress.kubernetes.io/scheme: "internet-facing"
-    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    kubernetes.io/ingress.class: alb
+  finalizers:
+  - ingress.k8s.aws/resources
+  name: ledger-web-ingress
+  namespace: {{ LEDGER_NAMESPACE }}
 spec:
   ingressClassName: alb
   rules:
-    - http:
-        paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: web-svc
-              port:
-                number: 80
+  - http:
+      paths:
+      - backend:
+          service:
+            name: web-svc
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -391,7 +384,6 @@ metadata:
   name: mysql-data
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  storageClassName: eks-standard
   accessModes:
   - ReadWriteOnce
   resources:
@@ -429,7 +421,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: registry.mnslab.io:5000/ciq/ledger-db:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -471,7 +463,7 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_parser_replicas }}
   selector:
     matchLabels:
       io.kompose.service: parser
@@ -490,7 +482,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-parser:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -519,7 +511,7 @@ metadata:
   name: web
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  replicas: 1
+  replicas: {{ ledger_web_replicas }}
   selector:
     matchLabels:
       io.kompose.service: web
@@ -538,7 +530,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: registry.mnslab.io:5000/ciq/ledger-web:{{ LEDGER_VERSION }}
+        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:
