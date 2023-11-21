@@ -1,0 +1,36 @@
+- name: Query for aws account number
+  amazon.aws.aws_caller_info:
+  register: caller_info
+  no_log: true
+
+- name: Add AWS Managed Policies
+  amazon.aws.iam_user:
+    name: "{{ EKS_USER }}"
+    managed_policies:
+      - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+      - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+    state: present
+
+- name: Apply EKS All Access Policy
+  amazon.aws.iam_policy:
+    iam_type: user
+    iam_name: "{{ EKS_USER }}"
+    policy_name: "ascender_eks_all_access"
+    state: present
+    policy_json: "{{ lookup('template', 'templates/eks/iam_policies/eksallaccess.json') }}"
+
+- name: Apply IAM Limited Access Policy
+  amazon.aws.iam_policy:
+    iam_type: user
+    iam_name: "{{ EKS_USER }}"
+    policy_name: "ascender_iam_limited_access"
+    state: present
+    policy_json: "{{ lookup('template', 'templates/eks/iam_policies/iamlimitedaccess.json') }}"
+
+- name: Apply Remaining Ascender Install Policies
+  amazon.aws.iam_policy:
+    iam_type: user
+    iam_name: "{{ EKS_USER }}"
+    policy_name: "ascender_install_permissions"
+    state: present
+    policy_json: "{{ lookup('template', 'templates/eks/iam_policies/ascenderinstallpermissions.json') }}"
