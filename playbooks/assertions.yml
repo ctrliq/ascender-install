@@ -15,6 +15,7 @@
         that:
           - LEDGER_HOSTNAME != ASCENDER_HOSTNAME
         fail_msg: "LEDGER_HOSTNAME ({{ LEDGER_HOSTNAME }}) and ASCENDER_HOSTNAME ({{ ASCENDER_HOSTNAME }}) must be different"
+      when: LEDGER_HOSTNAME is defined
 
 - hosts: ascender
   gather_facts: yes
