@@ -83,6 +83,7 @@ description/proper usage directly present in the comments.
 
 - [K3s](ascender-install-instructions/k3s/README.md)
 - [Elastic Kubernetes Service](ascender-install-instructions/eks/README.md)
+- [RKE Government](ascender-install-instructions/rke2/README.md)
 - [D2IQ Kubernetes Platform](ascender-install-instructions/dkp/README.md)
 
 ## Uninstall
