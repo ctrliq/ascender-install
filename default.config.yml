@@ -8,6 +8,10 @@ k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
 k8s_lb_protocol: http #options include http and https
 
+# Routable IP address for the K8s API Server
+# (This could be a Load Balancer if using 3 K8s control nodes)
+kubeapi_server_ip: "127.0.0.1"
+
 # ---k3s variables---
 
 # Sets up a new k3s cluster when set to true
