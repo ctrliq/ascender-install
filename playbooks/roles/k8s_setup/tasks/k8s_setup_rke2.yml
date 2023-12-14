@@ -1,0 +1,129 @@
+- name: Wait 600 seconds for target connection to become reachable/usable
+  ansible.builtin.wait_for_connection:
+  delay: 15
+
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+##TODO if the rke2 service is running and kubeinstall is false, just grab the kubeconfig file
+
+# - name: Ensure that the /etc/rancher/rke2 directory exists on the worker node
+#   ansible.builtin.file:
+#     path: /etc/rancher/rke2
+#     state: directory
+#   become: true
+
+# - name: Check if the /etc/rancher/rke2/config.yaml exists
+#   ansible.builtin.stat:
+#     path: /etc/rancher/rke2/config.yaml
+#   register: config_status
+
+# - name: Create /etc/rancher/rke2/config.yaml if it does not exist
+#   ansible.builtin.template:
+#     src: rke2/config.yaml
+#     dest: /etc/rancher/rke2/config.yaml
+#   when: not config_status.stat.exists
+
+# - name: Add config template to the end of /etc/rancher/rke2/config.yaml
+#   ansible.builtin.blockinfile: 
+#     state: present
+#     insertafter: EOF
+#     dest: /etc/services
+#     block: "{{ lookup('template', 'rke2/config.yaml') }}"
+#   when: config_status.stat.exists
+
+- name: Stop firewall service
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: false
+  when: "'firewalld.service' in services"
+
+# - name: Install K3s (this may take up to 5 minutes)
+#   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
+#   when:
+#     - kube_install
+#     - "'k3s.service' not in services"
+
+# - name: Ensure that ~/.kube directory exists
+#   ansible.builtin.file:
+#     path: ~/.kube
+#     state: directory
+#   delegate_to: localhost
+
+- name: Copy kubeconfig file from default location to the ~/.kube directory"
+  ansible.builtin.fetch:
+    src: /etc/rancher/rke2/rke2.yaml
+    dest: ~/.kube/config
+    flat: true
+  become: true
+
+- name: "Replace the kubeconfig cluster kube-api server IP with the public IP address, if the cluster is remote "
+  ansible.builtin.replace:
+    path: ~/.kube/config
+    regexp: '127.0.0.1'
+    replace: "{{ kubeapi_server_ip }}"
+  delegate_to: localhost
+  when: ansible_host != "localhost"
+  run_once: true
+  
+- name: Get a list of all nodes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    validate_certs: false
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+- name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ ASCENDER_HOSTNAME }}"
+    line: "{{ kubeapi_server_ip }}   {{ ASCENDER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: use_etc_hosts
+
+# # - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
+# #   ansible.builtin.lineinfile:
+# #     path: /etc/hosts
+# #     regexp: "{{ ASCENDER_HOSTNAME }}"
+# #     state: absent
+# #     owner: root
+# #     group: root
+# #     mode: '0644'
+# #   become: true
+# #   delegate_to: localhost
+# #   when: not use_etc_hosts
+
+- name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ LEDGER_HOSTNAME }}"
+    line: "{{ kubeapi_server_ip }}   {{ LEDGER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: 
+    - use_etc_hosts
+    - LEDGER_INSTALL
+    
+# # - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
+# #   ansible.builtin.lineinfile:
+# #     path: /etc/hosts
+# #     regexp: "{{ LEDGER_HOSTNAME }}"
+# #     state: absent
+# #     owner: root
+# #     group: root
+# #     mode: '0644'
+# #   become: true
+# #   delegate_to: localhost
+# #   when: 
+# #     - not use_etc_hosts
+# #     - LEDGER_INSTALL

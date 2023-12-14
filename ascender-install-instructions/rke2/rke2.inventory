@@ -1,0 +1,11 @@
+[localhost]
+localhost ansible_host=localhost ansible_connection=local
+
+[ascender]
+ascender_host ansible_host=localhost ansible_connection=local
+
+[ascender_workers]
+# ascender_worker_1 ansible_host=x.x.x.x ansible_user=user ansible_ssh_pass=password
+# ascender_worker_1 ansible_host=x.x.x.x ansible_user=user ansible_ssh_private_key_file=~/.ssh/key.pem
+# ascender_worker_2 ansible_host=x.x.x.x ansible_user=user ansible_ssh_pass=password
+# ascender_worker_2 ansible_host=x.x.x.x ansible_user=user ansible_ssh_private_key_file=~/.ssh/key.pem

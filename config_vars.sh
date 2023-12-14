@@ -4,7 +4,7 @@ rm ./custom.config.yml
 
 # k8s_platform
 echo $'\n'
-platforms=(k3s eks dkp)
+platforms=(k3s eks rke2 dkp)
 selected=()
 PS3='Select the number of the Kubernetes platform you are using to install Ascender: '
 select name in "${platforms[@]}" ; do
@@ -61,6 +61,16 @@ if [ $k8s_platform == "k3s" ]; then
    echo "# Routable IP address for the K3s Master/Worker node" >> custom.config.yml
    echo "# required for DNS and k3s install" >> custom.config.yml
    echo "k3s_master_node_ip: "\"$k3s_master_node_ip\" >> custom.config.yml
+fi
+
+# kubeapi_server_ip
+if [ $k8s_platform == "rke2" ]; then
+   echo $'\n'
+   read -p "Routable IP address for the K8s API Server (This could be a Load Balancer if using 3 K8s control nodes) [127.0.0.1]: " k8s_api_srvr_ip
+   kubeapi_server_ip=${k8s_api_srvr_ip:-127.0.0.1}
+   echo "# Routable IP address for the K8s API Server" >> custom.config.yml
+   echo "# (This could be a Load Balancer if using 3 K8s control nodes)" >> custom.config.yml
+   echo "kubeapi_server_ip: "\"$kubeapi_server_ip\" >> custom.config.yml
 fi
 
 if [ $k8s_platform == "eks" ]; then
@@ -193,7 +203,7 @@ if [ $k8s_platform == "dkp" ]; then
    echo "# The name of the dkp cluster you wish to deploy Ascender to and/or create" >> custom.config.yml
    echo "DKP_CLUSTER_NAME: "$dkp_cluster_name >> custom.config.yml
 fi
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2") ]]; then
    u_etc_hosts=(true false)
    selected=()
    PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender:'
@@ -208,13 +218,13 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) ]]; then
    echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
 fi
 
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) && $k8s_lb_protocol == "https" ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
    echo $'\n'
    read -p "TLS Certificate file location on the local installing machine [~/ascender.crt]:" t_cert_path
    tls_cert_path=${t_cert_path:-~/ascender.crt} 
    echo "# TLS Certificate file location on the local installing machine" >> custom.config.yml
-   echo "tls_cert_path: "\"$tls_cert_path\" >> custom.config.yml
+   echo "tls_crt_path: "\"$tls_cert_path\" >> custom.config.yml
 
    #tls_key_path
    echo $'\n'
@@ -397,72 +407,74 @@ echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
 # echo "# Determines whether or not Ledger will be installed" >> custom.config.yml
 # echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
 
-# LEDGER_HOSTNAME
-echo $'\n'
-read -p "DNS resolvable hostname for Ledger service. This is required for install [ledger.example.com]: " l_hostname
-ledger_hostname=${l_hostname:-ledger.example.com}
-echo "# DNS resolvable hostname for Ledger service. This is required for install" >> custom.config.yml
-echo "LEDGER_HOSTNAME: "$ledger_hostname >> custom.config.yml
+if [ $ledger_install == "true" ]; then
+    # LEDGER_HOSTNAME
+    echo $'\n'
+    read -p "DNS resolvable hostname for Ledger service. This is required for install [ledger.example.com]: " l_hostname
+    ledger_hostname=${l_hostname:-ledger.example.com}
+    echo "# DNS resolvable hostname for Ledger service. This is required for install" >> custom.config.yml
+    echo "LEDGER_HOSTNAME: "$ledger_hostname >> custom.config.yml
 
-# LEDGER_WEB_IMAGE
-echo $'\n'
-read -p "The OCI container image for Ledger [ghcr.io/ctrliq/ascender-ledger/ledger-web]: " l_web_image
-ledger_web_image=${l_web_image:-ghcr.io/ctrliq/ascender-ledger/ledger-web}
-echo "# The OCI container image for Ledger" >> custom.config.yml
-echo "LEDGER_WEB_IMAGE: "$ledger_web_image >> custom.config.yml
+    # LEDGER_WEB_IMAGE
+    echo $'\n'
+    read -p "The OCI container image for Ledger [ghcr.io/ctrliq/ascender-ledger/ledger-web]: " l_web_image
+    ledger_web_image=${l_web_image:-ghcr.io/ctrliq/ascender-ledger/ledger-web}
+    echo "# The OCI container image for Ledger" >> custom.config.yml
+    echo "LEDGER_WEB_IMAGE: "$ledger_web_image >> custom.config.yml
 
-# ledger_web_replicas
-echo $'\n'
-read -p "Number of replicas for the Ledger web container [1]: " l_web_replicas
-ledger_web_replicas=${l_web_replicas:-1}
-echo "# Number of replicas for the Ledger web container" >> custom.config.yml
-echo "ledger_web_replicas: "$ledger_web_replicas >> custom.config.yml
+    # ledger_web_replicas
+    echo $'\n'
+    read -p "Number of replicas for the Ledger web container [1]: " l_web_replicas
+    ledger_web_replicas=${l_web_replicas:-1}
+    echo "# Number of replicas for the Ledger web container" >> custom.config.yml
+    echo "ledger_web_replicas: "$ledger_web_replicas >> custom.config.yml
 
-# LEDGER_PARSER_IMAGE
-echo $'\n'
-read -p "The OCI container image for Ledger Parser [ghcr.io/ctrliq/ascender-ledger/ledger-parser]: " l_parser_image
-ledger_parser_image=${l_parser_image:-ghcr.io/ctrliq/ascender-ledger/ledger-parser}
-echo "# The OCI container image for Ledger Parser" >> custom.config.yml
-echo "LEDGER_PARSER_IMAGE: "$ledger_parser_image >> custom.config.yml
+    # LEDGER_PARSER_IMAGE
+    echo $'\n'
+    read -p "The OCI container image for Ledger Parser [ghcr.io/ctrliq/ascender-ledger/ledger-parser]: " l_parser_image
+    ledger_parser_image=${l_parser_image:-ghcr.io/ctrliq/ascender-ledger/ledger-parser}
+    echo "# The OCI container image for Ledger Parser" >> custom.config.yml
+    echo "LEDGER_PARSER_IMAGE: "$ledger_parser_image >> custom.config.yml
 
-# ledger_parser_replicas
-echo $'\n'
-read -p "Number of replicas for the Ledger Parser container [1]: " l_parser_replicas
-ledger_parser_replicas=${l_parser_replicas:-1}
-echo "# Number of replicas for the Ledger Parser container" >> custom.config.yml
-echo "ledger_parser_replicas: "$ledger_parser_replicas >> custom.config.yml
+    # ledger_parser_replicas
+    echo $'\n'
+    read -p "Number of replicas for the Ledger Parser container [1]: " l_parser_replicas
+    ledger_parser_replicas=${l_parser_replicas:-1}
+    echo "# Number of replicas for the Ledger Parser container" >> custom.config.yml
+    echo "ledger_parser_replicas: "$ledger_parser_replicas >> custom.config.yml
 
-# LEDGER_DB_IMAGE
-echo $'\n'
-read -p "The OCI container image for Ledger DB [ghcr.io/ctrliq/ascender-ledger/ledger-db]: " l_db_image
-ledger_db_image=${l_db_image:-ghcr.io/ctrliq/ascender-ledger/ledger-db}
-echo "# The OCI container image for Ledger DB" >> custom.config.yml
-echo "LEDGER_DB_IMAGE: "$ledger_db_image >> custom.config.yml
+    # LEDGER_DB_IMAGE
+    echo $'\n'
+    read -p "The OCI container image for Ledger DB [ghcr.io/ctrliq/ascender-ledger/ledger-db]: " l_db_image
+    ledger_db_image=${l_db_image:-ghcr.io/ctrliq/ascender-ledger/ledger-db}
+    echo "# The OCI container image for Ledger DB" >> custom.config.yml
+    echo "LEDGER_DB_IMAGE: "$ledger_db_image >> custom.config.yml
 
-# LEDGER_VERSION
-echo $'\n'
-read -p "The image tag indicating the version of Ledger you wish to install [latest]: " l_version
-ledger_version=${l_version:-latest}
-echo "# The image tag indicating the version of Ledger you wish to install" >> custom.config.yml
-echo "LEDGER_VERSION: "$ledger_version >> custom.config.yml
+    # LEDGER_VERSION
+    echo $'\n'
+    read -p "The image tag indicating the version of Ledger you wish to install [latest]: " l_version
+    ledger_version=${l_version:-latest}
+    echo "# The image tag indicating the version of Ledger you wish to install" >> custom.config.yml
+    echo "LEDGER_VERSION: "$ledger_version >> custom.config.yml
 
-# LEDGER_NAMESPACE
-echo $'\n'
-read -p "The Kubernetes namespace in which Ledger objects will live [ledger]: " l_namespace
-ledger_namespace=${l_namespace:-ledger}
-echo "# The Kubernetes namespace in which Ledger objects will live" >> custom.config.yml
-echo "LEDGER_NAMESPACE: "$ledger_namespace >> custom.config.yml
+    # LEDGER_NAMESPACE
+    echo $'\n'
+    read -p "The Kubernetes namespace in which Ledger objects will live [ledger]: " l_namespace
+    ledger_namespace=${l_namespace:-ledger}
+    echo "# The Kubernetes namespace in which Ledger objects will live" >> custom.config.yml
+    echo "LEDGER_NAMESPACE: "$ledger_namespace >> custom.config.yml
 
-# LEDGER_ADMIN_PASSWORD
-echo $'\n'
-read -p "Admin password for Ledger [myadminpassword]: " l_admin_password
-ledger_admin_password=${l_admin_password:-myadminpassword}
-echo "# Admin password for Ledger (the username is admin by default)" >> custom.config.yml
-echo "LEDGER_ADMIN_PASSWORD: "$ledger_admin_password >> custom.config.yml
+    # LEDGER_ADMIN_PASSWORD
+    echo $'\n'
+    read -p "Admin password for Ledger [myadminpassword]: " l_admin_password
+    ledger_admin_password=${l_admin_password:-myadminpassword}
+    echo "# Admin password for Ledger (the username is admin by default)" >> custom.config.yml
+    echo "LEDGER_ADMIN_PASSWORD: "$ledger_admin_password >> custom.config.yml
 
-# LEDGER_DB_PASSWORD
-echo $'\n'
-read -p "Password for Ledger database [mydbpassword]: " l_db_password
-ledger_db_password=${l_db_password:-mydbpassword}
-echo "# Password for Ledger database" >> custom.config.yml
-echo "LEDGER_DB_PASSWORD: "$ledger_db_password >> custom.config.yml
+    # LEDGER_DB_PASSWORD
+    echo $'\n'
+    read -p "Password for Ledger database [mydbpassword]: " l_db_password
+    ledger_db_password=${l_db_password:-mydbpassword}
+    echo "# Password for Ledger database" >> custom.config.yml
+    echo "LEDGER_DB_PASSWORD: "$ledger_db_password >> custom.config.yml
+fi

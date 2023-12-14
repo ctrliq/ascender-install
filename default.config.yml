@@ -86,6 +86,14 @@ EKS_EBS_CSI_DRIVER_VERSION: "v1.24.0"
 # NOTE: This must be done while pointing to the DKP Bootstrap Cluster
 DKP_CLUSTER_NAME: dkp-cluster
 
+# ---rke2 variables---
+
+# The URL to the binary file rke2.linux-amd64. If you want to choose a different 
+# release, you can choose here:
+# https://github.com/rancher/rke2/releases
+RKE2_BINARY_URL: https://github.com/rancher/rke2/releases/download/v1.25.16%2Brke2r1/rke2.linux-amd64
+
+
 # ---Local artifact variables---
 
 # TLS Certificate file, required when deploying HTTPS in K3s
