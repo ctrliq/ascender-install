@@ -290,15 +290,15 @@ echo "ASCENDER_IMAGE: "$ascender_image >> custom.config.yml
 # ASCENDER_VERSION
 echo $'\n'
 echo "# The image tag indicating the version of Ascender you wish to install" >> custom.config.yml
-read -p "The image tag indicating the version of Ascender you wish to install [23.3.1]: " a_version
-ascender_version=${a_version:-23.3.1}
+read -p "The image tag indicating the version of Ascender you wish to install [23.5.1]: " a_version
+ascender_version=${a_version:-23.5.1}
 echo "ASCENDER_VERSION: "$ascender_version >> custom.config.yml
 
 # ANSIBLE_OPERATOR_VERSION
 echo $'\n'
 echo "# The version of the AWX Operator used to install Ascender and its components" >> custom.config.yml
-read -p "The version of the AWX Operator used to install Ascender and its components [2.7.0]: " a_operator_version
-ascender_operator_version=${a_version:-2.7.0}
+read -p "The version of the AWX Operator used to install Ascender and its components [2.9.0]: " a_operator_version
+ascender_operator_version=${a_version:-2.9.0}
 echo "ANSIBLE_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
 
 # ascender_garbage_collect_secrets
