@@ -173,7 +173,7 @@ To ensure access to the Ascender and Ledger GUIs, ensure that the `ASCENDER_HOST
 127.0.0.1	localhost
 255.255.255.255	broadcasthost
 ::1             localhost
-`kubeapi_server_ip`     `ASCENDER_HOSTNAME`
+<kubeapi_server_ip>     <ASCENDER_HOSTNAME>
 ```
 Afterward, ou can visit/Browse/Administer your Ascender instance by pointing your web browser to:
 
