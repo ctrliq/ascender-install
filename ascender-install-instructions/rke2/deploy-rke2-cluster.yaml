@@ -1,0 +1,60 @@
+- name: Deploy RKE2
+  hosts: all
+  become: yes
+  vars:
+    # RKE2 version
+    # All releases at:
+    # https://github.com/rancher/rke2/releases
+    rke2_version: v1.28.4+rke2r1
+    # RKE2 channel
+    rke2_channel: stable
+    # Architecture to be downloaded, currently there are releases for amd64 and s390x
+    rke2_architecture: amd64
+    # Changes the deploy strategy to install based on local artifacts
+    rke2_airgap_mode: true
+    # Airgap implementation type - download, copy or exists
+# - 'download' will fetch the artifacts on each node,
+# - 'copy' will transfer local files in 'rke2_artifact' to the nodes,
+# - 'exists' assumes 'rke2_artifact' files are already stored in 'rke2_artifact_path'
+    rke2_airgap_implementation: download
+    # Additional RKE2 server configuration options
+    rke2_server_options:
+      - "disable-cloud-controller: true"
+      - "kubelet-arg:"  
+      - "  - \"cloud-provider=external\""
+      - "  - \"provider-id=vsphere://$master_node_id\""
+    # Additional RKE2 agent configuration options
+    rke2_agent_options:
+      - "disable-cloud-controller: true"
+      - "kubelet-arg:"
+      - "  - \"cloud-provider=external\""
+      - "  - \"provider-id=vsphere://$worker_id\""
+    # Pre-shared secret token that other server or agent nodes will register with when connecting to the cluster
+    rke2_token: defaultSecret12345
+    # Deploy RKE2 with default CNI canal
+    rke2_cni: canal
+    # Local source path where artifacts are stored
+    rke2_airgap_copy_sourcepath: /tmp/rke2_artifacts
+    # Local path to store artifacts
+    rke2_artifact_path: /var/tmp/rke2_artifacts
+    # Airgap required artifacts
+    rke2_artifact: 
+      - sha256sum-{{ rke2_architecture }}.txt
+      - rke2.linux-{{ rke2_architecture }}.tar.gz
+      - rke2-images.linux-{{ rke2_architecture }}.tar.zst
+    # Download Kubernetes config file to the Ansible controller
+    rke2_download_kubeconf: true
+    # Name of the Kubernetes config file will be downloaded to the Ansible controller
+    rke2_download_kubeconf_file_name: config
+    # Destination directory where the Kubernetes config file will be downloaded to the Ansible controller
+    rke2_download_kubeconf_path: ~/.kube
+    # rke2_airgap_copy_additional_tarballs:
+    #   - rke2-images-multus.linux-{{ rke2_architecture }}.tar.gz
+    #   - rke2-images-multus.linux-{{ rke2_architecture }}.tar.zst
+    #   - rke2-images-multus.linux-{{ rke2_architecture }}.txt
+    #   - rke2-images-calico.linux-{{ rke2_architecture }}.tar.gz
+    #   - rke2-images-calico.linux-{{ rke2_architecture }}.tar.zst
+    #   - rke2-images-calico.linux-{{ rke2_architecture }}.txt
+    
+  roles:
+     - role: lablabs.rke2
