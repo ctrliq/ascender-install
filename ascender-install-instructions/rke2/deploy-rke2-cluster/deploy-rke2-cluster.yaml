@@ -13,9 +13,9 @@
     # Changes the deploy strategy to install based on local artifacts
     rke2_airgap_mode: true
     # Airgap implementation type - download, copy or exists
-# - 'download' will fetch the artifacts on each node,
-# - 'copy' will transfer local files in 'rke2_artifact' to the nodes,
-# - 'exists' assumes 'rke2_artifact' files are already stored in 'rke2_artifact_path'
+    # - 'download' will fetch the artifacts on each node,
+    # - 'copy' will transfer local files in 'rke2_artifact' to the nodes,
+    # - 'exists' assumes 'rke2_artifact' files are already stored in 'rke2_artifact_path'
     rke2_airgap_implementation: download
     # Additional RKE2 server configuration options
     rke2_server_options:
