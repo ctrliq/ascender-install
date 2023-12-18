@@ -17,12 +17,73 @@ If you have not done so already, be sure to follow the general
 prerequisites found in the [Ascender-Install main
 README](../../README.md#general-prerequisites)
 
+## RKE2 Preamble
+
+- RKE2, also known as RKE Government, is a Kubernetes distribution from Rancher that is focused on compliance with the U.S. Federal Government Sector. As such, these instructions are primarily focused on installing Ascender into an on-premise environment that may have no public internet access.
+  - More details on RKE2 and how it it uniquely suited to Public Sector can be found at Rancher's Introduction website for [RKE2](https://docs.rke2.io/).
+- If you do not yet have an RKE2 Cluster, [Labrinth Labs](https://lablabs.io/) has developed together an Ansible role that can be used to set up a cluster of any size that is incredibly well-documented. 
+  - The role URL is here: [RKE2 Ansible Role](https://github.com/lablabs/ansible-role-rke2)
+  - The example playbook used by the CIQ team in order to create a cluster with one control plane host, is in this repository, but is copied here for easy access:
+
+  ```
+  - name: Deploy RKE2
+  hosts: all
+  become: yes
+  vars:
+    # RKE2 version
+    # All releases at:
+    # https://github.com/rancher/rke2/releases
+    rke2_version: v1.28.4+rke2r1
+    # RKE2 channel
+    rke2_channel: stable
+    # Architecture to be downloaded, currently there are releases for amd64 and s390x
+    rke2_architecture: amd64
+    # Changes the deploy strategy to install based on local artifacts
+    rke2_airgap_mode: true
+    # Airgap implementation type - download, copy or exists
+    # - 'download' will fetch the artifacts on each node,
+    # - 'copy' will transfer local files in 'rke2_artifact' to the nodes,
+    # - 'exists' assumes 'rke2_artifact' files are already stored in 'rke2_artifact_path'
+    rke2_airgap_implementation: download
+    # Additional RKE2 server configuration options
+    rke2_server_options:
+      - "disable-cloud-controller: true"
+      - "kubelet-arg:"  
+      - "  - \"cloud-provider=external\""
+      - "  - \"provider-id=vsphere://$master_node_id\""
+    # Additional RKE2 agent configuration options
+    rke2_agent_options:
+      - "disable-cloud-controller: true"
+      - "kubelet-arg:"
+      - "  - \"cloud-provider=external\""
+      - "  - \"provider-id=vsphere://$worker_id\""
+    # Pre-shared secret token that other server or agent nodes will register with when connecting to the cluster
+    rke2_token: defaultSecret12345
+    # Deploy RKE2 with default CNI canal
+    rke2_cni: canal
+    # Local source path where artifacts are stored
+    rke2_airgap_copy_sourcepath: /tmp/rke2_artifacts
+    # Local path to store artifacts
+    rke2_artifact_path: /var/tmp/rke2_artifacts
+    # Airgap required artifacts
+    rke2_artifact: 
+      - sha256sum-{{ rke2_architecture }}.txt
+      - rke2.linux-{{ rke2_architecture }}.tar.gz
+      - rke2-images.linux-{{ rke2_architecture }}.tar.zst
+    # Download Kubernetes config file to the Ansible controller
+    rke2_download_kubeconf: true
+    # Name of the Kubernetes config file will be downloaded to the Ansible controller
+    rke2_download_kubeconf_file_name: config
+    # Destination directory where the Kubernetes config file will be downloaded to the Ansible controller
+    rke2_download_kubeconf_path: ~/.kube
+    
+  roles:
+     - role: lablabs.rke2
+  ```
+
 ## RKE2-specific Prerequisites
 
-- NOTE: The K3s install of Ascender is not yet meant for production,
-  but rather as a sandbox on which to try Ascender. As such, the
-  Installer expects a single-node K3s cluster which will act as both
-  master and worker node.
+- 
 - Operating System Requirements for the k3s server:
   - The OS Family must be the same as Rocky Linux (indicated by the ansible_os_family ansible fact), and the major version must be 8 or 9.
     - While this includes other distributions, the installer is primarily tested with Rocky Linux
