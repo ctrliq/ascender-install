@@ -14,7 +14,7 @@ kubeapi_server_ip: "127.0.0.1"
 
 # ---k3s variables---
 
-# Sets up a new k3s cluster when set to true
+# Sets up a new k3s or k8s cluster when set to true
 kube_install: false
 
 # IP address for the K3s Master/Worker node
