@@ -23,7 +23,8 @@ README](../../README.md#general-prerequisites)
   - More details on RKE2 and how it it uniquely suited to Public Sector can be found at Rancher's Introduction website for [RKE2](https://docs.rke2.io/).
 - If you do not yet have an RKE2 Cluster, [Labrinth Labs](https://lablabs.io/) has developed together an Ansible role that can be used to set up a cluster of any size that is incredibly well-documented. 
   - The role URL is here: [RKE2 Ansible Role](https://github.com/lablabs/ansible-role-rke2)
-  - The example playbook used by the CIQ team in order to create a cluster with one control plane host, is in this repository, but is copied here for easy access:
+  - 
+  - The example playbook used by the CIQ team in order to create a cluster with one control plane host, is in [this repository](./deploy-rke2-cluster/deploy-rke2-cluster.yaml), but is copied here for easy access:
 
       ```
       - name: Deploy RKE2
@@ -77,28 +78,19 @@ README](../../README.md#general-prerequisites)
         # Destination directory where the Kubernetes config file will be downloaded to the Ansible controller
         rke2_download_kubeconf_path: ~/.kube
     
-  roles:
-     - role: lablabs.rke2
+      roles:
+        - role: lablabs.rke2
   ```
+- The installer was run against a vSphere cluster, and if you elect to do the same, you will need to set up the vSphere Container Storage Plug-in in your RKE2 cluster. Detailed instructions from VMWare can be found at this URL: [Installation of vSphere Container Storage Plug-in](https://docs.vmware.com/en/VMware-vSphere-Container-Storage-Plug-in/3.0/vmware-vsphere-csp-getting-started/GUID-0AB6E692-AA47-4B6A-8CEA-38B754E16567.html)
+
 
 ## RKE2-specific Prerequisites
 
-- 
-- Operating System Requirements for the k3s server:
-  - The OS Family must be the same as Rocky Linux (indicated by the ansible_os_family ansible fact), and the major version must be 8 or 9.
-    - While this includes other distributions, the installer is primarily tested with Rocky Linux
-- Minimal System Requirements for the k3s server:
+- These instructions assume that you either have an existing RKE2 cluster, and have the `kubeconfig` file necessary to access it, at `~/.kube/config`
+- Minimal System Requirements for installing Ascender and Ledger on RKE2:
   - CPUs: 2
   - Memory: 8Gb (if installing both Ascender and Ledger)
   - 20GB of free disk (for Ascender and Ledger Volumes)
-- These instructions accomodate both an existing K3s cluster, and will
-  set one up on your behalf if needed. This behavior is determined by
-  the variable `kube_install`
-  - If `kube_install` is set to true, the installer will set up K3s on
-    the `ascender_host`in the inventory file. (`ascender_host` can be
-    localhost)
-  - If `kube_install` is set to false, the installer will not perform
-    a K3s install
 - SSL Certificate and Key
   - To enable HTTPS on your website, you need to provide the Ascender
     installer with an SSL Certificate file, and a Private Key
@@ -129,7 +121,7 @@ This will create a directory named `ascender-install` in your present working di
 
 We will refer to this directory as the <ASCENDER-INSTALL-SOURCE> in the remainder of this instructions.
 
-### Set the configuration variables for a K3s Install
+### Set the configuration variables for a RKE2 Install
 
 #### custom.config.yml file
 
@@ -173,41 +165,21 @@ ASCENDER SUCCESSFULLY SETUP
 
 ### Connecting to Ascender Web UI
 
-This is a quick and temporary work-around for connecting to your new Ascender installation. 
-By default the Ascender web service is accessible over its internal CLUSTER IP address. 
-You can use SSH forwarding from any remote host to connect to the internal CLUSTER IP.
+The Ascender and Ledger web UIs are served from the `kubeapi_server_ip` specified in the config file used in the Ascender installer, and together with the Ingress object for Ascender and Legder, will give access to the respective GUIs.
 
-For the example here, you'll use the kubectl utility to query for the CLUSTER IP and store the value in a variable named "ASCENDER_WEB_INTERNAL_IP". 
-
-While still logged on to the server running Ascender, type:
+To ensure access to the Ascender and Ledger GUIs, ensure that the `ASCENDER_HOSTNAME` resolves to `kubeapi_server_ip` with a DNS query. If the IP address is not being served by a DNS server, you will have to add that rule locally on the server you are using to connect to the Ascender GUI. For example, on a Mac, the file `/private/etc/hosts` would need the following line added:
 
 ```
-export ASCENDER_WEB_INTERNAL_IP=$(kubectl -n ascender get service/ascender-app-service -o jsonpath='{.spec.clusterIP}')
+127.0.0.1	localhost
+255.255.255.255	broadcasthost
+::1             localhost
+`kubeapi_server_ip`     `ASCENDER_HOSTNAME`
 ```
+Afterward, ou can visit/Browse/Administer your Ascender instance by pointing your web browser to:
 
-To see the value of ASCENDER_WEB_INTERNAL_IP type:
-
-```
-echo $ASCENDER_WEB_INTERNAL_IP
-```
-
-Now, to use SSH forwarding to connect to your Ascender installation from any remote workstation you can use a command like:
-
-```
-$ ssh -L 80:<ASCENDER_WEB_INTERNAL_IP>:80   user@ASCENDER_SERVER_IP
-```
-
-For example, if your the value of $ASCENDER_WEB_INTERNAL_IP is `10.43.9.224`, and the ASCENDER_SERVER_IP is `1.2.3.4`, the full command to connect as the root user will be:
-
-```
-$ ssh -L 80:10.43.9.224:80 root@1.2.3.4
-```
-
-With forwarding successfully, you can visit/Browse/Administer your Ascender instance by pointing your web browser to:
-
-https://localhost
+https://<ASCENDER_HOSTNAME>
 
 
-Username is "Admin" and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/default.config.yml under the `ASCENDER_ADMIN_PASSWORD` variable.
+The username and the corresponding password are stored in <ASCENDER-INSTALL-SOURCE>/default.config.yml (or <ASCENDER-INSTALL-SOURCE>/custom.config.yml) under the `ASCENDER_ADMIN_USER` and `ASCENDER_ADMIN_PASSWORD` variable, respectively.
 
 
