@@ -20,11 +20,11 @@ echo "---"$'\n'"# This variable specificies which Kubernetes platform Ascender a
 echo "k8s_platform: "$k8s_platform >> custom.config.yml
 
 # kube_install
-if [ $k8s_platform == "k3s" ]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2" ) ]]; then
    echo $'\n'
    k_install=(true false)
       selected=()
-      PS3='Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false): '
+      PS3='Boolean indicating whether to set up a new k3s or on premise k8s cluster (true) or use an existing k3s cluster (false): '
       select name in "${k_install[@]}" ; do
           for reply in $REPLY ; do
               selected+=(${k_install[reply - 1]})
