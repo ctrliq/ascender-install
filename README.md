@@ -58,7 +58,7 @@ admins rejoice!
   access. If not specified, the AWX Operator responsible for
   installing Ascender will create a managed PostgreSQL server.
 
-## Configuration File
+## Configuration File and Inventory
 
 There is a [default configuration file](default.config.yml) that will
 hold all of the options required to set up your installation
@@ -66,7 +66,11 @@ properly. While this file is comprehensive, you can find more
 platform-specific config file templates in the respective Kubernetes
 platform install instructions directory.
 
-Additionally, there is an executable script in this directory called [config_vars.sh](./config_vars.sh) that will generate a config file based on user input.
+Additionally, there is an executable script in this directory called [config_vars.sh](./config_vars.sh) that will generate a config file based on user input, named `custom.config.yml`. `custon.config.yml` is listed in .gitignore, and as such is the suggested/preferred method of setting your install variables.
+
+The Ascender Install script also uses the Ansible inventory file, [inventory](./inventory), located in the top level directory of this repository. 
+
+For both the config file and inventory files, you will find templates for each Kubernetes distribution in its corresponding directory in [ascender-install-instructions](./ascender-install-instructions/). You can use these templates as guides for how `custom.config.ml` and `inventory` should look for your particular install.
 
 The [**Uninstall**](#uninstall) section of this tutorial references
 two of the variables that need to be set:
@@ -84,7 +88,6 @@ description/proper usage directly present in the comments.
 - [K3s](ascender-install-instructions/k3s/README.md)
 - [Elastic Kubernetes Service](ascender-install-instructions/eks/README.md)
 - [RKE Government](ascender-install-instructions/rke2/README.md)
-- [D2IQ Kubernetes Platform](ascender-install-instructions/dkp/README.md)
 
 ## Uninstall
 
