@@ -12,10 +12,17 @@ k8s_lb_protocol: http #options include http and https
 # (This could be a Load Balancer if using 3 K8s control nodes)
 kubeapi_server_ip: "127.0.0.1"
 
-# ---k3s variables---
-
-# Sets up a new k3s or k8s cluster when set to true
+# This value being set to "true" means that some work needs to be done to set up a
+# cluster before proceeding. Here is ther behavior for different values of k8s_platforms:
+# k3s: A single-node k3s cluster will be set up on the inventory server
+#      named "ascender_host"
+# eks: A new EKS cluster will be set up
 kube_install: false
+
+# Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+download_kubeconfig: false
+
+# ---k3s variables---
 
 # IP address for the K3s Master/Worker node
 # Required for local DNS and k3s install
