@@ -79,12 +79,20 @@
     url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
     return_content: yes
     validate_certs: no
-    status_code:
-      - 200
-  until: uri_output.status == 200
+    status_code: 200
+  until: 
+    - uri_output.status|int == 200
+    - uri_output.url == k8s_lb_protocol + "://" + ascender_ip + ":" + ascender_port + "/api/v2/ping/"
   retries: 200
   delay: 10
   register: uri_output
+
+# - ansible.builtin.debug:
+#     var: uri_output
+
+# - ansible.builtin.debug:
+#     msg: "The Ascender API CURL returns HTTP Code {{ uri_output.status }}"
+
 
 - ansible.builtin.debug:
     msg: "Ascender API is up"
