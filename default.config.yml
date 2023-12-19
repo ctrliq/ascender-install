@@ -17,6 +17,7 @@ kubeapi_server_ip: "127.0.0.1"
 # k3s: A single-node k3s cluster will be set up on the inventory server
 #      named "ascender_host"
 # eks: A new EKS cluster will be set up
+# rke2: N/A, as you must use Labyrinth Labs' Ansible role to set up a fresh kubernetes cluster
 kube_install: false
 
 # Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
