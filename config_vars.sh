@@ -20,22 +20,39 @@ echo "---"$'\n'"# This variable specificies which Kubernetes platform Ascender a
 echo "k8s_platform: "$k8s_platform >> custom.config.yml
 
 # kube_install
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2" ) ]]; then
-   echo $'\n'
-   k_install=(true false)
-      selected=()
-      PS3='Boolean indicating whether to set up a new k3s or on premise k8s cluster (true) or use an existing k3s cluster (false): '
-      select name in "${k_install[@]}" ; do
-          for reply in $REPLY ; do
-              selected+=(${k_install[reply - 1]})
-          done
-          [[ $selected ]] && break
-      done
+if [ $k8s_platform == "k3s" ]; then
+    echo $'\n'
+    k_install=(true false)
+    selected=()
+    PS3='Boolean indicating whether to set up a new k3s or on premise k8s cluster (true) or use an existing k3s cluster (false): '
+    select name in "${k_install[@]}" ; do
+        for reply in $REPLY ; do
+            selected+=(${k_install[reply - 1]})
+        done
+        [[ $selected ]] && break
+    done
 
-      kube_install=${selected[@]}
-      echo "# Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false)" >> custom.config.yml
-      echo "kube_install: "$kube_install >> custom.config.yml
+    kube_install=${selected[@]}
+    echo "# Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false)" >> custom.config.yml
+    echo "kube_install: "$kube_install >> custom.config.yml
 fi
+
+# download_kubeconfig
+echo $'\n'
+d_kubeconfig=(true false)
+selected=()
+PS3='Boolean indicating whether or not the kubeconfig file needs to be downloaded to the Ansible controller: '
+select name in "${d_kubeconfig[@]}" ; do
+    for reply in $REPLY ; do
+        selected+=(${d_kubeconfig[reply - 1]})
+    done
+    [[ $selected ]] && break
+done
+
+download_kubeconfig=${selected[@]}
+echo "# Boolean indicating whether or not the kubeconfig file needs to be downloaded to the Ansible controller" >> custom.config.yml
+echo "download_kubeconfig: "$download_kubeconfig >> custom.config.yml
+
 
 # k8s_lb_protocol
 echo $'\n'
@@ -54,6 +71,7 @@ echo "# If set to https, you MUST provide certificate/key options for the Instal
 echo "k8s_lb_protocol: "$k8s_lb_protocol >> custom.config.yml
 
 # k3s_master_node_ip
+echo $'\n'
 if [ $k8s_platform == "k3s" ]; then
    echo $'\n'
    read -p "Routable IP address for the K3s Master/Worker node [127.0.0.1]: " k3s_m_node_ip
@@ -204,6 +222,7 @@ if [ $k8s_platform == "dkp" ]; then
    echo "DKP_CLUSTER_NAME: "$dkp_cluster_name >> custom.config.yml
 fi
 if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2") ]]; then
+   echo $'\n'
    u_etc_hosts=(true false)
    selected=()
    PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender:'
@@ -239,8 +258,8 @@ echo $'\n'
 echo "# A directory in which to place both temporary artifacts" >> custom.config.yml
 echo "# and timestamped Kubernetes Manifests to make Ascender/Ledger easy" >> custom.config.yml
 echo "# to uninstall" >> custom.config.yml
-read -p "Where will install artifacts be stored [/tmp/ascender_install_artifacts]? " dir
-tmp_dir=${dir:-/tmp/ascender_install_artifacts}
+read -p "Where will install artifacts be stored [~/ascender_install_artifacts]? " dir
+tmp_dir=${dir:-~/ascender_install_artifacts}
 echo "tmp_dir: \""$tmp_dir\" >> custom.config.yml
 
 # ASCENDER_HOSTNAME
