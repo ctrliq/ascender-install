@@ -149,4 +149,24 @@ https://localhost
 
 Username is "Admin" and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/default.config.yml under the `ASCENDER_ADMIN_PASSWORD` variable.
 
+### Uninstall
+
+After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
+
+- `ascender-deployment-{{ k8s_platform }}.yml`
+- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
+- `kustomization.yml`
+
+Remove the timestamp from the filename and then run the following
+commands from within `tmp_dir``:
+
+- `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
+- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
+- `$ kubectl delete -k .`
+
+Running the Ascender deletion will remove all related deployments and
+statefulsets, however, persistent volumes and secrets will remain. To
+enforce secrets also getting removed, you can use
+`ascender_garbage_collect_secrets: true` in the `default.config.yml`
+file.
 
