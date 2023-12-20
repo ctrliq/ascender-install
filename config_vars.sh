@@ -258,8 +258,8 @@ echo $'\n'
 echo "# A directory in which to place both temporary artifacts" >> custom.config.yml
 echo "# and timestamped Kubernetes Manifests to make Ascender/Ledger easy" >> custom.config.yml
 echo "# to uninstall" >> custom.config.yml
-read -p "Where will install artifacts be stored [~/ascender_install_artifacts]? " dir
-tmp_dir=${dir:-~/ascender_install_artifacts}
+read -p "Where will install artifacts be stored [{{ playbook_dir}}/../ascender_install_artifacts]? " dir
+tmp_dir=${dir:-"{{ playbook_dir}}/../ascender_install_artifacts"}
 echo "tmp_dir: \""$tmp_dir\" >> custom.config.yml
 
 # ASCENDER_HOSTNAME
