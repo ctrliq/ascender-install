@@ -11,9 +11,9 @@
         state: directory
       delegate_to: localhost
 
-    - name: Copy kubeconfig file from default location to the ~/.kube directory"
+    - name: Copy kubeconfig file from default location to the ~/.kube directory
       ansible.builtin.fetch:
-        src: /etc/rancher/k3s/k3s.yaml
+        src: /etc/rancher/rke2/rke2.yaml
         dest: ~/.kube/config
         flat: true
       become: true
