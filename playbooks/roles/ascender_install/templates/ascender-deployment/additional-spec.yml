@@ -1,7 +1,17 @@
   image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
   replicas: {{ ascender_replicas | default(1) }}
+  init_container_image: quay.io/ansible/awx-ee
+  init_container_image_version: latest
+  control_plane_ee_image: quay.io/ansible/awx-ee
+  control_plane_ee_image_version: latest
+  postgres_image: docker.io/postgres
+  postgres_image_version: "13"
+  redis_image: docker.io/redis
+  redis_image_version: "7"
   redis_capabilities:
    - CHOWN
    - SETUID
    - SETGID
 
+#TODO:
+# - account for image pull secret and ee pull secret
