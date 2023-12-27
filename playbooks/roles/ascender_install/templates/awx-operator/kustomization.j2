@@ -3,12 +3,21 @@ kind: Kustomization
 resources:
   # Find the latest tag here: https://github.com/ansible/awx-operator/releases
   # - github.com/ansible/awx-operator/config/default?ref=<tag>
+{% if k8s_offline == false %}
   - github.com/ansible/awx-operator/config/default?ref={{ ANSIBLE_OPERATOR_VERSION }}
+{% else %}
+  - ./config/default
+{% endif %}
 
 # Set the image tags to match the git version from above
 images:
-  - name: quay.io/ansible/awx-operator
+  - name: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-operator" }} 
+{% if k8s_offline == false %}
     newTag: {{ ANSIBLE_OPERATOR_VERSION }}
+{% else %}
+    newTag: ANSIBLE_OPERATOR_OFFLINE_VERSION
+{% endif %}
+    
 
 # Specify a custom namespace in which to install AWX
 namespace: {{ ASCENDER_NAMESPACE }}
