@@ -20,6 +20,15 @@ kubeapi_server_ip: "127.0.0.1"
 # rke2: N/A, as you must use Labyrinth Labs' Ansible role to set up a fresh kubernetes cluster
 kube_install: false
 
+# Offline Install - Whether to use local assets to complete the install
+k8s_offline: false 
+
+# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images
+k8s_image_pull_secret: ascender-pull-secret
+
+# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images
+k8s_ee_pull_credentials_secret: ee-pull-secret
+
 # Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
 download_kubeconfig: false
 
