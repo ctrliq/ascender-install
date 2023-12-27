@@ -33,8 +33,6 @@ metadata:
   namespace: ascender
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
@@ -64,8 +62,6 @@ metadata:
   namespace: ascender
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
@@ -110,8 +106,6 @@ metadata:
   namespace: ascender
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
@@ -138,8 +132,6 @@ metadata:
   namespace: ascender
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
