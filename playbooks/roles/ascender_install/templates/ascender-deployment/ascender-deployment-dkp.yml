@@ -45,8 +45,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   service_type: ClusterIP
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
@@ -82,8 +80,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   service_type: ClusterIP
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
@@ -123,8 +119,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   service_type: ClusterIP
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
@@ -148,8 +142,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   service_type: ClusterIP
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
