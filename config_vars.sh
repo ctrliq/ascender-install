@@ -1,6 +1,6 @@
 #!/bin/bash
 
-rm ./custom.config.yml 
+rm ./custom.config.yml
 
 # k8s_platform
 echo $'\n'
@@ -55,7 +55,14 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2") ]]; then
     echo "k8s_offline: "$k8s_offline >> custom.config.yml
 fi
 
-# If offline is selected and platform is rke2, choose an alternate registry
+if [$k8s_offline == "true"]; then
+    echo $'\n'
+    echo "# Offline Install - Whether to use local assets to complete the install"  >> custom.config.yml
+    echo "ANSIBLE_OPERATOR_OFFLINE_VERSION: 2.9.0" >> custom.config.yml
+fi
+
+# If offline is selected and platform is rke2, choose an alternate 
+registry
 # k8s_container_registry
 if [[ ( $k8s_offline == "true" && $k8s_platform == "rke2") ]]; then
     echo $'\n'
