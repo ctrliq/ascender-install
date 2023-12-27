@@ -1,3 +1,4 @@
+#jinja2: keep_trailing_newline:True
 ---
 # Ascender admin password
 apiVersion: v1
@@ -44,8 +45,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
@@ -80,8 +79,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
@@ -120,8 +117,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
@@ -144,8 +139,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  image: "{{ ASCENDER_IMAGE }}"
-  image_version: "{{ ASCENDER_VERSION }}"
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password

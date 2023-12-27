@@ -1,3 +1,4 @@
+#jinja2: keep_trailing_newline:True
 ---
 # Ascender admin password
 apiVersion: v1
