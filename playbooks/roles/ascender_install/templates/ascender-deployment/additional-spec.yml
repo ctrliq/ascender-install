@@ -10,11 +10,15 @@
   postgres_image_version: "13"
   redis_image: {{ k8s_container_registry | default("docker.io")  ~ "/redis" }}
   redis_image_version: "7"
-{% if k8s_image_pull_secret != "None" or k8s_image_pull_secret is undefined %}
+{% if k8s_image_pull_secret is defined %}
+{% if k8s_image_pull_secret != 'None'  %}
   image_pull_secret: {{ k8s_image_pull_secret }}
+{% endif %}  
 {% endif %}
-{% if k8s_ee_pull_credentials_secret != "None" or k8s_ee_pull_credentials_secret is undefined %}
+{% if k8s_ee_pull_credentials_secret is defined %}
+{% if k8s_ee_pull_credentials_secret != 'None'  %}
   ee_pull_credentials_secret: {{ k8s_ee_pull_credentials_secret }}
+{% endif %}
 {% endif %}
   redis_capabilities:
    - CHOWN
