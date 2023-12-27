@@ -23,11 +23,16 @@ kube_install: false
 # Offline Install - Whether to use local assets to complete the install
 k8s_offline: false 
 
+# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images
+k8s_container_registry: registry.io/namespace
+
 # Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images
-k8s_image_pull_secret: ascender-pull-secret
+#LEAVE AS NONE if no such secret is required
+k8s_image_pull_secret: None
 
 # Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images
-k8s_ee_pull_credentials_secret: ee-pull-secret
+#LEAVE AS NONE if no such secret is required
+k8s_ee_pull_credentials_secret: None
 
 # Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
 download_kubeconfig: false
