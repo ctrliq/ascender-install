@@ -1,17 +1,22 @@
+  image: {{ k8s_container_registry | default("ghcr.io/ctrliq")  ~ "/ascender" }}
+  image_version: {{ ASCENDER_VERSION | default("23.3.1") }}
   image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
   replicas: {{ ascender_replicas | default(1) }}
-  init_container_image: quay.io/ansible/awx-ee
+  init_container_image: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-ee" }}
   init_container_image_version: latest
-  control_plane_ee_image: quay.io/ansible/awx-ee
+  control_plane_ee_image: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-ee" }}
   control_plane_ee_image_version: latest
-  postgres_image: docker.io/postgres
+  postgres_image: {{ k8s_container_registry | default("docker.io")  ~ "/postgres" }}
   postgres_image_version: "13"
-  redis_image: docker.io/redis
+  redis_image: {{ k8s_container_registry | default("docker.io")  ~ "/redis" }}
   redis_image_version: "7"
+{% if k8s_image_pull_secret is defined %}
+  image_pull_secret: {{ k8s_image_pull_secret }}
+{% endif %}
+{% if k8s_ee_pull_credentials_secret is defined %}
+  ee_pull_credentials_secret: {{ k8s_ee_pull_credentials_secret }}
+{% endif %}
   redis_capabilities:
    - CHOWN
    - SETUID
    - SETGID
-
-#TODO:
-# - account for image pull secret and ee pull secret
