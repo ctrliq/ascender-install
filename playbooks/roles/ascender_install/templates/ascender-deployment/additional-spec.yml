@@ -1,5 +1,5 @@
   image: {{ k8s_container_registry | default("ghcr.io/ctrliq")  ~ "/ascender" }}
-  image_version: {{ ASCENDER_VERSION | default("23.3.1") }}
+  image_version: {{ ASCENDER_VERSION | default("23.5.1") }}
   image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
   replicas: {{ ascender_replicas | default(1) }}
   init_container_image: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-ee" }}
@@ -24,3 +24,10 @@
    - CHOWN
    - SETUID
    - SETGID
+{% if ee_images is defined %}
+  ee_images:
+{% for ee in ee_images %}
+    - name: {{ ee.name }}
+      image: {{ ee.image}}
+{% endfor %}
+{% endif %}
