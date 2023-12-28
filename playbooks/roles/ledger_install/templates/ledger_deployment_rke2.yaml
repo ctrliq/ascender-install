@@ -158,7 +158,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger-db"  }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -219,7 +219,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger_parser" }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -267,7 +267,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger-web"  }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:
@@ -426,7 +426,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger-db"  }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -487,7 +487,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger_parser" }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -535,7 +535,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger-web"  }}:{{ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:
