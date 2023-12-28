@@ -500,20 +500,6 @@ echo "# Determines whether or not Ledger will be installed" >> custom.config.yml
 echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
 
 
-# echo $'\n'
-# l_install=(true false)
-# selected=()
-# PS3='Boolean indicating whether to install Ledger: '
-# select name in "${l_install[@]}" ; do
-#     for reply in $REPLY ; do
-#         selected+=(${l_install[reply - 1]})
-#     done
-#     [[ $selected ]] && break
-# done
-# ledger_install=${selected[@]}
-# echo "# Determines whether or not Ledger will be installed" >> custom.config.yml
-# echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
-
 if [ $ledger_install == "true" ]; then
     # LEDGER_HOSTNAME
     echo $'\n'
@@ -522,12 +508,12 @@ if [ $ledger_install == "true" ]; then
     echo "# DNS resolvable hostname for Ledger service. This is required for install" >> custom.config.yml
     echo "LEDGER_HOSTNAME: "$ledger_hostname >> custom.config.yml
 
-    # LEDGER_WEB_IMAGE
-    echo $'\n'
-    read -p "The OCI container image for Ledger [ghcr.io/ctrliq/ascender-ledger/ledger-web]: " l_web_image
-    ledger_web_image=${l_web_image:-ghcr.io/ctrliq/ascender-ledger/ledger-web}
-    echo "# The OCI container image for Ledger" >> custom.config.yml
-    echo "LEDGER_WEB_IMAGE: "$ledger_web_image >> custom.config.yml
+    # # LEDGER_WEB_IMAGE
+    # echo $'\n'
+    # read -p "The OCI container image for Ledger [ghcr.io/ctrliq/ascender-ledger/ledger-web]: " l_web_image
+    # ledger_web_image=${l_web_image:-ghcr.io/ctrliq/ascender-ledger/ledger-web}
+    # echo "# The OCI container image for Ledger" >> custom.config.yml
+    # echo "LEDGER_WEB_IMAGE: "$ledger_web_image >> custom.config.yml
 
     # ledger_web_replicas
     echo $'\n'
@@ -536,12 +522,12 @@ if [ $ledger_install == "true" ]; then
     echo "# Number of replicas for the Ledger web container" >> custom.config.yml
     echo "ledger_web_replicas: "$ledger_web_replicas >> custom.config.yml
 
-    # LEDGER_PARSER_IMAGE
-    echo $'\n'
-    read -p "The OCI container image for Ledger Parser [ghcr.io/ctrliq/ascender-ledger/ledger-parser]: " l_parser_image
-    ledger_parser_image=${l_parser_image:-ghcr.io/ctrliq/ascender-ledger/ledger-parser}
-    echo "# The OCI container image for Ledger Parser" >> custom.config.yml
-    echo "LEDGER_PARSER_IMAGE: "$ledger_parser_image >> custom.config.yml
+    # # LEDGER_PARSER_IMAGE
+    # echo $'\n'
+    # read -p "The OCI container image for Ledger Parser [ghcr.io/ctrliq/ascender-ledger/ledger-parser]: " l_parser_image
+    # ledger_parser_image=${l_parser_image:-ghcr.io/ctrliq/ascender-ledger/ledger-parser}
+    # echo "# The OCI container image for Ledger Parser" >> custom.config.yml
+    # echo "LEDGER_PARSER_IMAGE: "$ledger_parser_image >> custom.config.yml
 
     # ledger_parser_replicas
     echo $'\n'
@@ -550,12 +536,12 @@ if [ $ledger_install == "true" ]; then
     echo "# Number of replicas for the Ledger Parser container" >> custom.config.yml
     echo "ledger_parser_replicas: "$ledger_parser_replicas >> custom.config.yml
 
-    # LEDGER_DB_IMAGE
-    echo $'\n'
-    read -p "The OCI container image for Ledger DB [ghcr.io/ctrliq/ascender-ledger/ledger-db]: " l_db_image
-    ledger_db_image=${l_db_image:-ghcr.io/ctrliq/ascender-ledger/ledger-db}
-    echo "# The OCI container image for Ledger DB" >> custom.config.yml
-    echo "LEDGER_DB_IMAGE: "$ledger_db_image >> custom.config.yml
+    # # LEDGER_DB_IMAGE
+    # echo $'\n'
+    # read -p "The OCI container image for Ledger DB [ghcr.io/ctrliq/ascender-ledger/ledger-db]: " l_db_image
+    # ledger_db_image=${l_db_image:-ghcr.io/ctrliq/ascender-ledger/ledger-db}
+    # echo "# The OCI container image for Ledger DB" >> custom.config.yml
+    # echo "LEDGER_DB_IMAGE: "$ledger_db_image >> custom.config.yml
 
     # LEDGER_VERSION
     echo $'\n'
