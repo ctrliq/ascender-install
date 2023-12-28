@@ -95,6 +95,36 @@ if [[ ( $k8s_offline == "true" && $k8s_platform == "rke2") ]]; then
 
 fi
 
+# ee_images
+echo $'\n'
+u_ee_images=(true false)
+selected=()
+PS3='Do you wish to pull container images to serve as additional Execution Environments to run your playbooks? If unsure, choose (false): '
+select name in "${u_ee_images[@]}" ; do
+    for reply in $REPLY ; do
+        selected+=(${u_ee_images[reply - 1]})
+    done
+    [[ $selected ]] && break
+done
+use_ee_images=${selected[@]}
+
+if [ $use_ee_images == "true" ]; then
+    echo "ee_images:" >> custom.config.yml
+    while true
+    do
+        echo "Enter the informal image name, and the formal registry-address/namespace/image:tag (the tag is optional):"
+        read -p "Informal image name (format: my-custom-ascender-ee): " informal_image_name
+        read -p "Formal image path: (format: registry-address/namespace/my-custom-ascender-ee:tag): " formal_image_path
+        echo "  - name: "$informal_image_name >> custom.config.yml
+        echo "    image: "$formal_image_path >> custom.config.yml
+        echo "Do you have another image to enter? Yes = 1, No = 2"
+        read next_image
+        if [[ $next_image -eq 2 ]]; then
+            break
+        fi
+    done
+fi
+
 # download_kubeconfig
 echo $'\n'
 d_kubeconfig=(true false)
@@ -283,7 +313,7 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rk
    echo $'\n'
    u_etc_hosts=(true false)
    selected=()
-   PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender:'
+   PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender: '
    select name in "${u_etc_hosts[@]}" ; do
        for reply in $REPLY ; do
            selected+=(${u_etc_hosts[reply - 1]})
@@ -358,11 +388,11 @@ ascender_admin_password=${a_admin_password:-myadminpassword}
 echo "ASCENDER_ADMIN_PASSWORD: "\"$ascender_admin_password\" >> custom.config.yml
 
 # Define ASCENDER_IMAGE variable
-echo $'\n'
-echo "# The OCI container image for Ascender" >> custom.config.yml
-read -p "The OCI container image for Ascender [ghcr.io/ctrliq/ascender]: " a_image
-ascender_image=${a_image:-ghcr.io/ctrliq/ascender}
-echo "ASCENDER_IMAGE: "$ascender_image >> custom.config.yml
+# echo $'\n'
+# echo "# The OCI container image for Ascender" >> custom.config.yml
+# read -p "The OCI container image for Ascender [ghcr.io/ctrliq/ascender]: " a_image
+# ascender_image=${a_image:-ghcr.io/ctrliq/ascender}
+# echo "ASCENDER_IMAGE: "$ascender_image >> custom.config.yml
 
 # ASCENDER_VERSION
 echo $'\n'
