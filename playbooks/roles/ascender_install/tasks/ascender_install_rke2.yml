@@ -39,8 +39,8 @@
         path: "{{ tmp_dir }}/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
         state: absent
     
-  # when:
-  #   - k8s_offline
+  when:
+    - k8s_offline
 
 - name: Install AWX Operator with Kustomize
   kubernetes.core.k8s:
