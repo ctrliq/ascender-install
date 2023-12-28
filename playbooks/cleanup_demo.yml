@@ -10,7 +10,7 @@
 
   environment:
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
-    NAMESPACE: "{{ LEDGER_NAMESPACE }}"
+    # NAMESPACE: "{{ LEDGER_NAMESPACE }}"
     PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
 
   tasks:
