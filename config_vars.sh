@@ -53,53 +53,52 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2") ]]; then
     k8s_offline=${selected[@]}
     echo "# Offline Install - Whether to use local assets to complete the install" >> custom.config.yml
     echo "k8s_offline: "$k8s_offline >> custom.config.yml
-fi
 
-if [$k8s_offline == "true"]; then
-    echo $'\n'
-    echo "# Offline Install - Whether to use local assets to complete the install"  >> custom.config.yml
-    echo "ANSIBLE_OPERATOR_OFFLINE_VERSION: 2.9.0" >> custom.config.yml
-fi
-
-# If offline is selected and platform is rke2, choose an alternate 
-registry
-# k8s_container_registry
-if [[ ( $k8s_offline == "true" && $k8s_platform == "rke2") ]]; then
-    echo $'\n'
-    read -p "Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images [format: registry.io/namespace]: " k_offline_registry
-    k8s_container_registry=${k_container_registry:-registry.io/namespace}
-    echo "# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images"
-    echo "k8s_container_registry: "$k8s_container_registry >> custom.config.yml
-
-    # k8s_image_pull_secret
-    echo $'\n'
-    read -p "Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images. If no login credentials are required, leave as [None]: " k_image_pull_secret
-    k8s_image_pull_secret=${k_image_pull_secret:-None}
-
-    if [ $k8s_image_pull_secret != "None" ]; then
+    if [ $k8s_offline == "true" ]; then
         echo $'\n'
-        echo "# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images." >> custom.config.yml
-        echo "k8s_image_pull_secret: "$k8s_image_pull_secret >> custom.config.yml
+        echo "# Offline Install - Whether to use local assets to complete the install"  >> custom.config.yml
+        echo "ANSIBLE_OPERATOR_OFFLINE_VERSION: 2.9.0" >> custom.config.yml
     fi
 
-    # k8s_ee_pull_credentials_secret
-    echo $'\n'
-    read -p "Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images. If no login credentials are required, leave as [None]: " k_ee_pull_credentials_secret
-    k8s_ee_pull_credentials_secret=${k_ee_pull_credentials_secret:-None}
-
-    if [ $k8s_ee_pull_credentials_secret != "None" ]; then
+    # If offline is selected and platform is rke2, choose an alternate registry
+    # k8s_container_registry
+    if [[ ( $k8s_offline == "true" && $k8s_platform == "rke2") ]]; then
         echo $'\n'
-        echo "# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images." >> custom.config.yml
-        echo "k8s_ee_pull_credentials_secret: "$k8s_ee_pull_credentials_secret >> custom.config.yml
-    fi
+        read -p "Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images [format: registry.io/namespace]: " k_offline_registry
+        k8s_container_registry=${k_container_registry:-registry.io/namespace}
+        echo "# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images"
+        echo "k8s_container_registry: "$k8s_container_registry >> custom.config.yml
 
+        # k8s_image_pull_secret
+        echo $'\n'
+        read -p "Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images. If no login credentials are required, leave as [None]: " k_image_pull_secret
+        k8s_image_pull_secret=${k_image_pull_secret:-None}
+
+        if [ $k8s_image_pull_secret != "None" ]; then
+            echo $'\n'
+            echo "# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images." >> custom.config.yml
+            echo "k8s_image_pull_secret: "$k8s_image_pull_secret >> custom.config.yml
+        fi
+
+        # k8s_ee_pull_credentials_secret
+        echo $'\n'
+        read -p "Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images. If no login credentials are required, leave as [None]: " k_ee_pull_credentials_secret
+        k8s_ee_pull_credentials_secret=${k_ee_pull_credentials_secret:-None}
+
+        if [ $k8s_ee_pull_credentials_secret != "None" ]; then
+            echo $'\n'
+            echo "# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images." >> custom.config.yml
+            echo "k8s_ee_pull_credentials_secret: "$k8s_ee_pull_credentials_secret >> custom.config.yml
+        fi
+
+    fi
 fi
 
 # ee_images
 echo $'\n'
 u_ee_images=(true false)
 selected=()
-PS3='Do you wish to pull container images to serve as additional Execution Environments to run your playbooks? If unsure, choose (false): '
+PS3='Do you wish to pull container images to serve as additional Execution Environments to run your playbooks? If unsure, choose false: '
 select name in "${u_ee_images[@]}" ; do
     for reply in $REPLY ; do
         selected+=(${u_ee_images[reply - 1]})
