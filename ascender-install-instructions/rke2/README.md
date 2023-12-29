@@ -105,6 +105,24 @@ README](../../README.md#general-prerequisites)
     parse these files for their content, and use the content to create
     a Kubernetes TLS Secret for HTTPS enablement.
 
+### Offline Installation
+
+In order to perform an offline installation of Ascender on RKE2, you must complete the following steps before running the installation script:
+  - The RKE2 cluster MUST ALREADY EXIST as the installer will not create it for you. You may however, have the installer retrieve the KUBECONFIG file as part of the process.
+  - When setting the variables in `config_vars.sh`, be sure to set `k8s_offline` to true. This will force you to specify the required internal container registry and namespace for Ascender, with the variable `k8s_container_registry`. The registry address and namespace is **expected to be the same** for all container images that are part of an Ascender installation.
+  - The container images required for installation MUST BE NAMED AS THEY ARE BELOW. Here are all of the names of the container images, and their original locations:
+    - Ascender:
+      - ascender (Found at [Github Container Registry](https://github.com/ctrliq/ascender/pkgs/container/ascender)) 
+      - awx-ee (Found at [Quay](https://quay.io/repository/ansible/awx-ee?tab=tags)) 
+      - postgres (Found at [Dockerhub](https://hub.docker.com/_/postgres))
+      - redis (Found at [Dockerhub](https://hub.docker.com/_/redis))
+    - Ledger
+      - ledger-parser (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-parser))
+      - ledger-db (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-db))
+      - ledger-web (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-web))
+
+    
+
 ## Install Instructions
 
 ### Obtain the sources
