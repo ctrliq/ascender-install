@@ -58,6 +58,16 @@ admins rejoice!
   access. If not specified, the AWX Operator responsible for
   installing Ascender will create a managed PostgreSQL server.
 
+### Offline Installation
+
+For certain Kubernetes platforms (such as k3s, kubeadm, rke2), the Ascender installer supports installation for clusters that do not have outside internet access. In these cases, you can either use:
+  - An included bundle of container images (this is the case for k3s)
+  - Move the Ascender and Ledger container images into an internal container registry for the installer to consume (this is the case for rke2 and kubeadm)
+
+A bunded AWX operator is also included for the purposes of offline install.
+
+For more detailed instructions, see the section on the corresponding Kubernetes platform.
+
 ## Configuration File and Inventory
 
 There is a [default configuration file](default.config.yml) that will
