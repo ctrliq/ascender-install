@@ -23,7 +23,6 @@ README](../../README.md#general-prerequisites)
   - More details on RKE2 and how it it uniquely suited to Public Sector can be found at Rancher's Introduction website for [RKE2](https://docs.rke2.io/).
 - If you do not yet have an RKE2 Cluster, [Labrinth Labs](https://lablabs.io/) has developed together an Ansible role that can be used to set up a cluster of any size that is incredibly well-documented. 
   - The role URL is here: [RKE2 Ansible Role](https://github.com/lablabs/ansible-role-rke2)
-  - 
   - The example playbook used by the CIQ team in order to create a cluster with one control plane host, is in [this repository](./deploy-rke2-cluster/deploy-rke2-cluster.yaml), but is copied here for easy access:
 
       ```
