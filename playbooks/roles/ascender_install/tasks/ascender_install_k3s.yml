@@ -21,6 +21,27 @@
     src: templates/awx-operator/kustomization.j2
     dest: "{{ tmp_dir }}/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
+- name: Retrieve local AWX Operator directory
+  block:
+    - name: Copy local role AWX Operator archive
+      ansible.builtin.copy:
+        src: "files/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
+        dest: "{{ tmp_dir }}/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
+
+    - name: Unarchive the newly copied AWX Operator archive
+      ansible.builtin.unarchive:
+        src: "{{ tmp_dir }}/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
+        dest: "{{ tmp_dir }}/"
+        remote_src: yes
+    
+    - name: Delete copied role AWX Operator archive
+      ansible.builtin.file:
+        path: "{{ tmp_dir }}/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
+        state: absent
+    
+  when:
+    - k8s_offline
+    
 - name: Install AWX Operator with Kustomize
   kubernetes.core.k8s:
     definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
@@ -41,6 +62,33 @@
     wait_timeout: 360
     verify_ssl: false
   
+- name: Import archived Ascender container images into k3s
+  block:
+    - name: Retrieve list of k3s server Ascender Container Image tar files
+      ansible.builtin.find:
+        paths: ~/ascender_images/
+        patterns: '*.tar'
+      register: k3s_server_ascender_images
+      delegate_to: ascender_host
+
+    - ansible.builtin.debug:
+        var: item.path
+      loop: "{{ k3s_server_ascender_images.files }}"
+
+    - name: Import Ascender images into k3s
+      ansible.builtin.command:
+        cmd: "k3s ctr images import {{ item.path }}"
+      loop: "{{ k3s_server_ascender_images.files }}"
+      delegate_to: ascender_host
+    
+    - name: Recursively delete ~/ledger_images/ directory to preserve disk space
+      ansible.builtin.file:
+        path: ~/ascender_images/
+        state: absent
+      delegate_to: ascender_host
+  when: k8s_offline
+
+
 - name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: "ascender-deployment/ascender-deployment-k3s.yml"
