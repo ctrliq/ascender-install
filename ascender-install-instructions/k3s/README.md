@@ -96,6 +96,10 @@ The script will take you through a series of questions, that will populate the v
 
 Afterward, you can simply edit this file should you not want to run the script again before installing Ascender.
 
+Examples of Configuration files for traditional installation (where resources such as container images are retrieved from online) and offline installation can be found in this directory as:
+- [k3s.default.config.yml](./k3s.default.config.yml)
+- [k3s.offline.default.config.yml](./k3s.offline.default.config.yml)
+
 ### Run the setup script
 
 Run `./setup.sh` from top level directory in this repository.
