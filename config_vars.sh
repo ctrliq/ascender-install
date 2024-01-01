@@ -24,7 +24,7 @@ if [ $k8s_platform == "k3s" ]; then
     echo $'\n'
     k_install=(true false)
     selected=()
-    PS3='Boolean indicating whether to set up a new k3s or on premise k8s cluster (true) or use an existing k3s cluster (false): '
+    PS3='Boolean indicating whether to set up a new k3s/k8s on premise cluster (true) or use an existing k3s/k8s on premise cluster (false): '
     select name in "${k_install[@]}" ; do
         for reply in $REPLY ; do
             selected+=(${k_install[reply - 1]})
@@ -42,7 +42,7 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2") ]]; then
     echo $'\n'
     k_offline=(true false)
     selected=()
-    PS3='Boolean indicating whether to use local assets to complete the install (false): '
+    PS3='Boolean indicating whether to use local assets to complete an OFFLINE install (true) or perform a traditional install using internet resources (false): '
     select name in "${k_offline[@]}" ; do
         for reply in $REPLY ; do
             selected+=(${k_offline[reply - 1]})
@@ -468,20 +468,23 @@ ascender_replicas=${a_replicas:-1}
 echo "# External PostgreSQL database name used for Ascender (this DB must exist)" >> custom.config.yml
 echo "ascender_replicas: "$ascender_replicas >> custom.config.yml
 
+
 # ascender_image_pull_policy
-echo $'\n'
-pull_policy=(IfNotPresent Always Never)
-selected=()
-PS3='Select the Ascender web container image pull policy (If unsure, choose IfNotPresent): '
-select name in "${pull_policy[@]}" ; do
-    for reply in $REPLY ; do
-        selected+=(${pull_policy[reply - 1]})
+if [ $k8s_offline == "false" ]; then
+    echo $'\n'
+    pull_policy=(IfNotPresent Always Never)
+    selected=()
+    PS3='Select the Ascender web container image pull policy (If unsure, choose IfNotPresent): '
+    select name in "${pull_policy[@]}" ; do
+        for reply in $REPLY ; do
+            selected+=(${pull_policy[reply - 1]})
+        done
+        [[ $selected ]] && break
     done
-    [[ $selected ]] && break
-done
-image_pull_policy=${selected[@]}
-echo "# The Ascender web container image pull policy (If unsure, choose IfNotPresent)" >> custom.config.yml
-echo "image_pull_policy: "$image_pull_policy >> custom.config.yml
+    image_pull_policy=${selected[@]}
+    echo "# The Ascender web container image pull policy (If unsure, choose IfNotPresent)" >> custom.config.yml
+    echo "image_pull_policy: "$image_pull_policy >> custom.config.yml
+fi
 
 # LEDGER_INSTALL
 echo $'\n'
