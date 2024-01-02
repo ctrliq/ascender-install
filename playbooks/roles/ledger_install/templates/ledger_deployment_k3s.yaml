@@ -160,7 +160,7 @@ spec:
         - name: admin-password
           value: /run/secrets/admin-password
 {% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
         image: ghcr.io/ctrliq/ascender-ledger/ledger-db:latest
         imagePullPolicy: Never
 {% else %}        
@@ -231,7 +231,7 @@ spec:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
 {% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
         image: ghcr.io/ctrliq/ascender-ledger/ledger-parser:latest
         imagePullPolicy: Never
 {% else %}        
@@ -289,7 +289,7 @@ spec:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
 {% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
         image: ghcr.io/ctrliq/ascender-ledger/ledger-web:latest
         imagePullPolicy: Never
 {% else %}        
@@ -459,7 +459,7 @@ spec:
         - name: admin-password
           value: /run/secrets/admin-password
 {% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
         image: ghcr.io/ctrliq/ascender-ledger/ledger-db:latest
         imagePullPolicy: Never
 {% else %}        
@@ -530,7 +530,7 @@ spec:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
 {% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
         image: ghcr.io/ctrliq/ascender-ledger/ledger-parser:latest
         imagePullPolicy: Never
 {% else %}        
@@ -588,7 +588,7 @@ spec:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
 {% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
         image: ghcr.io/ctrliq/ascender-ledger/ledger-web:latest
         imagePullPolicy: Never
 {% else %}        
