@@ -137,17 +137,22 @@
   ansible.builtin.copy:
     src: ~/.kube/config
     dest: "~/.kube/config.{{ ansible_date_time.iso8601_basic_short }}"
-  when: existing_kubeconfig.stat.exists
+  when: 
+    - existing_kubeconfig.stat.exists
+    - download_kubeconfig
 
 - name: Delete existing ~/.kube/config
   ansible.builtin.file:
     path: ~/.kube/config
     state: absent
-  when: existing_kubeconfig.stat.exists
+  when: 
+    - existing_kubeconfig.stat.exists
+    - download_kubeconfig
 
 - name: "Retrieve kubeconfig for new eks cluster {{ EKS_CLUSTER_NAME }}"
   ansible.builtin.command:
     cmd: "aws eks update-kubeconfig --region {{ EKS_CLUSTER_REGION }} --name {{ EKS_CLUSTER_NAME }}"
+  when: download_kubeconfig
 
 - name: Query for AWSLoadBalancerControllerIAMPolicy policy ARN
   ansible.builtin.command:

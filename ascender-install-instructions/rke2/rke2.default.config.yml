@@ -1,0 +1,70 @@
+---
+# This variable specificies which Kubernetes platform Ascender and its components will be installed on.
+k8s_platform: rke2
+# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+# If set to https, you MUST provide certificate/key options for the Installer to use.
+k8s_lb_protocol: https
+# Routable IP address for the K8s API Server
+# (This could be a Load Balancer if using 3 K8s control nodes)
+kubeapi_server_ip: "127.0.0.1"
+# This value being set to "true" means that some work needs to be done to set up a
+# cluster before proceeding. Here is ther behavior for different values of k8s_platforms:
+# k3s: A single-node k3s cluster will be set up on the inventory server
+#      named "ascender_host"
+# eks: A new EKS cluster will be set up
+# rke2: N/A, as you must use Labyrinth Labs' Ansible role to set up a fresh kubernetes cluster
+kube_install: false
+# Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+download_kubeconfig: false
+# Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender
+use_etc_hosts: true
+# TLS Certificate file location on the local installing machine
+tls_crt_path: "/root/ascender.crt"
+# TLS Private Key file location on the local installing machine
+tls_key_path: "/root/ascender.key"
+# A directory in which to place both temporary artifacts
+# and timestamped Kubernetes Manifests to make Ascender/Ledger easy
+# to uninstall
+tmp_dir: "/tmp/ascender_install_artifacts"
+# DNS resolvable hostname for Ascender service. This is required for install.
+ASCENDER_HOSTNAME: ascender.example.com
+# Namespace for Ascender Kubernetes objects
+ASCENDER_NAMESPACE: ascender
+# Administrator username for Ascender
+ASCENDER_ADMIN_USER: admin
+# Administrator password for Ascender
+ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+# The OCI container image for Ascender
+ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
+# The image tag indicating the version of Ascender you wish to install
+ASCENDER_VERSION: 23.5.1
+# The version of the AWX Operator used to install Ascender and its components
+ANSIBLE_OPERATOR_VERSION: 2.9.0
+# Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
+ascender_garbage_collect_secrets: false
+# External PostgreSQL database name used for Ascender (this DB must exist)
+ascender_replicas: 1
+# The Ascender web container image pull policy (If unsure, choose IfNotPresent)
+image_pull_policy: IfNotPresent
+# Determines whether or not Ledger will be installed
+LEDGER_INSTALL: true
+# DNS resolvable hostname for Ledger service. This is required for install
+LEDGER_HOSTNAME: ledger.example.com
+# The OCI container image for Ledger
+LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
+# Number of replicas for the Ledger web container
+ledger_web_replicas: 1
+# The OCI container image for Ledger Parser
+LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-parser
+# Number of replicas for the Ledger Parser container
+ledger_parser_replicas: 1
+# The OCI container image for Ledger DB
+LEDGER_DB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-db
+# The image tag indicating the version of Ledger you wish to install
+LEDGER_VERSION: latest
+# The Kubernetes namespace in which Ledger objects will live
+LEDGER_NAMESPACE: ledger
+# Admin password for Ledger (the username is admin by default)
+LEDGER_ADMIN_PASSWORD: myadminpassword
+# Password for Ledger database
+LEDGER_DB_PASSWORD: mydbpassword

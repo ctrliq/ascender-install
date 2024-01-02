@@ -46,6 +46,8 @@
     name: ledger-web-ingress
     namespace: "{{ LEDGER_NAMESPACE }}"
   register: ledger_ingress
+  until: ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
+  retries: 20
 
 - ansible.builtin.debug: 
     var: ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname

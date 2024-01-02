@@ -90,7 +90,6 @@ metadata:
   namespace: {{ LEDGER_NAMESPACE }}
   name: ledger-web-ingress
 spec:
-  ingressClassName: traefik
   rules:
     - host: {{ LEDGER_HOSTNAME }}
       http:
@@ -369,7 +368,6 @@ metadata:
   namespace: {{ LEDGER_NAMESPACE }}
   name: ledger-web-ingress
 spec:
-  ingressClassName: traefik
   rules:
     - host: {{ LEDGER_HOSTNAME }}
       http:

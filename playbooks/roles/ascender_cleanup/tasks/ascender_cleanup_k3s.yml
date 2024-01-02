@@ -13,6 +13,10 @@
 - ansible.builtin.debug:
     msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
     
+- name: Pause for 15 seconds
+  ansible.builtin.pause:
+    seconds: 15
+
 - name: Wait until Ascender API is Up and the Database is populated
   awx.awx.organization:
     controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
