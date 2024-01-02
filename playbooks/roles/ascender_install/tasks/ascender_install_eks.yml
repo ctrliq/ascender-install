@@ -74,7 +74,9 @@
     name: ascender-app-ingress
     namespace: ascender
   register: ascender_ingress
-
+  until: ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
+  retries: 20
+  
 - ansible.builtin.debug: 
     var: ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname
 
@@ -119,7 +121,9 @@
     validate_certs: no
     status_code:
       - 200
-  until: uri_output.status == 200
+  until: 
+    - uri_output.status|int == 200
+    - uri_output.url == k8s_lb_protocol + "://" + ascender_ip + ":" + ascender_port + "/api/v2/ping/"
   retries: 200
   delay: 10
   register: uri_output

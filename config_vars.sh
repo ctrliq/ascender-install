@@ -1,10 +1,10 @@
 #!/bin/bash
 
-rm ./custom.config.yml 
+rm ./custom.config.yml
 
 # k8s_platform
 echo $'\n'
-platforms=(k3s eks dkp)
+platforms=(k3s eks rke2 dkp)
 selected=()
 PS3='Select the number of the Kubernetes platform you are using to install Ascender: '
 select name in "${platforms[@]}" ; do
@@ -21,21 +21,125 @@ echo "k8s_platform: "$k8s_platform >> custom.config.yml
 
 # kube_install
 if [ $k8s_platform == "k3s" ]; then
-   echo $'\n'
-   k_install=(true false)
-      selected=()
-      PS3='Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false): '
-      select name in "${k_install[@]}" ; do
-          for reply in $REPLY ; do
-              selected+=(${k_install[reply - 1]})
-          done
-          [[ $selected ]] && break
-      done
+    echo $'\n'
+    k_install=(true false)
+    selected=()
+    PS3='Boolean indicating whether to set up a new k3s/k8s on premise cluster (true) or use an existing k3s/k8s on premise cluster (false): '
+    select name in "${k_install[@]}" ; do
+        for reply in $REPLY ; do
+            selected+=(${k_install[reply - 1]})
+        done
+        [[ $selected ]] && break
+    done
 
-      kube_install=${selected[@]}
-      echo "# Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false)" >> custom.config.yml
-      echo "kube_install: "$kube_install >> custom.config.yml
+    kube_install=${selected[@]}
+    echo "# Boolean indicating whether to set up a new k3s cluster (true) or use an existing k3s cluster (false)" >> custom.config.yml
+    echo "kube_install: "$kube_install >> custom.config.yml
 fi
+
+# k8s_offline
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2") ]]; then
+    echo $'\n'
+    k_offline=(true false)
+    selected=()
+    PS3='Boolean indicating whether to use local assets to complete an OFFLINE install (true) or perform a traditional install using internet resources (false): '
+    select name in "${k_offline[@]}" ; do
+        for reply in $REPLY ; do
+            selected+=(${k_offline[reply - 1]})
+        done
+        [[ $selected ]] && break
+    done
+
+    k8s_offline=${selected[@]}
+    echo "# Offline Install - Whether to use local assets to complete the install" >> custom.config.yml
+    echo "k8s_offline: "$k8s_offline >> custom.config.yml
+
+    if [ $k8s_offline == "true" ]; then
+        echo $'\n'
+        echo "# Offline Install - Whether to use local assets to complete the install"  >> custom.config.yml
+        echo "ANSIBLE_OPERATOR_OFFLINE_VERSION: 2.9.0" >> custom.config.yml
+    fi
+
+    # If offline is selected and platform is rke2, choose an alternate registry
+    # k8s_container_registry
+    if [[ ( $k8s_offline == "true" && $k8s_platform == "rke2") ]]; then
+        echo $'\n'
+        read -p "Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images [format: registry.io/namespace]: " k_offline_registry
+        k8s_container_registry=${k_container_registry:-registry.io/namespace}
+        echo "# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images"
+        echo "k8s_container_registry: "$k8s_container_registry >> custom.config.yml
+
+        # k8s_image_pull_secret
+        echo $'\n'
+        read -p "Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images. If no login credentials are required, leave as [None]: " k_image_pull_secret
+        k8s_image_pull_secret=${k_image_pull_secret:-None}
+
+        if [ $k8s_image_pull_secret != "None" ]; then
+            echo $'\n'
+            echo "# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images." >> custom.config.yml
+            echo "k8s_image_pull_secret: "$k8s_image_pull_secret >> custom.config.yml
+        fi
+
+        # k8s_ee_pull_credentials_secret
+        echo $'\n'
+        read -p "Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images. If no login credentials are required, leave as [None]: " k_ee_pull_credentials_secret
+        k8s_ee_pull_credentials_secret=${k_ee_pull_credentials_secret:-None}
+
+        if [ $k8s_ee_pull_credentials_secret != "None" ]; then
+            echo $'\n'
+            echo "# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images." >> custom.config.yml
+            echo "k8s_ee_pull_credentials_secret: "$k8s_ee_pull_credentials_secret >> custom.config.yml
+        fi
+
+    fi
+fi
+
+# ee_images
+echo $'\n'
+u_ee_images=(true false)
+selected=()
+PS3='Do you wish to pull container images to serve as additional Execution Environments to run your playbooks? If unsure, choose false: '
+select name in "${u_ee_images[@]}" ; do
+    for reply in $REPLY ; do
+        selected+=(${u_ee_images[reply - 1]})
+    done
+    [[ $selected ]] && break
+done
+use_ee_images=${selected[@]}
+
+if [ $use_ee_images == "true" ]; then
+    echo "ee_images:" >> custom.config.yml
+    while true
+    do
+        echo "Enter the informal image name, and the formal registry-address/namespace/image:tag (the tag is optional):"
+        read -p "Informal image name (format: my-custom-ascender-ee): " informal_image_name
+        read -p "Formal image path: (format: registry-address/namespace/my-custom-ascender-ee:tag): " formal_image_path
+        echo "  - name: "$informal_image_name >> custom.config.yml
+        echo "    image: "$formal_image_path >> custom.config.yml
+        echo "Do you have another image to enter? Yes = 1, No = 2"
+        read next_image
+        if [[ $next_image -eq 2 ]]; then
+            break
+        fi
+    done
+fi
+
+# download_kubeconfig
+echo $'\n'
+d_kubeconfig=(true false)
+selected=()
+PS3='Boolean indicating whether or not the kubeconfig file needs to be downloaded to the Ansible controller: '
+select name in "${d_kubeconfig[@]}" ; do
+    for reply in $REPLY ; do
+        selected+=(${d_kubeconfig[reply - 1]})
+    done
+    [[ $selected ]] && break
+done
+
+download_kubeconfig=${selected[@]}
+echo "# Boolean indicating whether or not the kubeconfig file needs to be downloaded to the Ansible controller" >> custom.config.yml
+echo "download_kubeconfig: "$download_kubeconfig >> custom.config.yml
+
 
 # k8s_lb_protocol
 echo $'\n'
@@ -54,6 +158,7 @@ echo "# If set to https, you MUST provide certificate/key options for the Instal
 echo "k8s_lb_protocol: "$k8s_lb_protocol >> custom.config.yml
 
 # k3s_master_node_ip
+echo $'\n'
 if [ $k8s_platform == "k3s" ]; then
    echo $'\n'
    read -p "Routable IP address for the K3s Master/Worker node [127.0.0.1]: " k3s_m_node_ip
@@ -61,6 +166,16 @@ if [ $k8s_platform == "k3s" ]; then
    echo "# Routable IP address for the K3s Master/Worker node" >> custom.config.yml
    echo "# required for DNS and k3s install" >> custom.config.yml
    echo "k3s_master_node_ip: "\"$k3s_master_node_ip\" >> custom.config.yml
+fi
+
+# kubeapi_server_ip
+if [ $k8s_platform == "rke2" ]; then
+   echo $'\n'
+   read -p "Routable IP address for the K8s API Server (This could be a Load Balancer if using 3 K8s control nodes) [127.0.0.1]: " k8s_api_srvr_ip
+   kubeapi_server_ip=${k8s_api_srvr_ip:-127.0.0.1}
+   echo "# Routable IP address for the K8s API Server" >> custom.config.yml
+   echo "# (This could be a Load Balancer if using 3 K8s control nodes)" >> custom.config.yml
+   echo "kubeapi_server_ip: "\"$kubeapi_server_ip\" >> custom.config.yml
 fi
 
 if [ $k8s_platform == "eks" ]; then
@@ -193,10 +308,11 @@ if [ $k8s_platform == "dkp" ]; then
    echo "# The name of the dkp cluster you wish to deploy Ascender to and/or create" >> custom.config.yml
    echo "DKP_CLUSTER_NAME: "$dkp_cluster_name >> custom.config.yml
 fi
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2") ]]; then
+   echo $'\n'
    u_etc_hosts=(true false)
    selected=()
-   PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender:'
+   PS3='Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender: '
    select name in "${u_etc_hosts[@]}" ; do
        for reply in $REPLY ; do
            selected+=(${u_etc_hosts[reply - 1]})
@@ -208,13 +324,13 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) ]]; then
    echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
 fi
 
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" ) && $k8s_lb_protocol == "https" ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
    echo $'\n'
    read -p "TLS Certificate file location on the local installing machine [~/ascender.crt]:" t_cert_path
    tls_cert_path=${t_cert_path:-~/ascender.crt} 
    echo "# TLS Certificate file location on the local installing machine" >> custom.config.yml
-   echo "tls_cert_path: "\"$tls_cert_path\" >> custom.config.yml
+   echo "tls_crt_path: "\"$tls_cert_path\" >> custom.config.yml
 
    #tls_key_path
    echo $'\n'
@@ -229,8 +345,8 @@ echo $'\n'
 echo "# A directory in which to place both temporary artifacts" >> custom.config.yml
 echo "# and timestamped Kubernetes Manifests to make Ascender/Ledger easy" >> custom.config.yml
 echo "# to uninstall" >> custom.config.yml
-read -p "Where will install artifacts be stored [/tmp/ascender_install_artifacts]? " dir
-tmp_dir=${dir:-/tmp/ascender_install_artifacts}
+read -p "Where will install artifacts be stored [{{ playbook_dir}}/../ascender_install_artifacts]? " dir
+tmp_dir=${dir:-"{{ playbook_dir}}/../ascender_install_artifacts"}
 echo "tmp_dir: \""$tmp_dir\" >> custom.config.yml
 
 # ASCENDER_HOSTNAME
@@ -271,24 +387,24 @@ ascender_admin_password=${a_admin_password:-myadminpassword}
 echo "ASCENDER_ADMIN_PASSWORD: "\"$ascender_admin_password\" >> custom.config.yml
 
 # Define ASCENDER_IMAGE variable
-echo $'\n'
-echo "# The OCI container image for Ascender" >> custom.config.yml
-read -p "The OCI container image for Ascender [ghcr.io/ctrliq/ascender]: " a_image
-ascender_image=${a_image:-ghcr.io/ctrliq/ascender}
-echo "ASCENDER_IMAGE: "$ascender_image >> custom.config.yml
+# echo $'\n'
+# echo "# The OCI container image for Ascender" >> custom.config.yml
+# read -p "The OCI container image for Ascender [ghcr.io/ctrliq/ascender]: " a_image
+# ascender_image=${a_image:-ghcr.io/ctrliq/ascender}
+# echo "ASCENDER_IMAGE: "$ascender_image >> custom.config.yml
 
 # ASCENDER_VERSION
 echo $'\n'
 echo "# The image tag indicating the version of Ascender you wish to install" >> custom.config.yml
-read -p "The image tag indicating the version of Ascender you wish to install [23.3.1]: " a_version
-ascender_version=${a_version:-23.3.1}
+read -p "The image tag indicating the version of Ascender you wish to install [23.5.1]: " a_version
+ascender_version=${a_version:-23.5.1}
 echo "ASCENDER_VERSION: "$ascender_version >> custom.config.yml
 
 # ANSIBLE_OPERATOR_VERSION
 echo $'\n'
 echo "# The version of the AWX Operator used to install Ascender and its components" >> custom.config.yml
-read -p "The version of the AWX Operator used to install Ascender and its components [2.7.0]: " a_operator_version
-ascender_operator_version=${a_version:-2.7.0}
+read -p "The version of the AWX Operator used to install Ascender and its components [2.9.0]: " a_operator_version
+ascender_operator_version=${a_version:-2.9.0}
 echo "ANSIBLE_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
 
 # ascender_garbage_collect_secrets
@@ -352,20 +468,23 @@ ascender_replicas=${a_replicas:-1}
 echo "# External PostgreSQL database name used for Ascender (this DB must exist)" >> custom.config.yml
 echo "ascender_replicas: "$ascender_replicas >> custom.config.yml
 
+
 # ascender_image_pull_policy
-echo $'\n'
-pull_policy=(IfNotPresent Always Never)
-selected=()
-PS3='Select the Ascender web container image pull policy (If unsure, choose IfNotPresent): '
-select name in "${pull_policy[@]}" ; do
-    for reply in $REPLY ; do
-        selected+=(${pull_policy[reply - 1]})
+if [ "$k8s_offline" == "false" ]; then
+    echo $'\n'
+    pull_policy=(IfNotPresent Always Never)
+    selected=()
+    PS3='Select the Ascender web container image pull policy (If unsure, choose IfNotPresent): '
+    select name in "${pull_policy[@]}" ; do
+        for reply in $REPLY ; do
+            selected+=(${pull_policy[reply - 1]})
+        done
+        [[ $selected ]] && break
     done
-    [[ $selected ]] && break
-done
-image_pull_policy=${selected[@]}
-echo "# The Ascender web container image pull policy (If unsure, choose IfNotPresent)" >> custom.config.yml
-echo "image_pull_policy: "$image_pull_policy >> custom.config.yml
+    image_pull_policy=${selected[@]}
+    echo "# The Ascender web container image pull policy (If unsure, choose IfNotPresent)" >> custom.config.yml
+    echo "image_pull_policy: "$image_pull_policy >> custom.config.yml
+fi
 
 # LEDGER_INSTALL
 echo $'\n'
@@ -383,86 +502,74 @@ echo "# Determines whether or not Ledger will be installed" >> custom.config.yml
 echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
 
 
-# echo $'\n'
-# l_install=(true false)
-# selected=()
-# PS3='Boolean indicating whether to install Ledger: '
-# select name in "${l_install[@]}" ; do
-#     for reply in $REPLY ; do
-#         selected+=(${l_install[reply - 1]})
-#     done
-#     [[ $selected ]] && break
-# done
-# ledger_install=${selected[@]}
-# echo "# Determines whether or not Ledger will be installed" >> custom.config.yml
-# echo "LEDGER_INSTALL: "$ledger_install >> custom.config.yml
+if [ $ledger_install == "true" ]; then
+    # LEDGER_HOSTNAME
+    echo $'\n'
+    read -p "DNS resolvable hostname for Ledger service. This is required for install [ledger.example.com]: " l_hostname
+    ledger_hostname=${l_hostname:-ledger.example.com}
+    echo "# DNS resolvable hostname for Ledger service. This is required for install" >> custom.config.yml
+    echo "LEDGER_HOSTNAME: "$ledger_hostname >> custom.config.yml
 
-# LEDGER_HOSTNAME
-echo $'\n'
-read -p "DNS resolvable hostname for Ledger service. This is required for install [ledger.example.com]: " l_hostname
-ledger_hostname=${l_hostname:-ledger.example.com}
-echo "# DNS resolvable hostname for Ledger service. This is required for install" >> custom.config.yml
-echo "LEDGER_HOSTNAME: "$ledger_hostname >> custom.config.yml
+    # # LEDGER_WEB_IMAGE
+    # echo $'\n'
+    # read -p "The OCI container image for Ledger [ghcr.io/ctrliq/ascender-ledger/ledger-web]: " l_web_image
+    # ledger_web_image=${l_web_image:-ghcr.io/ctrliq/ascender-ledger/ledger-web}
+    # echo "# The OCI container image for Ledger" >> custom.config.yml
+    # echo "LEDGER_WEB_IMAGE: "$ledger_web_image >> custom.config.yml
 
-# LEDGER_WEB_IMAGE
-echo $'\n'
-read -p "The OCI container image for Ledger [ghcr.io/ctrliq/ascender-ledger/ledger-web]: " l_web_image
-ledger_web_image=${l_web_image:-ghcr.io/ctrliq/ascender-ledger/ledger-web}
-echo "# The OCI container image for Ledger" >> custom.config.yml
-echo "LEDGER_WEB_IMAGE: "$ledger_web_image >> custom.config.yml
+    # ledger_web_replicas
+    echo $'\n'
+    read -p "Number of replicas for the Ledger web container [1]: " l_web_replicas
+    ledger_web_replicas=${l_web_replicas:-1}
+    echo "# Number of replicas for the Ledger web container" >> custom.config.yml
+    echo "ledger_web_replicas: "$ledger_web_replicas >> custom.config.yml
 
-# ledger_web_replicas
-echo $'\n'
-read -p "Number of replicas for the Ledger web container [1]: " l_web_replicas
-ledger_web_replicas=${l_web_replicas:-1}
-echo "# Number of replicas for the Ledger web container" >> custom.config.yml
-echo "ledger_web_replicas: "$ledger_web_replicas >> custom.config.yml
+    # # LEDGER_PARSER_IMAGE
+    # echo $'\n'
+    # read -p "The OCI container image for Ledger Parser [ghcr.io/ctrliq/ascender-ledger/ledger-parser]: " l_parser_image
+    # ledger_parser_image=${l_parser_image:-ghcr.io/ctrliq/ascender-ledger/ledger-parser}
+    # echo "# The OCI container image for Ledger Parser" >> custom.config.yml
+    # echo "LEDGER_PARSER_IMAGE: "$ledger_parser_image >> custom.config.yml
 
-# LEDGER_PARSER_IMAGE
-echo $'\n'
-read -p "The OCI container image for Ledger Parser [ghcr.io/ctrliq/ascender-ledger/ledger-parser]: " l_parser_image
-ledger_parser_image=${l_parser_image:-ghcr.io/ctrliq/ascender-ledger/ledger-parser}
-echo "# The OCI container image for Ledger Parser" >> custom.config.yml
-echo "LEDGER_PARSER_IMAGE: "$ledger_parser_image >> custom.config.yml
+    # ledger_parser_replicas
+    echo $'\n'
+    read -p "Number of replicas for the Ledger Parser container [1]: " l_parser_replicas
+    ledger_parser_replicas=${l_parser_replicas:-1}
+    echo "# Number of replicas for the Ledger Parser container" >> custom.config.yml
+    echo "ledger_parser_replicas: "$ledger_parser_replicas >> custom.config.yml
 
-# ledger_parser_replicas
-echo $'\n'
-read -p "Number of replicas for the Ledger Parser container [1]: " l_parser_replicas
-ledger_parser_replicas=${l_parser_replicas:-1}
-echo "# Number of replicas for the Ledger Parser container" >> custom.config.yml
-echo "ledger_parser_replicas: "$ledger_parser_replicas >> custom.config.yml
+    # # LEDGER_DB_IMAGE
+    # echo $'\n'
+    # read -p "The OCI container image for Ledger DB [ghcr.io/ctrliq/ascender-ledger/ledger-db]: " l_db_image
+    # ledger_db_image=${l_db_image:-ghcr.io/ctrliq/ascender-ledger/ledger-db}
+    # echo "# The OCI container image for Ledger DB" >> custom.config.yml
+    # echo "LEDGER_DB_IMAGE: "$ledger_db_image >> custom.config.yml
 
-# LEDGER_DB_IMAGE
-echo $'\n'
-read -p "The OCI container image for Ledger DB [ghcr.io/ctrliq/ascender-ledger/ledger-db]: " l_db_image
-ledger_db_image=${l_db_image:-ghcr.io/ctrliq/ascender-ledger/ledger-db}
-echo "# The OCI container image for Ledger DB" >> custom.config.yml
-echo "LEDGER_DB_IMAGE: "$ledger_db_image >> custom.config.yml
+    # LEDGER_VERSION
+    echo $'\n'
+    read -p "The image tag indicating the version of Ledger you wish to install [latest]: " l_version
+    ledger_version=${l_version:-latest}
+    echo "# The image tag indicating the version of Ledger you wish to install" >> custom.config.yml
+    echo "LEDGER_VERSION: "$ledger_version >> custom.config.yml
 
-# LEDGER_VERSION
-echo $'\n'
-read -p "The image tag indicating the version of Ledger you wish to install [latest]: " l_version
-ledger_version=${l_version:-latest}
-echo "# The image tag indicating the version of Ledger you wish to install" >> custom.config.yml
-echo "LEDGER_VERSION: "$ledger_version >> custom.config.yml
+    # LEDGER_NAMESPACE
+    echo $'\n'
+    read -p "The Kubernetes namespace in which Ledger objects will live [ledger]: " l_namespace
+    ledger_namespace=${l_namespace:-ledger}
+    echo "# The Kubernetes namespace in which Ledger objects will live" >> custom.config.yml
+    echo "LEDGER_NAMESPACE: "$ledger_namespace >> custom.config.yml
 
-# LEDGER_NAMESPACE
-echo $'\n'
-read -p "The Kubernetes namespace in which Ledger objects will live [ledger]: " l_namespace
-ledger_namespace=${l_namespace:-ledger}
-echo "# The Kubernetes namespace in which Ledger objects will live" >> custom.config.yml
-echo "LEDGER_NAMESPACE: "$ledger_namespace >> custom.config.yml
+    # LEDGER_ADMIN_PASSWORD
+    echo $'\n'
+    read -p "Admin password for Ledger [myadminpassword]: " l_admin_password
+    ledger_admin_password=${l_admin_password:-myadminpassword}
+    echo "# Admin password for Ledger (the username is admin by default)" >> custom.config.yml
+    echo "LEDGER_ADMIN_PASSWORD: "$ledger_admin_password >> custom.config.yml
 
-# LEDGER_ADMIN_PASSWORD
-echo $'\n'
-read -p "Admin password for Ledger [myadminpassword]: " l_admin_password
-ledger_admin_password=${l_admin_password:-myadminpassword}
-echo "# Admin password for Ledger (the username is admin by default)" >> custom.config.yml
-echo "LEDGER_ADMIN_PASSWORD: "$ledger_admin_password >> custom.config.yml
-
-# LEDGER_DB_PASSWORD
-echo $'\n'
-read -p "Password for Ledger database [mydbpassword]: " l_db_password
-ledger_db_password=${l_db_password:-mydbpassword}
-echo "# Password for Ledger database" >> custom.config.yml
-echo "LEDGER_DB_PASSWORD: "$ledger_db_password >> custom.config.yml
+    # LEDGER_DB_PASSWORD
+    echo $'\n'
+    read -p "Password for Ledger database [mydbpassword]: " l_db_password
+    ledger_db_password=${l_db_password:-mydbpassword}
+    echo "# Password for Ledger database" >> custom.config.yml
+    echo "LEDGER_DB_PASSWORD: "$ledger_db_password >> custom.config.yml
+fi

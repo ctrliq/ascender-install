@@ -134,3 +134,22 @@ You can connect to the Ascender UI at https://`ASCENDER_HOST`
 The username is and the corresponding password is stored in `< ASCENDER-INSTALL-SOURCE >`/custom.config.yml under the `ASCENDER_ADMIN_USER` and `ASCENDER_ADMIN_PASSWORD` variables, respectively.
 
 
+## Uninstall Instructions
+
+After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
+
+- `ascender-deployment-{{ k8s_platform }}.yml`
+- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
+- `kustomization.yml`
+- `eks-cluster-manifest.yml` (if you provisioned a new EKS cluster with the Ascender installer)
+
+Remove the timestamp from the filename and then run the following
+commands from within `tmp_dir``:
+
+- `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
+- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
+- `$ kubectl delete -k .`
+
+To delete an EKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`
+
+- `$ eksctl delete cluster -f eks-cluster-manifest.yml`
