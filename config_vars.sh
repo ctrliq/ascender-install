@@ -470,7 +470,7 @@ echo "ascender_replicas: "$ascender_replicas >> custom.config.yml
 
 
 # ascender_image_pull_policy
-if [ $k8s_offline == "false" ]; then
+if [ "$k8s_offline" == "false" ]; then
     echo $'\n'
     pull_policy=(IfNotPresent Always Never)
     selected=()
