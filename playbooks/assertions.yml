@@ -83,7 +83,6 @@
           when: 
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
-            - k8s_platform == "k3s"
             - k8s_offline
           with_items: "{{ ansible_mounts }}"
 
