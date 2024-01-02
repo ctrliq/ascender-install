@@ -8,10 +8,36 @@ k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
 k8s_lb_protocol: http #options include http and https
 
-# ---k3s variables---
+# Routable IP address for the K8s API Server
+# (This could be a Load Balancer if using 3 K8s control nodes)
+kubeapi_server_ip: "127.0.0.1"
 
-# Sets up a new k3s cluster when set to true
+# This value being set to "true" means that some work needs to be done to set up a
+# cluster before proceeding. Here is ther behavior for different values of k8s_platforms:
+# k3s: A single-node k3s cluster will be set up on the inventory server
+#      named "ascender_host"
+# eks: N/A, as this is handled by the EKS_CLUSTER_STATUS variable
+# rke2: N/A, as you must use Labyrinth Labs' Ansible role to set up a fresh kubernetes cluster
 kube_install: false
+
+# Offline Install - Whether to use local assets to complete the install
+k8s_offline: false 
+
+# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images
+k8s_container_registry: registry.io/namespace
+
+# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images
+#LEAVE AS NONE if no such secret is required
+k8s_image_pull_secret: None
+
+# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images
+#LEAVE AS NONE if no such secret is required
+k8s_ee_pull_credentials_secret: None
+
+# Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+download_kubeconfig: false
+
+# ---k3s variables---
 
 # IP address for the K3s Master/Worker node
 # Required for local DNS and k3s install
@@ -85,6 +111,14 @@ EKS_EBS_CSI_DRIVER_VERSION: "v1.24.0"
 # See a list of all dkp clusters with the command 
 # NOTE: This must be done while pointing to the DKP Bootstrap Cluster
 DKP_CLUSTER_NAME: dkp-cluster
+
+# ---rke2 variables---
+
+# The URL to the binary file rke2.linux-amd64. If you want to choose a different 
+# release, you can choose here:
+# https://github.com/rancher/rke2/releases
+RKE2_BINARY_URL: https://github.com/rancher/rke2/releases/download/v1.25.16%2Brke2r1/rke2.linux-amd64
+
 
 # ---Local artifact variables---
 

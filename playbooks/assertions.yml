@@ -15,6 +15,7 @@
         that:
           - LEDGER_HOSTNAME != ASCENDER_HOSTNAME
         fail_msg: "LEDGER_HOSTNAME ({{ LEDGER_HOSTNAME }}) and ASCENDER_HOSTNAME ({{ ASCENDER_HOSTNAME }}) must be different"
+      when: LEDGER_HOSTNAME is defined
 
 - hosts: ascender
   gather_facts: yes
@@ -70,9 +71,22 @@
         #   ansible.builtin.debug:
         #     var: mount_location.stdout_lines[1].split()[0]
 
-        # - name: "Get available disk of {{ mount_location.stdout_lines[1].split()[0] }}"
-        #   ansible.builtin.debug:
-        #     var: ansible_mounts
+        - name: "Get available disk of {{ mount_location.stdout_lines[1].split()[0] }}"
+          ansible.builtin.debug:
+            var: ansible_mounts
+
+
+        - name: "Ensure that free space on {{ mount_location.stdout_lines[1].split()[0] }} is greater than 30GB for k3s offline install"
+          ansible.builtin.assert:
+            that: item.size_available >= 32212254720
+            fail_msg: "Free disk space for /var must be at least 30GB"
+          when: 
+            - item.device is match(mount_location.stdout_lines[1].split()[0])
+            - item.mount == "/"
+            - k8s_platform == "k3s"
+            - k8s_offline
+          with_items: "{{ ansible_mounts }}"
+
 
         - name: "Ensure that free space on {{ mount_location.stdout_lines[1].split()[0] }} is greater than 20GB"
           ansible.builtin.assert:

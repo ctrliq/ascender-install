@@ -3,42 +3,16 @@
     gather_subset:
      - date_time
 
-- name: Import archived Ledger container images into k3s
-  block:
-    - name: Retrieve list of k3s server Ledger Container Image tar files
-      ansible.builtin.find:
-        paths: ~/ledger_images/
-        patterns: '*.tar'
-      register: k3s_server_ledger_images
-      delegate_to: ascender_host
-
-    - ansible.builtin.debug:
-        var: item.path
-      loop: "{{ k3s_server_ledger_images.files }}"
-
-    - name: Import Ledger images into k3s
-      ansible.builtin.command:
-        cmd: "k3s ctr images import {{ item.path }}"
-      loop: "{{ k3s_server_ledger_images.files }}"
-      delegate_to: ascender_host
-    
-    - name: Recursively delete ~/ledger_images/ directory to preserve disk space
-      ansible.builtin.file:
-        path: ~/ledger_images/
-        state: absent
-      delegate_to: ascender_host
-  when: k8s_offline
-
 - name: Generate manifest to install Ledger k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
-    src: ledger_deployment_k3s.yaml
-    dest: "{{ tmp_dir }}/ledger_deployment_k3s.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+    src: ledger_deployment_rke2.yaml
+    dest: "{{ tmp_dir }}/ledger_deployment_rke2.yaml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: "Apply ledger manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
     namespace: "{{ LEDGER_NAMESPACE }}"
-    definition: "{{ lookup('template', 'templates/ledger_deployment_k3s.yaml') | from_yaml_all }}"
+    definition: "{{ lookup('template', 'templates/ledger_deployment_rke2.yaml') | from_yaml_all }}"
     verify_ssl: false
 
 - name: Wait for Ledger web Deployment to complete setting up
