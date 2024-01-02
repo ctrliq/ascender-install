@@ -53,6 +53,16 @@ README](../../README.md#general-prerequisites)
     parse these files for their content, and use the content to create
     a Kubernetes TLS Secret for HTTPS enablement.
 
+### Offline Installation
+
+In order to perform an offline installation of Ascender on k3s, you must complete the following steps before running the installation script:
+  - When setting the variables in `config_vars.sh`, be sure to set `k8s_platform` to `k3s`, and `k8s_offline` to `true`. This will instruct the installer to use archived container images rather than to a container registry to install Ascender and Ledger.
+    - The images are version-pinned, and are expected to be placed at the following locations for Ascender and Ledger, respectively:
+      - `ascender_install/playbooks/roles/k8s_setup/files/k3s_images/ascender_images/`
+      - `ascender_install/playbooks/roles/k8s_setup/files/k3s_images/ledger_images/`
+
+By doing these steps, the Ascender installer will copy the archived images to the k3s server, import them into k3s to allow their usage in Pods, and set the `imagePullPolicy` for all k3s images to `Never`, which will prevent the cluster from attempting to access the internet to retrieve images. 
+
 ## Install Instructions
 
 ### Obtain the sources
@@ -85,6 +95,10 @@ The script will take you through a series of questions, that will populate the v
 ```
 
 Afterward, you can simply edit this file should you not want to run the script again before installing Ascender.
+
+Examples of Configuration files for traditional installation (where resources such as container images are retrieved from online) and offline installation can be found in this directory as:
+- [k3s.default.config.yml](./k3s.default.config.yml)
+- [k3s.offline.default.config.yml](./k3s.offline.default.config.yml)
 
 ### Run the setup script
 
@@ -149,4 +163,24 @@ https://localhost
 
 Username is "Admin" and the corresponding password is stored in <ASCENDER-INSTALL-SOURCE>/default.config.yml under the `ASCENDER_ADMIN_PASSWORD` variable.
 
+### Uninstall
+
+After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
+
+- `ascender-deployment-{{ k8s_platform }}.yml`
+- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
+- `kustomization.yml`
+
+Remove the timestamp from the filename and then run the following
+commands from within `tmp_dir``:
+
+- `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
+- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
+- `$ kubectl delete -k .`
+
+Running the Ascender deletion will remove all related deployments and
+statefulsets, however, persistent volumes and secrets will remain. To
+enforce secrets also getting removed, you can use
+`ascender_garbage_collect_secrets: true` in the `default.config.yml`
+file.
 
