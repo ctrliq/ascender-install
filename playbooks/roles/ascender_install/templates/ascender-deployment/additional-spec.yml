@@ -1,5 +1,5 @@
 {% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
   image_pull_policy: Never
   image: "ghcr.io/ctrliq/ascender"
   image_version: "23.5.1"
