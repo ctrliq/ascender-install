@@ -99,6 +99,16 @@ description/proper usage directly present in the comments.
 - [Elastic Kubernetes Service](ascender-install-instructions/eks/README.md)
 - [RKE Government](ascender-install-instructions/rke2/README.md)
 
+## Adding Components/Configuration Changes
+
+Consider a situation where you have already installed Asender, and wish to change one or more of the attributes of how it is deployed. Some of these changes may include:
+
+- Moving from non-SSL to an SSL connection 
+- Installing Ledger when you may have only installed Ascender first
+- Changing the version of Ascender and or Ledger that is installed
+
+This can be accomplished by either running `config_vars.sh` again, or editing an existing `custom.config.yml`, in each case, changing the desired install variables. You can then rerun `setup.sh`.`
+
 ## Uninstall
 
 After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
