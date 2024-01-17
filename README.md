@@ -101,7 +101,7 @@ description/proper usage directly present in the comments.
 
 ## Adding Components/Configuration Changes
 
-Consider a situation where you have already installed Asender, and wish to change one or more of the attributes of how it is deployed. Some of these changes may include:
+Consider a situation where you have already installed Ascender, and wish to change one or more of the attributes of how it is deployed. Some of these changes may include:
 
 - Moving from non-SSL to an SSL connection 
 - Installing Ledger when you may have only installed Ascender first
