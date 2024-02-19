@@ -1,4 +1,4 @@
-#jinja2: keep_trailing_newline:True
+jinja2: keep_trailing_newline:True
 ---
 # Ascender admin password
 apiVersion: v1
@@ -8,7 +8,8 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 stringData:
   password: {{ ASCENDER_ADMIN_PASSWORD }}
-{% if k8s_lb_protocol == 'https' and ASCENDER_PGSQL_HOST is defined %}
+
+{% if ASCENDER_PGSQL_HOST is defined %}
 ---
 # Ascender postgres host/port and credentials
 apiVersion: v1
@@ -25,127 +26,34 @@ stringData:
   sslmode: prefer
   type: unmanaged
 type: Opaque
----
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: ascender
-spec:
-{% include 'additional-spec.yml' %}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  postgres_configuration_secret: ascender-app-postgres-configuration
-  service_type: ClusterIP
-  ingress_annotations: |
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: 'ip'
-    alb.ingress.kubernetes.io/certificate-arn: {{ EKS_SSL_CERT }}
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
-  ingress_type: ingress
-  ingress_class_name: alb
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - https://{{ ASCENDER_HOSTNAME }}
-{% elif k8s_lb_protocol == 'https' and ASCENDER_PGSQL_HOST is not defined %}
----
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: ascender
-spec:
-{% include 'additional-spec.yml' %}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  service_type: ClusterIP
-  ingress_annotations: |
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: 'ip'
-    alb.ingress.kubernetes.io/certificate-arn: {{ EKS_SSL_CERT }}
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
-  ingress_type: ingress
-  ingress_class_name: alb
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - https://{{ ASCENDER_HOSTNAME }}
-{% elif k8s_lb_protocol == 'http' and ASCENDER_PGSQL_HOST is defined %}
----
-# Ascender postgres host/port and credentials
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ascender-app-postgres-configuration
-  namespace: {{ ASCENDER_NAMESPACE }}
-stringData:
-  host: {{ ASCENDER_PGSQL_HOST }}
-  port: '{{ ASCENDER_PGSQL_PORT }}'
-  database: {{ ASCENDER_PGSQL_DB }}
-  username: {{ ASCENDER_PGSQL_USER }}
-  password: {{ ASCENDER_PGSQL_PWD }}
-  sslmode: prefer
-  type: unmanaged
-type: Opaque
----
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: ascender
-spec:
-{% include 'additional-spec.yml' %}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  postgres_configuration_secret: ascender-app-postgres-configuration
-  service_type: ClusterIP
-  ingress_annotations: |
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: 'ip'
-  ingress_type: ingress
-  ingress_class_name: alb
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - http://{{ ASCENDER_HOSTNAME }}
-{% else %} # Assume k8s_lb_protocol == 'http' and ASCENDER_PGSQL_HOST is not defined
----
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: ascender
-spec:
-{% include 'additional-spec.yml' %}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  service_type: ClusterIP
-  ingress_annotations: |
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: 'ip'
-  ingress_type: ingress
-  ingress_class_name: alb
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - http://{{ ASCENDER_HOSTNAME }}
 {% endif %}
+---
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: ascender-app
+  namespace: ascender
+spec:
+{% include 'additional-spec.yml' %}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_password_secret: ascender-app-admin-password
+  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
+{% if ASCENDER_PGSQL_HOST is defined %}  postgres_configuration_secret: ascender-app-postgres-configuration{% endif %}
+  service_type: ClusterIP
+  ingress_annotations: |
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: 'ip'
+{% if k8s_lb_protocol == 'https' %}
+    alb.ingress.kubernetes.io/certificate-arn: {{ EKS_SSL_CERT }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+{% endif %}
+  ingress_type: ingress
+  ingress_class_name: alb
+  ingress_path: "/"
+  ingress_path_type: Prefix
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}
