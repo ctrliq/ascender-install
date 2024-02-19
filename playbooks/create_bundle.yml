@@ -37,7 +37,7 @@
       - name: redis
         path: docker.io/library/redis
         tag: 7
-    image_dir: /images
+    offline_dir: "{{ playbook_dir }}/../offline"
 
   tasks:
     - name: Add Docker repository
@@ -63,12 +63,44 @@
         state: started
         enabled: yes
 
+    - name: Set directory facts
+      set_fact:
+        image_dir: "{{ offline_dir }}/images"
+        collection_dir: "{{ offline_dir }}/collections"
+        collections: "{{ lookup('file','../collections/requirements.yml') | from_yaml }}"
+
+    - name: Ensure collections directory exists
+      ansible.builtin.file:
+        path: "{{ collection_dir }}"
+        state: directory
+
+    - name: Download collections
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection download "{{ item.name }}:{{ item.version | replace('>','') | replace('=','') }}" -p {{ offline_dir }}/collections/
+        creates:  "{{ offline_dir }}/collections/{{ item.name | replace('.','-') }}-{{ item.version | replace('>','') | replace('=','') }}.tar.gz"
+      loop: "{{ collections.collections }}"
+
+    - name: Remove temp requirements file
+      ansible.builtin.file:
+        path: "{{ collection_dir }}/requirements.yml"
+        state: absent
+
+    - name: Ensure images directory exists
+      ansible.builtin.file:
+        path: "{{ image_dir }}"
+        state: directory
+
+    - name: Pull current offline images
+      set_fact:
+        images: "{{ lookup('fileglob', '{{ image_dir }}/*.tar.gz', errors='warn') }}"
+
     - name: Pull images and create archives
       community.docker.docker_image:
         name: "{{ item.path }}"
         tag: "{{ item.tag }}"
         archive_path: "{{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar"
         source: pull
+      when: item.name ~ '-' ~ item.tag ~ '.tar.gz' not in images
       loop: "{{ containers }}"
 
     - name: Gzip the container files
@@ -78,4 +110,6 @@
         format: gz
         force_archive: true
         remove: true
+      when: item.name ~ '-' ~ item.tag ~ '.tar.gz' not in images
       loop: "{{ containers }}"
+
