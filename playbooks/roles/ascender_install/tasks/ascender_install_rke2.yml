@@ -21,24 +21,11 @@
     src: templates/awx-operator/kustomization.j2
     dest: "{{ tmp_dir }}/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
-- name: Retrieve local AWX Operator directory
-  block:
-    - name: Copy local role AWX Operator archive
-      ansible.builtin.copy:
-        src: "files/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
-        dest: "{{ tmp_dir }}/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
-
-    - name: Unarchive the newly copied AWX Operator archive
-      ansible.builtin.unarchive:
-        src: "{{ tmp_dir }}/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
-        dest: "{{ tmp_dir }}/"
-        remote_src: yes
-    
-    - name: Delete copied role AWX Operator archive
-      ansible.builtin.file:
-        path: "{{ tmp_dir }}/awx-operator-archive-{{ ANSIBLE_OPERATOR_OFFLINE_VERSION }}.zip"
-        state: absent
-    
+- name: Copy Operator Source
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../offline/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}"
+    dest: /tmp/ascender_install_artifacts/
+    remote_src: true
   when:
     - k8s_offline
 
