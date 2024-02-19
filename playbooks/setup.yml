@@ -14,8 +14,8 @@
   when:
     - LEDGER_INSTALL
 
-- name: Cleanup default resources
-  ansible.builtin.import_playbook: cleanup_demo.yml
+#- name: Cleanup default resources
+#  ansible.builtin.import_playbook: cleanup_demo.yml
 
 - name: Configure Initial Playbooks
   ansible.builtin.import_playbook: setup_playbooks.yml
