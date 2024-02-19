@@ -110,7 +110,7 @@
 
     - name: Rename the directory
       ansible.builtin.command:
-        cmd: mv "{{ ops.files[0].path }}" "{{ offline_dir }}/ansible-operator-{{ ANSIBLE_OPERATOR_VERSION }}"
+        cmd: mv "{{ ops.files[0].path }}" "{{ offline_dir }}/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}"
       when: ops.matched == 1
 
     - name: Remove Operator tar
