@@ -39,6 +39,14 @@
   become: true
   when: not k8s_offline
 
+- name: Install Kubectl from RPM (if offline)
+  ansible.builtin.dnf:
+    name: "{{ playbook_dir }}/../offline/packages/kubectl-*"
+    state: present
+    disable_gpg_check: true
+  become: true
+  when: k8s_offline
+
 - name: Install necessary packages for Enterprise Linux
   ansible.builtin.dnf:
     name: "{{ common_packages[ansible_distribution_major_version|int] }}"

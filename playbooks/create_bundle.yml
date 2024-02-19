@@ -1,6 +1,7 @@
 - hosts: localhost
   connection: local
   gather_facts: no
+  become: true
   vars:
     containers:
       - name: ascender
@@ -40,6 +41,37 @@
     offline_dir: "{{ playbook_dir }}/../offline"
 
   tasks:
+    - name: Set directory facts
+      set_fact:
+        package_dir: "{{ offline_dir }}/packages"
+        image_dir: "{{ offline_dir }}/images"
+        collection_dir: "{{ offline_dir }}/collections"
+        collections: "{{ lookup('file','../collections/requirements.yml') | from_yaml }}"
+
+    - name: Add the Kubernetes yum repository
+      ansible.builtin.copy:
+        dest: /etc/yum.repos.d/kubernetes.repo
+        content: |
+          [kubernetes]
+          name=Kubernetes
+          baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+          enabled=0
+          gpgcheck=1
+          gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+
+    - name: Ensure packages directory exists
+      ansible.builtin.file:
+        path: "{{ package_dir }}"
+        state: directory
+
+    - name: Download the kubectl rpm
+      ansible.builtin.dnf:
+        name: kubectl
+        download_only: true
+        download_dir: "{{ package_dir }}"
+        enablerepo: kubernetes
+        state: present
+
     - name: Add Docker repository
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/centos/docker-ce.repo
@@ -62,12 +94,6 @@
         name: docker
         state: started
         enabled: yes
-
-    - name: Set directory facts
-      set_fact:
-        image_dir: "{{ offline_dir }}/images"
-        collection_dir: "{{ offline_dir }}/collections"
-        collections: "{{ lookup('file','../collections/requirements.yml') | from_yaml }}"
 
     - name: Ensure collections directory exists
       ansible.builtin.file:
