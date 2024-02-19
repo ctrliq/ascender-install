@@ -7,3 +7,7 @@ collections:
     version: ">=22.3.0"
   - name: amazon.aws
     version: ">=6.5.0"
+  - name: community.docker
+    version: ">=3.4.11"
+  - name: community.general
+    version: ">=8.1.0"

@@ -1,0 +1,81 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  vars:
+    containers:
+      - name: ascender
+        path: ghcr.io/ctrliq/ascender
+        tag: 23.8.1
+        type: ascender
+      - name: ledger-web
+        path: ghcr.io/ctrliq/ascender-ledger/ledger-web
+        tag: latest
+        type: ledger
+      - name: ledger-parser
+        path: ghcr.io/ctrliq/ascender-ledger/ledger-parser
+        tag: latest
+        type: ledger
+      - name: ledger-db
+        path: ghcr.io/ctrliq/ascender-ledger/ledger-db
+        tag: latest
+        type: ledger
+      - name: awx-operator
+        path: quay.io/ansible/awx-operator
+        tag: 2.12.1
+      - name: awx-ee
+        path: quay.io/ansible/awx-ee
+        tag: latest
+      - name: awx-ee
+        path: quay.io/ansible/awx-ee
+        tag: 23.8.1
+      - name: ascender-ee
+        path: ghcr.io/ctrliq/ascender-ee
+        tag: latest
+      - name: postgres
+        path: docker.io/library/postgres
+        tag: 13
+      - name: redis
+        path: docker.io/library/redis
+        tag: 7
+    image_dir: /images
+
+  tasks:
+    - name: Add Docker repository
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: 0644
+
+    - name: Install Docker
+      ansible.builtin.dnf:
+        name:
+          - docker-ce
+          - python3-pip
+        state: present
+
+    - name: Install requests python module
+      ansible.builtin.pip:
+        name: requests
+
+    - name: Enable Docker Service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pull images and create archives
+      community.docker.docker_image:
+        name: "{{ item.path }}"
+        tag: "{{ item.tag }}"
+        archive_path: "{{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar"
+        source: pull
+      loop: "{{ containers }}"
+
+    - name: Gzip the container files
+      community.general.archive:
+        path: "{{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar"
+        dest: "{{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar.gz"
+        format: gz
+        force_archive: true
+        remove: true
+      loop: "{{ containers }}"
