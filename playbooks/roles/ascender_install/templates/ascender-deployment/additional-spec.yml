@@ -1,6 +1,10 @@
   image: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender" }}
   image_version: {{ ASCENDER_VERSION | default("23.5.1") }}
-  image_pull_policy: {% if k8s_platform == "k3s" and  k8s_offline == "true" %}Never{% else %}{{ ascender_image_pull_policy | default("Always") }}{% endif %}
+{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
+  image_pull_policy: Never
+{% else %}
+  image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
+{% endif %}
   replicas: {{ ascender_replicas | default(1) }}
   init_container_image: {{ k8s_container_registry | default("quay.io/ansible", true)  ~ "/awx-ee" }}
   init_container_image_version: latest
