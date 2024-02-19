@@ -17,6 +17,7 @@
   when:
     - kube_install
     - "'k3s.service' not in services"
+    - not k8s_offline
 
 - name: K3s Offline Install
   when:
@@ -37,8 +38,8 @@
 
   - name: Copy images
     ansible.builtin.copy:
-      src: "{{ playbook_dir }}/../offline/images/{{ item }}"
-      dest: "/var/lib/rancher/k3s/agent/images/{{ item }}"
+      src: "{{ item }}"
+      dest: "/var/lib/rancher/k3s/agent/images/{{ item | basename }}"
       remote_src: true
     with_fileglob: "{{ playbook_dir }}/../offline/images/*.tar.gz"
 
