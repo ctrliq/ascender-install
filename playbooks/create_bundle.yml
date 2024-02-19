@@ -3,6 +3,7 @@
   gather_facts: no
   become: true
   vars:
+    ansible_operator_version: 2.12.1
     containers:
       - name: ascender
         path: ghcr.io/ctrliq/ascender
@@ -22,7 +23,7 @@
         type: ledger
       - name: awx-operator
         path: quay.io/ansible/awx-operator
-        tag: 2.12.1
+        tag: "{{ ansible_operator_version }}"
       - name: awx-ee
         path: quay.io/ansible/awx-ee
         tag: latest
@@ -38,6 +39,8 @@
       - name: redis
         path: docker.io/library/redis
         tag: 7
+    k3s_binary_url: https://github.com/k3s-io/k3s/releases/download/v1.28.6%2Bk3s2/k3s-airgap-images-amd64.tar.gz
+    k3s_images_url: https://github.com/k3s-io/k3s/releases/download/v1.28.6%2Bk3s2/k3s
     offline_dir: "{{ playbook_dir }}/../offline"
 
   tasks:
@@ -47,6 +50,8 @@
         image_dir: "{{ offline_dir }}/images"
         collection_dir: "{{ offline_dir }}/collections"
         collections: "{{ lookup('file','../collections/requirements.yml') | from_yaml }}"
+
+####################### RPM PACKAGES #######################
 
     - name: Add the Kubernetes yum repository
       ansible.builtin.copy:
@@ -72,6 +77,60 @@
         enablerepo: kubernetes
         state: present
 
+####################### ANSIBLE OPERATOR #######################
+
+    - name: Remove Operator if Exists
+      ansible.builtin.file:
+        path: "{{ offline_dir }}/ansible-operator-{{ ansible_operator_version }}"
+        state: absent
+
+    - name: Download the Ansible Operator tar file
+      ansible.builtin.get_url:
+        url: https://api.github.com/repos/ansible/awx-operator/tarball/2.12.1
+        dest: "{{ offline_dir }}/ansible-operator.tar"
+
+    - name: Extract Ansible Operator tar
+      ansible.builtin.unarchive:
+        src: "{{ offline_dir }}/ansible-operator.tar"
+        dest: "{{ offline_dir }}/"
+
+    - name: Find the extracted directory name
+      ansible.builtin.find:
+        paths: "{{ offline_dir }}"
+        patterns: 'ansible-awx-operator-*'
+        file_type: directory
+      register: ops
+
+    - name: Rename the directory
+      ansible.builtin.command:
+        cmd: mv "{{ ops.files[0].path }}" "{{ offline_dir }}/ansible-operator-{{ ansible_operator_version }}"
+      when: ops.matched == 1
+
+    - name: Remove Operator tar
+      ansible.builtin.file:
+        path: "{{ offline_dir }}/ansible-operator.tar"
+        state: absent
+
+####################### ANSIBLE COLLECTIONS #######################
+
+    - name: Ensure collections directory exists
+      ansible.builtin.file:
+        path: "{{ collection_dir }}"
+        state: directory
+
+    - name: Download collections
+      ansible.builtin.command:
+        cmd: ansible-galaxy collection download "{{ item.name }}:{{ item.version | replace('>','') | replace('=','') }}" -p {{ offline_dir }}/collections/
+        creates:  "{{ offline_dir }}/collections/{{ item.name | replace('.','-') }}-{{ item.version | replace('>','') | replace('=','') }}.tar.gz"
+      loop: "{{ collections.collections }}"
+
+    - name: Remove temp requirements file
+      ansible.builtin.file:
+        path: "{{ collection_dir }}/requirements.yml"
+        state: absent
+
+####################### DOCKER IMAGES #######################
+
     - name: Add Docker repository
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/centos/docker-ce.repo
@@ -95,26 +154,25 @@
         state: started
         enabled: yes
 
-    - name: Ensure collections directory exists
-      ansible.builtin.file:
-        path: "{{ collection_dir }}"
-        state: directory
-
-    - name: Download collections
-      ansible.builtin.command:
-        cmd: ansible-galaxy collection download "{{ item.name }}:{{ item.version | replace('>','') | replace('=','') }}" -p {{ offline_dir }}/collections/
-        creates:  "{{ offline_dir }}/collections/{{ item.name | replace('.','-') }}-{{ item.version | replace('>','') | replace('=','') }}.tar.gz"
-      loop: "{{ collections.collections }}"
-
-    - name: Remove temp requirements file
-      ansible.builtin.file:
-        path: "{{ collection_dir }}/requirements.yml"
-        state: absent
-
     - name: Ensure images directory exists
       ansible.builtin.file:
         path: "{{ image_dir }}"
         state: directory
+
+    - name: Download k3s binary
+      ansible.builtin.get_url:
+        url: "{{ k3s_binary_url }}"
+        dest: "{{ package_dir }}/k3s"
+
+    - name: Download k3s installer
+      ansible.builtin.get_url:
+        url: "https://get.k3s.io/"
+        dest: "{{ package_dir }}/k3s_install.sh"
+
+    - name: Download k3s images
+      ansible.builtin.get_url:
+        url: "{{ k3s_images_url }}"
+        dest: "{{ image_dir }}/k3s-airgap-images-amd64.tar.gz"
 
     - name: Pull current offline images
       set_fact:
