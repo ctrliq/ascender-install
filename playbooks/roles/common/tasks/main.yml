@@ -37,6 +37,7 @@
       gpgcheck=1
       gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
   become: true
+  when: not k8s_offline
 
 - name: Install necessary packages for Enterprise Linux
   ansible.builtin.dnf:
