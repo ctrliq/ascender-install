@@ -53,6 +53,7 @@ check_collections() {
   ansible-doc -t module -l | grep amazon.aws.ec2_instance > /dev/null
   if [ $? -ne 0 ]; then
     return 0
+  fi
 
   return 1 
 }
