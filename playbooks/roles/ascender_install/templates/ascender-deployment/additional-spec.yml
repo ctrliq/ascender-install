@@ -1,52 +1,20 @@
-{% if k8s_offline is defined %}
-{% if k8s_platform == "k3s" and  k8s_offline == "true" %}
-  image_pull_policy: Never
-  image: "ghcr.io/ctrliq/ascender"
-  image_version: "23.5.1"
-  init_container_image: "quay.io/ansible/awx-ee"
-  init_container_image_version: "23.5.1"
-  control_plane_ee_image: "quay.io/ansible/awx-ee:latest"
-  postgres_image: "docker.io/library/postgres"
-  postgres_image_version: "13"
-  redis_image: "docker.io/library/redis"
-  redis_image_version: "7"
-{% else %}
-  image: {{ k8s_container_registry | default("ghcr.io/ctrliq")  ~ "/ascender" }}
+  image: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender" }}
   image_version: {{ ASCENDER_VERSION | default("23.5.1") }}
-  image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
+  image_pull_policy: {% if k8s_platform == "k3s" and  k8s_offline == "true" %}Never{% else %}{{ ascender_image_pull_policy | default("Always") }}{% endif %}
   replicas: {{ ascender_replicas | default(1) }}
-  init_container_image: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-ee" }}
+  init_container_image: {{ k8s_container_registry | default("quay.io/ansible", true)  ~ "/awx-ee" }}
   init_container_image_version: latest
-  control_plane_ee_image: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-ee" }}
+  control_plane_ee_image: {{ k8s_container_registry | default("quay.io/ansible", true)  ~ "/awx-ee" }}
   control_plane_ee_image_version: latest
-  postgres_image: {{ k8s_container_registry | default("docker.io")  ~ "/postgres" }}
+  postgres_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/postgres" }}
   postgres_image_version: "13"
-  redis_image: {{ k8s_container_registry | default("docker.io")  ~ "/redis" }}
+  redis_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/redis" }}
   redis_image_version: "7"
-{% endif %}
-{% else %}  
-  image: {{ k8s_container_registry | default("ghcr.io/ctrliq")  ~ "/ascender" }}
-  image_version: {{ ASCENDER_VERSION | default("23.5.1") }}
-  image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
-  replicas: {{ ascender_replicas | default(1) }}
-  init_container_image: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-ee" }}
-  init_container_image_version: latest
-  control_plane_ee_image: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-ee" }}
-  control_plane_ee_image_version: latest
-  postgres_image: {{ k8s_container_registry | default("docker.io")  ~ "/postgres" }}
-  postgres_image_version: "13"
-  redis_image: {{ k8s_container_registry | default("docker.io")  ~ "/redis" }}
-  redis_image_version: "7"
-{% endif %}
-{% if k8s_image_pull_secret is defined %}
-{% if k8s_image_pull_secret != 'None'  %}
+{% if k8s_image_pull_secret is defined and k8s_image_pull_secret != 'None' %}
   image_pull_secret: {{ k8s_image_pull_secret }}
-{% endif %}  
 {% endif %}
-{% if k8s_ee_pull_credentials_secret is defined %}
-{% if k8s_ee_pull_credentials_secret != 'None'  %}
+{% if k8s_ee_pull_credentials_secret is defined and k8s_ee_pull_credentials_secret != 'None'%}
   ee_pull_credentials_secret: {{ k8s_ee_pull_credentials_secret }}
-{% endif %}
 {% endif %}
   redis_capabilities:
    - CHOWN
