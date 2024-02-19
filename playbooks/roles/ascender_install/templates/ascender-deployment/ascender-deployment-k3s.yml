@@ -52,11 +52,15 @@ spec:
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
   admin_password_secret: ascender-app-admin-password
-{% if ASCENDER_PGSQL_HOST is defined %}  postgres_configuration_secret: ascender-app-postgres-configuration{% endif %}
+{% if ASCENDER_PGSQL_HOST is defined %}
+  postgres_configuration_secret: ascender-app-postgres-configuration
+{% endif %}
   ingress_type: ingress
   ingress_path: "/"
   ingress_path_type: Prefix
-{% if k8s_lb_protocol == 'https' %}  ingress_tls_secret: ascender-tls-secret{% endif %}
+{% if k8s_lb_protocol == 'https' %}
+  ingress_tls_secret: ascender-tls-secret
+{% endif %}
   hostname: {{ ASCENDER_HOSTNAME }}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
