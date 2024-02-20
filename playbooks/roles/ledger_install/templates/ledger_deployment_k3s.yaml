@@ -171,10 +171,10 @@ spec:
         - name: admin-password
           value: /run/secrets/admin-password
         image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-db"  }}:{{ LEDGER_VERSION }}
-{% if k8s_platform == "k3s" and k8s_offline is defined and k8s_offline == "true" %}
+{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
         imagePullPolicy: Never
 {% else %}
-        imagePullPolicy: Always
+        imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
 {% endif %}
         name: db
         ports:
@@ -236,10 +236,10 @@ spec:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
         image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-parser"  }}:{{ LEDGER_VERSION }}
-{% if k8s_platform == "k3s" and k8s_offline is defined and k8s_offline == "true" %}
+{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
         imagePullPolicy: Never
 {% else %}
-        imagePullPolicy: Always
+        imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
 {% endif %}
         name: parser
         ports:
@@ -288,10 +288,10 @@ spec:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
         image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-web"  }}:{{ LEDGER_VERSION }}
-{% if k8s_platform == "k3s" and k8s_offline is defined and k8s_offline == "true" %}
+{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
         imagePullPolicy: Never
 {% else %}
-        imagePullPolicy: Always
+        imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
 {% endif %}
         name: web
         ports:

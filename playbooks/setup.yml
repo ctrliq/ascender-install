@@ -11,11 +11,11 @@
 
 - name: Install Ledger
   ansible.builtin.import_playbook: install_ledger.yml
-  when:
-    - LEDGER_INSTALL
+  when: LEDGER_INSTALL
 
 #- name: Cleanup default resources
 #  ansible.builtin.import_playbook: cleanup_demo.yml
 
 - name: Configure Initial Playbooks
   ansible.builtin.import_playbook: setup_playbooks.yml
+  when: not k8s_offline | default(false)

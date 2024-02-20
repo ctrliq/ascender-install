@@ -49,8 +49,13 @@
       state: file
       mode: "0755"
 
-  - name: Install K3s Offline (this may take up to 5 minutes)
+  - name: Install K3s Offline
     ansible.builtin.shell: INSTALL_K3S_SKIP_DOWNLOAD=true INSTALL_K3S_EXEC="--write-kubeconfig-mode 644" INSTALL_K3S_SKIP_SELINUX_RPM=true INSTALL_K3S_SELINUX_WARN=true {{ playbook_dir }}/../offline/packages/k3s_install.sh
+
+  - name: Import images
+    ansible.builtin.shell:
+      cmd: k3s ctr images import {{ item }}
+    with_fileglob: "{{ playbook_dir }}/../offline/images/*.tar"
 
 - name: Ensure that ~/.kube directory exists
   ansible.builtin.file:
@@ -136,56 +141,3 @@
 #   when: 
 #     - not use_etc_hosts
 #     - LEDGER_INSTALL
-
-
-- name: Copy archived Ascender container images to k3s server
-  block:
-    - name: Retrieve list of Ascender Container Image tar files
-      ansible.builtin.find:
-        paths: "{{ role_path }}/files/k3s_images/ascender_images/"
-        patterns: '*.tar'
-      register: local_ascender_images
-      delegate_to: localhost
-
-    - ansible.builtin.debug:
-        var: item.path
-      loop: "{{ local_ascender_images.files }}"
-
-    - name: Ensure that ~/ascender_images/ directory exists
-      ansible.builtin.file:
-        path: ~/ascender_images/
-        state: directory
-
-    - name: Copy Ascender Container Images to k3s server
-      ansible.builtin.copy:
-        src: "{{ item.path }}"
-        dest: ~/ascender_images/
-      loop: "{{ local_ascender_images.files }}"
-  when: k8s_offline
-
-- name: Copy archived Ledger container images to k3s server
-  block:
-    - name: Retrieve list of Ledger Container Image tar files
-      ansible.builtin.find:
-        paths: "{{ role_path }}/files/k3s_images/ledger_images/"
-        patterns: '*.tar'
-      register: local_ledger_images
-      delegate_to: localhost
-
-    - ansible.builtin.debug:
-        var: item.path
-      loop: "{{ local_ledger_images.files }}"
-
-    - name: Ensure that ~/ledger_images/ directory exists
-      ansible.builtin.file:
-        path: ~/ledger_images/
-        state: directory
-
-    - name: Copy Ledger Container Images to k3s server
-      ansible.builtin.copy:
-        src: "{{ item.path }}"
-        dest: ~/ledger_images/
-      loop: "{{ local_ledger_images.files }}"
-  when: 
-    - k8s_offline
-    - LEDGER_INSTALL
