@@ -52,11 +52,6 @@
   - name: Install K3s Offline
     ansible.builtin.shell: INSTALL_K3S_SKIP_DOWNLOAD=true INSTALL_K3S_EXEC="--write-kubeconfig-mode 644" INSTALL_K3S_SKIP_SELINUX_RPM=true INSTALL_K3S_SELINUX_WARN=true {{ playbook_dir }}/../offline/packages/k3s_install.sh
 
-  - name: Import images
-    ansible.builtin.shell:
-      cmd: k3s ctr images import {{ item }}
-    with_fileglob: "{{ playbook_dir }}/../offline/images/*.tar"
-
 - name: Ensure that ~/.kube directory exists
   ansible.builtin.file:
     path: ~/.kube
