@@ -3,6 +3,13 @@
     gather_subset:
      - date_time
 
+- name: Import images
+  ansible.builtin.shell:
+    cmd: k3s ctr images import {{ item }}
+  with_fileglob:
+    - "{{ playbook_dir }}/../offline/images/ledger*.tar"
+  when: k8s_offline
+
 - name: Generate manifest to install Ledger k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: ledger_deployment_k3s.yaml

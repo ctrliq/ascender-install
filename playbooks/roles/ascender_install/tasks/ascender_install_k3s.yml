@@ -26,9 +26,16 @@
     src: "{{ playbook_dir }}/../offline/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config"
     dest: /tmp/ascender_install_artifacts/
     remote_src: true
-  when:
-    - k8s_offline
-    
+  when: k8s_offline | default(false) | bool
+
+- name: Import Operator Images
+  ansible.builtin.shell:
+    cmd: k3s ctr images import {{ item }}
+  with_fileglob:
+    - "{{ playbook_dir }}/../offline/images/kube-rbac-proxy*.tar"
+    - "{{ playbook_dir }}/../offline/images/awx-operator*.tar"
+  when: k8s_offline | default(false) | bool
+
 - name: Install AWX Operator with Kustomize
   kubernetes.core.k8s:
     definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
@@ -39,6 +46,15 @@
     path: "{{ tmp_dir }}/kustomization.yml"
     state: absent
 
+- name: Import Ascender Images
+  ansible.builtin.shell:
+    cmd: k3s ctr images import {{ item }}
+  with_fileglob:
+    - "{{ playbook_dir }}/../offline/images/ascender*.tar"
+    - "{{ playbook_dir }}/../offline/images/postgres*.tar"
+    - "{{ playbook_dir }}/../offline/images/redis*.tar"
+  when: k8s_offline | default(false) | bool
+
 - name: Wait for Operator deployment to be ready
   kubernetes.core.k8s_info:
     kind: Deployment
@@ -48,7 +64,7 @@
     wait_sleep: 10
     wait_timeout: 360
     verify_ssl: false
-  
+
 - name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: "ascender-deployment/ascender-deployment-k3s.yml"
@@ -70,9 +86,6 @@
     wait_timeout: 360
     verify_ssl: false
   register: ascender_web_deployment
-
-# - ansible.builtin.debug:
-#     var: ascender_web_deployment
 
 - name: Set the Ascender URL
   ansible.builtin.set_fact:
