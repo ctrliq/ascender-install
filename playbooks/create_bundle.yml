@@ -25,12 +25,6 @@
       - name: awx-operator
         path: quay.io/ansible/awx-operator
         tag: "{{ ANSIBLE_OPERATOR_VERSION }}"
-      - name: awx-ee
-        path: quay.io/ansible/awx-ee
-        tag: latest
-      - name: awx-ee
-        path: quay.io/ansible/awx-ee
-        tag: "{{ ASCENDER_VERSION }}"
       - name: ascender-ee
         path: ghcr.io/ctrliq/ascender-ee
         tag: latest

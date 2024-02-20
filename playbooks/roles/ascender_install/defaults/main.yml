@@ -1,0 +1,3 @@
+ee_images:
+  - name: Ascender-EE (Latest)
+    image: ghcr.io/ctrliq/ascender-ee:latest
