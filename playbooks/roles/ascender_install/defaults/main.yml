@@ -1,3 +1,27 @@
 ee_images:
   - name: Ascender-EE (Latest)
     image: ghcr.io/ctrliq/ascender-ee:latest
+
+# DNS resolvable hostname for Ascender service. This is required for install.
+ASCENDER_HOSTNAME: ascender.example.com
+
+# The domain name for all components; required when k8s_platorm=="eks"
+ASCENDER_DOMAIN: example.com
+
+# k8s namespace for Ascender k8s objects
+ASCENDER_NAMESPACE: ascender
+
+# Administrator username for Ascender
+ASCENDER_ADMIN_USER: admin
+
+# Administrator password for Ascender
+ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+
+# The OCI container image for Ascender
+ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
+
+# The image tag indicating the version of Ascender you wish to install
+ASCENDER_VERSION: latest
+
+# The version of the AWX Operator used to install Ascender and its components
+ANSIBLE_OPERATOR_VERSION: latest
