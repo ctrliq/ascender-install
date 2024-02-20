@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   # Find the latest tag here: https://github.com/ansible/awx-operator/releases
   # - github.com/ansible/awx-operator/config/default?ref=<tag>
-{% if k8s_offline is defined and k8s_offline == true %}
+{% if k8s_offline | default (false) | bool %}
   - ./config/default
 {% else %}
   - github.com/ansible/awx-operator/config/default?ref={{ ANSIBLE_OPERATOR_VERSION }}
