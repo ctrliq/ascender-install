@@ -80,7 +80,7 @@ Additionally, there is an executable script in this directory called [config_var
 
 The Ascender Install script also uses the Ansible inventory file, [inventory](./inventory), located in the top level directory of this repository. 
 
-For both the config file and inventory files, you will find templates for each Kubernetes distribution in its corresponding directory in [ascender-install-instructions](./ascender-install-instructions/). You can use these templates as guides for how `custom.config.ml` and `inventory` should look for your particular install.
+For both the config file and inventory files, you will find templates for each Kubernetes distribution in its corresponding directory in [docs](./docs/). You can use these templates as guides for how `custom.config.ml` and `inventory` should look for your particular install.
 
 The [**Uninstall**](#uninstall) section of this tutorial references
 two of the variables that need to be set:
@@ -95,9 +95,9 @@ description/proper usage directly present in the comments.
 
 ## Installation Instructions by Kubernetes Platform
 
-- [K3s](ascender-install-instructions/k3s/README.md)
-- [Elastic Kubernetes Service](ascender-install-instructions/eks/README.md)
-- [RKE Government](ascender-install-instructions/rke2/README.md)
+- [K3s](docs/k3s/README.md)
+- [Elastic Kubernetes Service](docs/eks/README.md)
+- [RKE Government](docs/rke2/README.md)
 
 ## Adding Components/Configuration Changes
 
