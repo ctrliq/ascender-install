@@ -2,7 +2,7 @@
 # ---Kubernetes-specific variables---
 
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
+k8s_platform: k3s # Options include k3s, eks and dkp, with more to come.
 
 # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
@@ -158,7 +158,7 @@ ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 
 # The image tag indicating the version of Ascender you wish to install
-ASCENDER_VERSION: 23.8.1
+ASCENDER_VERSION: 24.0.0
 
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.13.1
@@ -184,7 +184,6 @@ ascender_setup_playbooks: true
 
 # # External PostgreSQL database name used for Ascender (this DB must exist)
 # ASCENDER_PGSQL_DB: ascenderdb
-
 
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
 ascender_replicas: 1

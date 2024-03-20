@@ -1,0 +1,32 @@
+# Determines whether or not Ledger will be installed
+LEDGER_INSTALL: true
+
+# DNS resolvable hostname for Ledger service. This is required for install.
+LEDGER_HOSTNAME: ledger.example.com
+
+# The OCI container image for Ledger
+LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
+
+# The number of ledger web pods - this is good to ensure high availability
+ledger_web_replicas: 1
+
+# The OCI container image for the Ledger Parser
+LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-parser
+
+# The number of ledger parser pods - this is good to ensure high availability
+ledger_parser_replicas: 1
+
+# The OCI container image for the Ledger Database
+LEDGER_DB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-db
+
+# The image tag indicating the version of Ledger you wish to install
+LEDGER_VERSION: latest
+
+# The Kubernetes namespace in which Ledger objects will live
+LEDGER_NAMESPACE: ledger
+
+# Admin password for Ledger (the username is admin by default)
+LEDGER_ADMIN_PASSWORD: "myadminpassword"
+
+# Password for Ledger database
+LEDGER_DB_PASSWORD: "mydbpassword"

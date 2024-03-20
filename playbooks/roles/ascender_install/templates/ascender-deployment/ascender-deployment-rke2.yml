@@ -8,7 +8,7 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 stringData:
   password: {{ ASCENDER_ADMIN_PASSWORD }}
-{% if k8s_lb_protocol == 'https' and ASCENDER_PGSQL_HOST is defined %}
+{% if ASCENDER_PGSQL_HOST is defined %}
 ---
 # Ascender postgres host/port and credentials
 apiVersion: v1
@@ -25,130 +25,43 @@ stringData:
   sslmode: prefer
   type: unmanaged
 type: Opaque
----
-# Ascender TLS Certificate and Key
-apiVersion: v1
-data:
-  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
-  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
-kind: Secret
-metadata:
-  name: ascender-tls-secret
-  namespace: {{ ASCENDER_NAMESPACE }}
-type: kubernetes.io/tls
----
-# Ascender AWX Object
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: {{ ASCENDER_NAMESPACE }}
-spec:
-{% include 'additional-spec.yml' %}
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  postgres_configuration_secret: ascender-app-postgres-configuration
-  ingress_type: ingress
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  ingress_tls_secret: ascender-tls-secret
-  hostname: {{ ASCENDER_HOSTNAME }}
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - https://{{ ASCENDER_HOSTNAME }}
-{% elif k8s_lb_protocol == 'https' and ASCENDER_PGSQL_HOST is not defined %}
----
-# Ascender TLS Certificate and Key
-apiVersion: v1
-data:
-  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
-  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
-kind: Secret
-metadata:
-  name: ascender-tls-secret
-  namespace: {{ ASCENDER_NAMESPACE }}
-type: kubernetes.io/tls
----
-# Ascender AWX Object
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: {{ ASCENDER_NAMESPACE }}
-spec:
-{% include 'additional-spec.yml' %}
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  ingress_type: ingress
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  ingress_tls_secret: ascender-tls-secret
-  hostname: {{ ASCENDER_HOSTNAME }}
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - https://{{ ASCENDER_HOSTNAME }}
-{% elif k8s_lb_protocol == 'http' and ASCENDER_PGSQL_HOST is defined %}
----
-# Ascender postgres host/port and credentials
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ascender-app-postgres-configuration
-  namespace: {{ ASCENDER_NAMESPACE }}
-stringData:
-  host: {{ ASCENDER_PGSQL_HOST }}
-  port: '{{ ASCENDER_PGSQL_PORT }}'
-  database: {{ ASCENDER_PGSQL_DB }}
-  username: {{ ASCENDER_PGSQL_USER }}
-  password: {{ ASCENDER_PGSQL_PWD }}
-  sslmode: prefer
-  type: unmanaged
-type: Opaque
----
-# Ascender AWX Object
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: {{ ASCENDER_NAMESPACE }}
-spec:
-{% include 'additional-spec.yml' %}
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  postgres_configuration_secret: ascender-app-postgres-configuration
-  ingress_type: ingress
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  hostname: {{ ASCENDER_HOSTNAME }}
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - http://{{ ASCENDER_HOSTNAME }}
-{% else %} # Assume k8s_lb_protocol == 'http' and ASCENDER_PGSQL_HOST is not defined
----
-# Ascender AWX Object
-apiVersion: awx.ansible.com/v1beta1
-kind: AWX
-metadata:
-  name: ascender-app
-  namespace: {{ ASCENDER_NAMESPACE }}
-spec:
-{% include 'additional-spec.yml' %}
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-  postgres_configuration_secret: ascender-app-postgres-configuration
-  ingress_type: ingress
-  ingress_path: "/"
-  ingress_path_type: Prefix
-  hostname: {{ ASCENDER_HOSTNAME }}
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - http://{{ ASCENDER_HOSTNAME }}
 {% endif %}
+{% if k8s_lb_protocol == 'https' %}
+---
+# Ascender TLS Certificate and Key
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ ASCENDER_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
+---
+# Ascender AWX Object
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: ascender-app
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+{% include 'additional-spec.yml' %}
+  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_password_secret: ascender-app-admin-password
+{% if ASCENDER_PGSQL_HOST is defined %}
+  postgres_configuration_secret: ascender-app-postgres-configuration
+{% endif %}
+  ingress_type: ingress
+  ingress_path: "/"
+  ingress_path_type: Prefix
+{% if k8s_lb_protocol == 'https' %}
+  ingress_tls_secret: ascender-tls-secret
+{% endif %}
+  hostname: {{ ASCENDER_HOSTNAME }}
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}

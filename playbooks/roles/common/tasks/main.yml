@@ -20,10 +20,10 @@
     path: "{{ tmp_dir }}"
     state: directory
     
-- name: Enable EPEL Repo
+- name: Enable EPEL Repo (Online)
   ansible.builtin.dnf:
     name: epel-release
-    state: latest
+    state: present
   become: true
 
 - name: Add the Kubernetes yum repository
@@ -37,11 +37,22 @@
       gpgcheck=1
       gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
   become: true
+  when: not k8s_offline
+
+- name: Install Kubectl from RPM (if offline)
+  ansible.builtin.dnf:
+    name: "{{ item }}"
+    state: present
+    disable_gpg_check: true
+    cacheonly: true
+  become: true
+  with_fileglob: "{{ playbook_dir }}/../offline/packages/kubectl-*"
+  when: k8s_offline
 
 - name: Install necessary packages for Enterprise Linux
   ansible.builtin.dnf:
     name: "{{ common_packages[ansible_distribution_major_version|int] }}"
-    update_cache: true
+#    update_cache: true
     state: present
   become: true
 
@@ -80,8 +91,3 @@
   when:
     - not eksctl_file.stat.exists or not eksctl_file.stat.xusr or not eksctl_file.stat.xgrp or not eksctl_file.stat.xoth
     - k8s_platform == "eks"
-
-
-
-
-  

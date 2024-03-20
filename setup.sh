@@ -38,6 +38,10 @@ check_ansible() {
 }
 
 check_collections() {
+  ansible-doc -t module -l | grep ansible.posix.selinux > /dev/null
+  if [ $? -ne 0 ]; then
+    return 0
+  fi
   ansible-doc -t module -l | grep awx.awx.settings > /dev/null
   if [ $? -ne 0 ]; then
     return 0
@@ -46,10 +50,11 @@ check_collections() {
   if [ $? -ne 0 ]; then
     return 0
   fi
-  ansible-doc -t module -l | grep ansible.posix.selinux > /dev/null
+  ansible-doc -t module -l | grep amazon.aws.ec2_instance > /dev/null
   if [ $? -ne 0 ]; then
     return 0
   fi
+
   return 1 
 }
 
@@ -64,7 +69,14 @@ fi
 check_collections
 if [ $? -ne 1 ]; then
   echo "#### INSTALLING COLLECTIONS ####"
-  ansible-galaxy install -r collections/requirements.yml
+  if [ -f "$(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz" ]; then
+    ansible-galaxy collection install $(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz
+    ansible-galaxy collection install $(dirname $0)/offline/collections/awx-awx-22.3.0.tar.gz
+    ansible-galaxy collection install $(dirname $0)/offline/collections/kubernetes-core-2.4.0.tar.gz
+    ansible-galaxy collection install $(dirname $0)/offline/collections/amazon-aws-6.5.0.tar.gz
+  else
+    ansible-galaxy install -r collections/requirements.yml
+  fi
 fi
 
 PASSED_ARG=$@

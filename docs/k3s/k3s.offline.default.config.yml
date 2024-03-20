@@ -1,21 +1,48 @@
 ---
-
 # ---Kubernetes-specific variables---
 
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-k8s_platform: k3s # Options include k3s and dkp, with more to come.
-
-# Sets up a new kubernetes cluster when set to true
-kube_install: false
-
-# Routable IP address for the K3s Master/Worker node
-# required for DNS and k3s install
-k3s_master_node_ip: "127.0.0.1"
+k8s_platform: k3s # Options include k3s, eks and dkp, with more to come.
 
 # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
 k8s_lb_protocol: http #options include http and https
 
+# Routable IP address for the K8s API Server
+# (This could be a Load Balancer if using 3 K8s control nodes)
+kubeapi_server_ip: "127.0.0.1"
+
+# This value being set to "true" means that some work needs to be done to set up a
+# cluster before proceeding. Here is ther behavior for different values of k8s_platforms:
+# k3s: A single-node k3s cluster will be set up on the inventory server
+#      named "ascender_host"
+# eks: N/A, as this is handled by the EKS_CLUSTER_STATUS variable
+# rke2: N/A, as you must use Labyrinth Labs' Ansible role to set up a fresh kubernetes cluster
+kube_install: true
+
+# Offline Install - Whether to use local assets to complete the install
+k8s_offline: true
+
+# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images
+# k8s_container_registry: ""
+
+# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the ASCENDER images
+#LEAVE AS NONE if no such secret is required
+# k8s_image_pull_secret: None
+
+# Kubernetes secret containing the login credentials required for the INTERNAL registry holding the EXECUTION ENVIRONMENT images
+#LEAVE AS NONE if no such secret is required
+# k8s_ee_pull_credentials_secret: None
+
+# Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+download_kubeconfig: true
+
+# ---k3s variables---
+
+# IP address for the K3s Master/Worker node
+# Required for local DNS and k3s install
+# This IP Address must be close reachable by the server from which this installer is running
+k3s_master_node_ip: "127.0.0.1"
 # ---Local artifact variables---
 
 # TLS Certificate file, required when deploying HTTPS in K3s
@@ -31,12 +58,15 @@ use_etc_hosts: true
 # A directory in which to place both temporary artifacts
 # and timestamped Kubernetes Manifests to make Ascender/Ledger easy
 # to uninstall
-tmp_dir: "/tmp/ascender_install_artifacts"
+tmp_dir: "{{ playbook_dir }}/ascender_install_artifacts"
 
 # ---Ascender install variables---
 
 # DNS resolvable hostname for Ascender service. This is required for install.
 ASCENDER_HOSTNAME: ascender.example.com
+
+# The domain name for all components; required when k8s_platorm=="eks"
+ASCENDER_DOMAIN: example.com
 
 # k8s namespace for Ascender k8s objects
 ASCENDER_NAMESPACE: ascender
@@ -51,13 +81,16 @@ ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 
 # The image tag indicating the version of Ascender you wish to install
-ASCENDER_VERSION: 23.3.1
+ASCENDER_VERSION: 24.0.0
 
 # The version of the AWX Operator used to install Ascender and its components
-ANSIBLE_OPERATOR_VERSION: 2.7.0
+ANSIBLE_OPERATOR_VERSION: 2.13.1
 
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
+
+# Setup extra demo playbooks after installation
+ascender_setup_playbooks: true
 
 # # External PostgreSQL ip or url resolvable by the cluster
 # ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" 
@@ -75,9 +108,11 @@ ascender_garbage_collect_secrets: true
 # # External PostgreSQL database name used for Ascender (this DB must exist)
 # ASCENDER_PGSQL_DB: ascenderdb
 
+
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
 ascender_replicas: 1
 ascender_image_pull_policy: Always
+
 
 # ---Ledger install variables---
 
@@ -113,3 +148,7 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
+
+
+
+
