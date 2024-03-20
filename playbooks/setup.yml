@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
+# Copyright (c) 2024, Ctrl IQ, Inc. All rights reserved.
 
 - name: Ensure Correct architecture for K3s Target
   ansible.builtin.import_playbook: assertions.yml
@@ -12,9 +12,6 @@
 - name: Install Ledger
   ansible.builtin.import_playbook: install_ledger.yml
   when: LEDGER_INSTALL
-
-#- name: Cleanup default resources
-#  ansible.builtin.import_playbook: cleanup_demo.yml
 
 - name: Configure Initial Playbooks
   ansible.builtin.import_playbook: setup_playbooks.yml
