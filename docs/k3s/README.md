@@ -53,16 +53,6 @@ README](../../README.md#general-prerequisites)
     parse these files for their content, and use the content to create
     a Kubernetes TLS Secret for HTTPS enablement.
 
-### Offline Installation
-
-In order to perform an offline installation of Ascender on k3s, you must complete the following steps before running the installation script:
-  - When setting the variables in `config_vars.sh`, be sure to set `k8s_platform` to `k3s`, and `k8s_offline` to `true`. This will instruct the installer to use archived container images rather than to a container registry to install Ascender and Ledger.
-    - The images are version-pinned, and are expected to be placed at the following locations for Ascender and Ledger, respectively:
-      - `ascender_install/playbooks/roles/k8s_setup/files/k3s_images/ascender_images/`
-      - `ascender_install/playbooks/roles/k8s_setup/files/k3s_images/ledger_images/`
-
-By doing these steps, the Ascender installer will copy the archived images to the k3s server, import them into k3s to allow their usage in Pods, and set the `imagePullPolicy` for all k3s images to `Never`, which will prevent the cluster from attempting to access the internet to retrieve images. 
-
 ## Install Instructions
 
 ### Obtain the sources
@@ -122,6 +112,16 @@ localhost                  : ok=72   changed=27   unreachable=0    failed=0    s
 
 ASCENDER SUCCESSFULLY SETUP
 ```
+
+
+### Offline Installation
+
+In order to perform an offline installation of Ascender on k3s, you must complete the following steps before running the installation script:
+  - Run the `playbooks/create_bundle.yml` playbook on a machine that has access to the internet.
+  - Copy the `offline` folder into your `ascender-install` folder on the machine you would like to install from.
+  - When setting the variables in your `config_vars.sh`, be sure to set `k8s_platform` to `k3s`, and `k8s_offline` to `true`. This will instruct the installer to use archived container images rather than to a container registry to install Ascender and Ledger.
+
+By doing these steps, the Ascender installer will copy the archived images to the k3s server, import them into k3s to allow their usage in Pods, and set the `imagePullPolicy` for all k3s images to `Never`, which will prevent the cluster from attempting to access the internet to retrieve images. 
 
 
 ### Connecting to Ascender Web UI

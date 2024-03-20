@@ -1,9 +1,13 @@
 collections:
-  - name: ansible.posix
-    version: ">=1.5.4"
-  - name: kubernetes.core
-    version: ">=2.4.0"
-  - name: awx.awx
-    version: ">=22.3.0"
   - name: amazon.aws
     version: ">=6.5.0"
+  - name: ansible.posix
+    version: ">=1.5.4"
+  - name: awx.awx
+    version: ">=22.3.0"
+  - name: community.docker
+    version: ">=3.7.0"
+  - name: community.general
+    version: ">=8.3.0"
+  - name: kubernetes.core
+    version: ">=2.4.0"

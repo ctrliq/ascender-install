@@ -8,7 +8,7 @@
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
 
   vars_files:
-    - ["custom.config.yml", "default.config.yml"]
+    - ["../custom.config.yml", "../default.config.yml"]
 
   tasks:
 

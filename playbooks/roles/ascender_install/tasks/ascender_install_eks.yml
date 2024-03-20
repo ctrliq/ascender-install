@@ -21,6 +21,14 @@
     src: templates/awx-operator/kustomization.j2
     dest: "{{ tmp_dir }}/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
+- name: Copy Operator Source
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../offline/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config"
+    dest: /tmp/ascender_install_artifacts/
+    remote_src: true
+  when:
+    - k8s_offline
+
 - name: Install AWX Operator with Kustomize
   kubernetes.core.k8s:
     definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
