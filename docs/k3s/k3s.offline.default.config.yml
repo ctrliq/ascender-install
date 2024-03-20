@@ -21,7 +21,7 @@ kubeapi_server_ip: "127.0.0.1"
 kube_install: true
 
 # Offline Install - Whether to use local assets to complete the install
-k8s_offline: false 
+k8s_offline: true
 
 # Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images
 # k8s_container_registry: ""
