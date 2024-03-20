@@ -166,6 +166,9 @@ ANSIBLE_OPERATOR_VERSION: 2.12.1
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
 
+# Setup extra demo playbooks after installation
+ascender_setup_playbooks: true
+
 # # External PostgreSQL ip or url resolvable by the cluster
 # ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" 
 
