@@ -6,3 +6,8 @@
     name: "{{ inventory.name }}"
     description: "{{ project.description | default('') }}"
     organization: Default
+    validate_certs: false
+  register: result
+  until: result is succeeded
+  retries: 20
+  delay: 5

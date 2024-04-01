@@ -20,6 +20,7 @@
         api_version: v1
         kind: Namespace
         state: present
+        validate_certs: false
 
     - name: "Run ascender_install role for {{ k8s_platform }}"
       ansible.builtin.include_role:
