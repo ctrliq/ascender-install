@@ -10,7 +10,9 @@
     name: firewalld
     state: stopped
     enabled: false
-  when: "'firewalld.service' in services"
+  when:
+    - firewalld_disable | bool 
+    - "'firewalld.service' in services"
 
 - name: Install K3s Online (this may take up to 5 minutes)
   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -

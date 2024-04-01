@@ -23,6 +23,10 @@ kube_install: false
 # Offline Install - Whether to use local assets to complete the install
 k8s_offline: false 
 
+# Firewall Disable - For most K8s installs, firewalls are recommended to be disabled, set this to false if
+# if you need the firewall to stay enabled
+firewalld_disable: true
+
 # Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images
 k8s_container_registry: ""
 
