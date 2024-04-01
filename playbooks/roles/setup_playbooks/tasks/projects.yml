@@ -9,5 +9,10 @@
     scm_type: "{{ project.scm_type }}"
     scm_url: "{{ project.scm_url }}"
     scm_update_on_launch: "{{ project.scm_update_on_launch | default(omit) }}"
+    validate_certs: false
+  register: result
+  until: result is succeeded
+  retries: 20
+  delay: 5
 
 
