@@ -150,7 +150,7 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger-db"  }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true) }}{{ "/ledger-db:" ~ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: db
         ports:
@@ -211,7 +211,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger_parser" }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true) }}{{ "/ledger-parser:" ~ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: parser
         ports:
@@ -259,7 +259,7 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger")  ~ "/ledger-web"  }}:{{ LEDGER_VERSION }}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true) }}{{ "/ledger-web:" ~ LEDGER_VERSION }}
         imagePullPolicy: Always
         name: web
         ports:
