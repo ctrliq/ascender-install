@@ -79,8 +79,7 @@
                 "arn:aws:iam::{{ caller_info.account }}:role/eksctl-*",
                 "arn:aws:iam::{{ caller_info.account }}:policy/eksctl-*",
                 "arn:aws:iam::{{ caller_info.account }}:oidc-provider/*",
-                "arn:aws:iam::{{ caller_info.account }}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup",
-                "arn:aws:iam::{{ caller_info.account }}:role/eksctl-managed-*"
+                "arn:aws:iam::{{ caller_info.account }}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup"
             ]
         },
         {
