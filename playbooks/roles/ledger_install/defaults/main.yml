@@ -30,3 +30,5 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
+
+k8s_container_registry: ghcr.io/ctrliq/ascender-ledger
