@@ -8,8 +8,7 @@
   replicas: {{ ascender_replicas | default(1) }}
   init_container_image: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender-ee" }}
   init_container_image_version: latest
-  control_plane_ee_image: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender-ee" }}
-  control_plane_ee_image_version: latest
+  control_plane_ee_image: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender-ee" }}:latest
   postgres_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/postgres" }}
   postgres_image_version: "13"
   redis_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/redis" }}
