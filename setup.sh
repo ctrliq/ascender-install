@@ -82,13 +82,21 @@ fi
 PASSED_ARG=$@
 if [[ ${#PASSED_ARG} -ne 0 ]]
 then
-  while getopts "br" ARG; do
+  while getopts "pbr" ARG; do
 
     case $ARG in
 
+      p)
+      
+        printf "\nCREATE CLOUD PERMISSIONS ARTIFACTS\n"
+
+        ansible-playbook -i "${INVENTORY_FILE}" playbooks/apply_cloud_permissions.yml
+
+        printf "\n\nNOTE: Check the ./ascender_install_artifacts directory for cloud permissions files.\n\n"
+        ;;
       b)
       
-        echo "BACKUP"
+        printf "\nBACKUP\n"
 
         ansible-playbook -i "${INVENTORY_FILE}" playbooks/backup.yml
         ;;
