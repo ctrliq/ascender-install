@@ -43,7 +43,7 @@
       src: "{{ item }}"
       dest: "/var/lib/rancher/k3s/agent/images/{{ item | basename }}"
       remote_src: true
-    with_fileglob: "{{ playbook_dir }}/../offline/images/*.tar.gz"
+    with_fileglob: "{{ playbook_dir }}/../offline/images/*"
 
   - name: Make Installer executable
     ansible.builtin.file:
