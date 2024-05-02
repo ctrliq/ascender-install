@@ -24,7 +24,7 @@
 - name: Copy Operator Source
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/../offline/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config"
-    dest: /tmp/ascender_install_artifacts/
+    dest: "{{ tmp_dir }}/"
     remote_src: true
   when: k8s_offline | default(false) | bool
 
