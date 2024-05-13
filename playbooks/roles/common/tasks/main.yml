@@ -42,12 +42,11 @@
 
 - name: Install Necessary RPMs (if offline)
   ansible.builtin.dnf:
-    name: "{{ item }}"
+    name: "{{ lookup('ansible.builtin.fileglob', '{{ playbook_dir }}/../offline/packages/*.rpm') }}"
     state: present
     disable_gpg_check: true
     cacheonly: true
   become: true
-  with_fileglob: "{{ playbook_dir }}/../offline/packages/*.rpm"
   when: k8s_offline
 
 - name: Install necessary packages for Enterprise Linux
