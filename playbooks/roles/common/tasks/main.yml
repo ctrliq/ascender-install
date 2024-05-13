@@ -25,6 +25,7 @@
     name: epel-release
     state: present
   become: true
+  when: not k8s_offline
 
 - name: Add the Kubernetes yum repository
   ansible.builtin.copy:
@@ -39,14 +40,13 @@
   become: true
   when: not k8s_offline
 
-- name: Install Kubectl from RPM (if offline)
+- name: Install Necessary RPMs (if offline)
   ansible.builtin.dnf:
-    name: "{{ item }}"
+    name: "{{ lookup('ansible.builtin.fileglob', '{{ playbook_dir }}/../offline/packages/*.rpm') }}"
     state: present
     disable_gpg_check: true
     cacheonly: true
   become: true
-  with_fileglob: "{{ playbook_dir }}/../offline/packages/kubectl-*"
   when: k8s_offline
 
 - name: Install necessary packages for Enterprise Linux
@@ -55,6 +55,7 @@
 #    update_cache: true
     state: present
   become: true
+  when: not k8s_offline
 
 - name: Install aws python packages
   ansible.builtin.pip:
