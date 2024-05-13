@@ -37,6 +37,9 @@
       - name: kube-rbac-proxy
         path: gcr.io/kubebuilder/kube-rbac-proxy
         tag: v0.15.0
+    rpms:
+      - kubectl
+      - python3-kubernetes
     k3s_images_url: https://github.com/k3s-io/k3s/releases/download/v1.28.6%2Bk3s2/k3s-airgap-images-amd64.tar.gz
     k3s_binary_url: https://github.com/k3s-io/k3s/releases/download/v1.28.6%2Bk3s2/k3s
     offline_dir: "{{ playbook_dir }}/../offline"
@@ -67,19 +70,20 @@
         path: "{{ package_dir }}"
         state: directory
 
-    - name: Remove kubectl rpm if Exists
+    - name: Remove rpms if Exist
       ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       with_fileglob: "{{ package_dir }}/*.rpm"
 
-    - name: Download the kubectl rpm
+    - name: Download the rpms
       ansible.builtin.dnf:
-        name: kubectl
+        name: "{{ item }}"
         download_only: true
         download_dir: "{{ package_dir }}"
         enablerepo: kubernetes
         state: present
+      loop: "{{ rpms }}"
 
 ####################### ANSIBLE OPERATOR #######################
 
