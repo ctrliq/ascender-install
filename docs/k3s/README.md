@@ -127,7 +127,7 @@ By doing these steps, the Ascender installer will copy the archived images to th
 
 #### Offline Ascender Upgrade
 
-In order to upgrade an offline installation of Ascender on k3s, the process is similar to that of installation with a few key changes:
+In order to upgrade an offline installation of Ascender on k3s, the process is similar to that of installation with one key change:
 - RE-RUN the `playbooks/create_bundle.yml` playbook on a machine that has access to the internet, using the new release/tag of Ascender you wish to move to, indicated by the `ASCENDER_VERSION` variable in the `custom.config.yml` or `default.config.yml` file.
   - The list of all releases can be found here: [Ascender Releases](https://github.com/ctrliq/ascender/releases).
 - Copy the `offline` folder into your `ascender-install` folder on the machine you would like to install from.
