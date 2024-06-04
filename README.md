@@ -112,16 +112,16 @@ This can be accomplished by either running `config_vars.sh` again, or editing an
 
 ## Upgrading Ascender
 
-Upgrading Ascender is as simple as changing the ascender container image version/tag that is being used in your deployment, and rerunning the installation script.
+Upgrading Ascender is as simple as changing the Ascender container image version/tag that is being used in your deployment, and rerunning the installation script.
 
 Assuming you have an existing `custom.config.yml` file that contains the variables used to perform your initial install of Ascender, open the file and set the values of these four variables:
 
 - `kube_install`: Set to `false` as you already have a kubernetes cluster on which Ascender is running.
 - `download_kubeconfig`: Set to `false` as you already have a valid KUBECONFIG file to authenticate to your existing cluster
-- `ASCENDER_VERSION`: This needs to be set to the release of Ascender you wish to upgrade to. As an example, a release should be in the format `24.0.0`. The lost of all releases can be found here: [Ascender Relases](https://github.com/ctrliq/ascender/releases).
-- `image_pull_policy`: Set tp `Always`, as this will force the Ascender web container image to be pulled.
+- `ASCENDER_VERSION`: This needs to be set to the release of Ascender you wish to upgrade to. As an example, a release should be in the format `24.0.0`. The list of all releases can be found here: [Ascender Releases](https://github.com/ctrliq/ascender/releases).
+- `image_pull_policy`: Set to `Always`, as this will force the Ascender web container image to be pulled.
 
-After having changes these four variables, re-run the installer script from the top level directory:
+After having changed these four variables, re-run the installer script from the top level directory:
 
 ```
 sudo < ASCENDER-INSTALL-SOURCE >/setup.sh
