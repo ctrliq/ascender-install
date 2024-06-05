@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # Find the latest tag here: https://github.com/ansible/eda-server-operator/releases
+  # - https://github.com/ansible/eda-server-operator/config/default?ref=<tag>
+{% if k8s_offline | default (false) | bool %}
+  - ./config/default
+{% else %}
+  - https://github.com/ansible/eda-server-operator/config/default?ref={{ REACT_OPERATOR_VERSION }}
+{% endif %}
+
+# Set the image tags to match the git version from above
+images:
+  - name: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/eda-server-operator" }}
+    newTag: {{ REACT_OPERATOR_VERSION }}
+
+# Specify a custom namespace in which to install EDA
+namespace: {{ REACT_NAMESPACE }}
