@@ -1,5 +1,5 @@
 [localhost]
-localhost ansible_host=localhost ansible_connection=local
+localhost ansible_host=localhost ansible_connection=local ansible_user=mford
 
 [ascender]
 # ascender_host ansible_host=x.x.x.x ansible_user=user ansible_ssh_pass=password
