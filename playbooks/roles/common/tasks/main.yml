@@ -63,65 +63,10 @@
       - botocore
   when: k8s_platform == "eks"
 
-- name: Read collections paths from ansible.cfg
-  ansible.builtin.set_fact:
-    collections_paths: "{{ lookup('ini', 'collections_path section=defaults file=../ansible.cfg') }}"
-  when: k8s_platform == "aks"
-
-- name: Debug ansible.cfg contents
-  ansible.builtin.command: cat ../ansible.cfg
-  register: cfg_contents
-
-- name: Read the original requirements.txt
-  ansible.builtin.slurp:
-    src: "{{ playbook_dir }}/../{{ collections_paths.split(':') | first }}/ansible_collections/azure/azcollection/requirements.txt"
-  register: original_requirements
-  when: k8s_platform == "aks"
-
-- ansible.builtin.debug:
-    var: original_requirements
-
-- name: Write modified requirements.txt without uamqp
-  ansible.builtin.copy:
-    content: |
-      {% for line in original_requirements.content | b64decode | split('\n') %}
-      {% if 'uamqp' not in line %}
-      {{ line }}
-      {% endif %}
-      {% endfor %}
-    dest: /tmp/requirements_no_uamqp.txt
-  when: k8s_platform == "aks"
-
-- name: Install pip packages from modified requirements.txt
-  ansible.builtin.pip:
-    requirements: /tmp/requirements_no_uamqp.txt
-  when: k8s_platform == "aks"
-
-# - ansible.builtin.debug:
-#     var: collections_paths
-
-# - name: Install development tools (RedHat)
-#   ansible.builtin.yum:
-#     name: "@Development Tools"
-#     state: present
-#   when: ansible_os_family == "RedHat"
-#   become: yes
-
-# - name: Upgrade pip, setuptools, and wheel
-#   ansible.builtin.pip:
-#     name:
-#       - pip
-#       - setuptools
-#       - wheel
-#     state: latest
-#   become: yes
-
-# - name: Install uamqp independently
-#   ansible.builtin.pip:
-#     name: uamqp
-#     state: latest
-#   ignore_errors: yes
-#   become: yes
+# - name: Read collections paths from ansible.cfg
+#   ansible.builtin.set_fact:
+#     collections_paths: "{{ lookup('ini', 'collections_path section=defaults file=../ansible.cfg') }}"
+#   when: k8s_platform == "aks"
 
 # - name: Install pip packages for Azure collections
 #   ansible.builtin.pip:
@@ -129,11 +74,6 @@
 #     requirements: "{{ collections_paths.split(':') | first }}/ansible_collections/azure/azcollection/requirements.txt"
 #   when: k8s_platform == "aks"
 #   become: yes
-
-# - name: Install aks python packages
-#   ansible.builtin.pip:
-#     requirements: "{{ (lookup('config', 'defaults.collections_paths') | split(':') | first) }}/ansible_collections/azure/azcollection/requirements.txt"
-#   when: k8s_platform == "aks"
 
 - name: Check for existing eksctl installation
   ansible.builtin.stat:
@@ -163,3 +103,6 @@
   when:
     - not eksctl_file.stat.exists or not eksctl_file.stat.xusr or not eksctl_file.stat.xgrp or not eksctl_file.stat.xoth
     - k8s_platform == "eks"
+
+- name: Install AKS Packages
+  ansible.builtin.include_tasks: aks_packages.yml

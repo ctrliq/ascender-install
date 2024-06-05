@@ -1,0 +1,64 @@
+- name: Read collections paths from ansible.cfg
+  ansible.builtin.set_fact:
+    collections_paths: "{{ lookup('ini', 'collections_path section=defaults file=../ansible.cfg') }}"
+  when: k8s_platform == "aks"
+
+- name: Install pip packages for Azure collections
+  ansible.builtin.pip:
+    chdir: "{{ playbook_dir }}/.."
+    requirements: "{{ collections_paths.split(':') | first }}/ansible_collections/azure/azcollection/requirements.txt"
+  when: k8s_platform == "aks"
+  become: yes
+
+- name: Import GPG keys
+  ansible.builtin.rpm_key:
+    state: present
+    key: "{{ item}}"
+  with_items: "{{ azure_gpg_keys[ansible_distribution_major_version|int] }}"
+  become: true
+
+- name: Set Hashicorp repository configuration for Rocky Linux 8
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/hashicorp.repo
+    content: |
+      [hashicorp]
+      name=HashiCorp Stable - $basearch
+      baseurl=https://rpm.releases.hashicorp.com/RHEL/8/$basearch/stable
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://rpm.releases.hashicorp.com/gpg
+  when: ansible_distribution_major_version|int == 8
+  become: true
+
+- name: Set repository configuration for Rocky Linux 9
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/hashicorp.repo
+    content: |
+      [hashicorp]
+      name=HashiCorp Stable - $basearch
+      baseurl=https://rpm.releases.hashicorp.com/RHEL/9/$basearch/stable
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://rpm.releases.hashicorp.com/gpg
+  when: ansible_distribution_major_version|int == 9
+  become: true
+
+- name: Update repository cache
+  ansible.builtin.dnf:
+    update_cache: yes
+    state: latest
+  become: true
+
+- name: Install necessary pip packages for Microsoft Azure
+  ansible.builtin.pip:
+    name: "{{ azure_pip_packages[ansible_distribution_major_version|int] }}"
+#    update_cache: true
+    state: present
+  become: true
+
+- name: Install necessary rpm packages for Microsoft Azure
+  ansible.builtin.dnf:
+    name: "{{ azure_rpm_packages[ansible_distribution_major_version|int] }}"
+#    update_cache: true
+    state: present
+  become: true
