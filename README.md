@@ -1,157 +1,206 @@
-The Ascender installer is a script that makes for relatively easy
-install of Ascender Automation Platform on Kubernetes platforms of
-multiple flavors. The installer is being expanded to new Kubernetes
-platforms as users/contributors allow, and if you have specific needs
-for a platform not yet supported, please submit an issue to this
-Github repository.
+# Ascender Installation and Updating on K3s
 
-While Ascender installs on Kubernetes, you don't need to be a guru in
-Kubernetes, or even have a Kubernetes cluster up and working!  For
-each specified Kubernetes platform, the installer will set up a
-Kubernetes cluster on your behalf, and set up the cluster access file
-at its default location of `~/.kube/config`.  Windows and Network
-admins rejoice!
+The Ascender installer is a script that makes it relatively easy to install the Ascender Automation
+Platform on Kubernetes platforms of multiple flavors. The installer is being expanded to new
+Kubernetes platforms as users/contributors allow. If you have specific needs for a platform not yet
+supported, please submit an issue to this Github repository.
 
 ## Table of Contents
 
 - [General Prerequisites](#general-prerequisites)
-- [Optional Components](#optional-components)
-- [Configuration File](#configuration-file)
-- [Instructions by Kubernetes Platform](#instructions-by-kubernetes-platform)
-- [Upgrading](#upgrading-ascender)
-- [Uninstall](#uninstall)
-- [Contributing](#contributing)
-- [Reporting Issues](#reporting-issues)
+- [K3s-specific Prerequisites](#k3s-specific-prerequisites)
+- [Install Instructions](#install-instructions)
+  - [Offline Installation](#offline-installation)
+  - [Offline Ascender Upgrade](#offline-ascender-upgrade)
 
 ## General Prerequisites
 
-- On the local server (on which the installer script will run), you
-  will need the following prerequisites met:
-  - The The OS family must be Rocky, Fedora or CentOS and the major version must be 8 or 9.
-  - The [ansible inventory file](inventory) file needs to be changed
-    to:
-    - `ascender_host`
-      - `ansible_host` needs to be a set to a server that hosts the [kube-apiserver](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/) kubernetes cluster access or that you want to eventually host the kube-apiserver.
-      - `ansible_user` needs to set to a user that can escalate to
-        root with `become` (if different than your logged in user)
-      - A port needs to be open for SSH access (typically TCP port
-        22). If you choose to have SSH accept connections on a
-        different port, you need to specify this port with the
-        built-in host variable `ansible_port`.
-  - [ansible-core][] will have to be installed, but the setup script
-    will install it if it is not already there.
-- On `ascender_host`, the following is required:
-  - If a Kubernetes cluster is already up, you will need the
-    [kubeconfig][] file, located at `~/.kube/config`. The server IP
-    address in the [cluster][] section of this file will determine the
-    cluster where Ascender will be installed. This cluster must be up
-    and running at the time of install.
-  - If a kubernetes cluster is to be set up, then the installer script it will create the
-    kubeconfig for you automatically.
+If you have not done so already, be sure to follow the general prerequisites found in the
+[Ascender-Install main README](../../README.md#general-prerequisites).
 
-[ansible-core]: https://github.com/ansible/ansible
-[kubeconfig]: https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/
-[cluster]: https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
+## K3s-specific Prerequisites
 
-## Optional Components
+- NOTE: The K3s install of Ascender is not yet meant for production, but rather as a sandbox on
+  which to try Ascender. As such, the Installer expects a single-node K3s cluster which will act as
+  both master and worker node.
+- Operating System Requirements for the k3s server:
+  - The OS Family must be the same as Rocky Linux (indicated by the `ansible_os_family` ansible
+    fact), and the major version must be 8 or 9.
+    - While this includes other Enterprise Linux distributions, the installer is primarily tested
+      with Rocky Linux
+- Minimal System Requirements for the k3s server:
+  - CPUs: 2
+  - Memory: 8GB (if installing both Ascender and Ledger)
+  - 20GB of free disk (for Ascender and Ledger Volumes)
+- These instructions accommodate an existing K3s cluster, or will set up a new one on your behalf if
+  necessary. This behavior is determined by the variable `kube_install`
+  - If `kube_install` is set to true, the installer will set up K3s on the `ascender_host`in the
+    inventory file. (`ascender_host` can be localhost)
+  - If `kube_install` is set to false, the installer will not perform a K3s install
+- SSL Certificate and Key
+  - To enable HTTPS on your website, you need to provide the Ascender installer with an SSL
+    Certificate file, and a Private Key file. While these can be self-signed certificates, it is
+    a good practice to use a trusted certificate, issued by a Certificate Authority. A good way to
+    generate a trusted Certificate for the purpose of sandboxing, is to use the free Certificate
+    Authority, [Let's Encrypt](https://letsencrypt.org/getting-started/).
+  - Once you have a Certificate and Private Key file, make sure they are present on the Ascender
+    installing server, and specify their locations in the default config file, with the variables
+    `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their
+    content, and use the content to create a Kubernetes TLS Secret for HTTPS enablement.
 
-- An external PostgreSQL server that the Ascender application can
-  access. If not specified, the AWX Operator responsible for
-  installing Ascender will create a managed PostgreSQL server.
+## Install and Upgrade Instructions
+
+### Obtain the sources
+
+You can use the `git` command to clone the ascender-install repository or you can download the
+zipped archive. (Install `git` with `sudo yum -y install git` if it is not already present.)
+
+```text
+$ git clone https://github.com/ctrliq/ascender-install.git
+```
+
+This will create a directory named `ascender-install` in your present working directory (PWD).
+
+We will refer to this directory as the \<ASCENDER-INSTALL-SOURCE\> in the remainder of this
+instructions.
+
+### Set the configuration variables for a K3s Install
+
+Change directories into the newly created `ascender-install` and run the `config_vars.sh` script.
+
+```text
+$ cd ascender-install
+
+$ ./config_vars.sh
+```
+
+The script will take you through a series of questions, that will populate the variables file
+requires to install Ascender. This variables file will be located at `./custom.config.yml`:
+
+You can edit this file manually if you want to change variable before (re)installing Ascender.
+
+Examples of Configuration files for traditional installation (where resources such as container
+images are retrieved from online) and offline installation can be found in this directory as:
+
+- [k3s.default.config.yml](./k3s.default.config.yml)
+- [k3s.offline.default.config.yml](./k3s.offline.default.config.yml)
+
+### Run the setup script
+
+Run `./setup.sh` from top level directory in this repository. The setup must run as a user with
+Administrative or `sudo` privileges. To begin the setup process, type:
+
+```text
+$ sudo ./setup.sh
+```
+
+Once the setup is completed successfully, you should see a final output similar to:
+
+```text
+[snip...]
+PLAY RECAP *************************************************************************************************************************
+ascender_host              : ok=14   changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
+localhost                  : ok=72   changed=27   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0
+
+ASCENDER SUCCESSFULLY SETUP
+```
 
 ### Offline Installation
 
-For certain Kubernetes platforms (such as k3s, kubeadm, rke2), the Ascender installer supports installation for clusters that do not have outside internet access. In these cases, you can either use:
-  - An included bundle of container images (this is the case for k3s)
-  - Move the Ascender and Ledger container images into an internal container registry for the installer to consume (this is the case for rke2 and kubeadm)
+In order to perform an offline installation of Ascender on k3s, you must complete the following
+steps before running the installation script:
 
-A bundled AWX operator is also included for the purposes of offline install.
+- Run the `playbooks/create_bundle.yml` playbook on a machine that has access to the internet.
+- Copy the `offline` folder into your `ascender-install` folder on the machine you would like to
+  install from.
+- When setting the variables in your `config_vars.sh`, be sure to set `k8s_platform` to `k3s`, and
+  `k8s_offline` to `true`. This will instruct the installer to use archived container images rather
+  than using a container registry to install Ascender and Ledger.
 
-For more detailed instructions, see the section on the corresponding Kubernetes platform.
+By doing these steps, the Ascender installer will copy the archived images to the k3s server, import
+them into k3s to allow their usage in Pods, and set the `imagePullPolicy` for all k3s images to
+`Never`, which will prevent the cluster from attempting to access the internet to retrieve images.
 
-## Configuration File and Inventory
+#### Offline Ascender Upgrade
 
-There is a [default configuration file](default.config.yml) that will
-hold all of the options required to set up your installation
-properly. While this file is comprehensive, you can find more
-platform-specific config file templates in the respective Kubernetes
-platform install instructions directory.
+In order to upgrade an offline installation of Ascender on k3s, the process is similar to that of
+installation with one key change:
 
-Additionally, there is an executable script in this directory called [config_vars.sh](./config_vars.sh) that will generate a config file based on user input, named `custom.config.yml`. `custon.config.yml` is listed in .gitignore, and as such is the suggested/preferred method of setting your install variables.
+- RE-RUN the `playbooks/create_bundle.yml` playbook on a machine that has access to the internet,
+  using the new release/tag of Ascender you wish to move to, indicated by the `ASCENDER_VERSION`
+  variable in the `custom.config.yml` or `default.config.yml` file.
+  - The list of all releases can be found here: [Ascender
+    Releases](https://github.com/ctrliq/ascender/releases).
+- Copy the `offline` folder into your `ascender-install` folder on the machine you would like to
+  install from.
+- When setting the variables in your `config_vars.sh`, be sure to set `k8s_platform` to `k3s`, and
+  `k8s_offline` to `true`. This will instruct the installer to use archived container images rather
+  than to a container registry to install Ascender and Ledger.
 
-The Ascender Install script also uses the Ansible inventory file, [inventory](./inventory), located in the top level directory of this repository. 
+### Connecting to Ascender Web UI
 
-For both the config file and inventory files, you will find templates for each Kubernetes distribution in its corresponding directory in [docs](./docs/). You can use these templates as guides for how `custom.config.ml` and `inventory` should look for your particular install.
+This is a quick and temporary work-around for connecting to your new Ascender installation. By
+default the Ascender web service is accessible over its internal CLUSTER IP address. You can use SSH
+forwarding from any remote host to connect to the internal CLUSTER IP. Note that it is important to
+connect as root to allow privileged port forwarding.
 
-The [**Uninstall**](#uninstall) section of this tutorial references
-two of the variables that need to be set:
+For the example here, you'll use the kubectl utility to query for the CLUSTER IP and store the value
+in a variable named "ASCENDER_WEB_INTERNAL_IP".
 
-- `k8s_platform`: The Kubernetes platform Ascender is being installed
-  on. This could be K3s, EKS, GKE, or AKS.
-- `tmp_dir`: The directory on the server running the install script,
-  where temporary artifacts will be stored.
+While still logged on to the server running Ascender (as root), type:
 
-All of the variables and flags in these files have their
-description/proper usage directly present in the comments.
-
-## Installation Instructions by Kubernetes Platform
-
-- [K3s](docs/k3s/README.md)
-- [Elastic Kubernetes Service](docs/eks/README.md)
-- [RKE Government](docs/rke2/README.md)
-
-## Adding Components/Configuration Changes
-
-Consider a situation where you have already installed Ascender, and wish to change one or more of the attributes of how it is deployed. Some of these changes may include:
-
-- Moving from non-SSL to an SSL connection 
-- Installing Ledger when you may have only installed Ascender first
-- Changing the version of Ascender and or Ledger that is installed
-
-This can be accomplished by either running `config_vars.sh` again, or editing an existing `custom.config.yml`, in each case, changing the desired install variables. You can then rerun `setup.sh`.`
-
-## Upgrading Ascender
-
-Upgrading Ascender is as simple as changing the Ascender container image version/tag that is being used in your deployment, and rerunning the installation script.
-
-Assuming you have an existing `custom.config.yml` file that contains the variables used to perform your initial install of Ascender, open the file and set the values of these four variables:
-
-- `kube_install`: Set to `false` as you already have a kubernetes cluster on which Ascender is running.
-- `download_kubeconfig`: Set to `false` as you already have a valid KUBECONFIG file to authenticate to your existing cluster
-- `ASCENDER_VERSION`: This needs to be set to the release of Ascender you wish to upgrade to. As an example, a release should be in the format `24.0.0`. The list of all releases can be found here: [Ascender Releases](https://github.com/ctrliq/ascender/releases).
-- `image_pull_policy`: Set to `Always`, as this will force the Ascender web container image to be pulled.
-
-After having changed these four variables, re-run the installer script from the top level directory:
-
-```
-sudo < ASCENDER-INSTALL-SOURCE >/setup.sh
+```text
+$ export ASCENDER_WEB_INTERNAL_IP=$(kubectl -n ascender get service/ascender-app-service -o jsonpath='{.spec.clusterIP}')
 ```
 
+To see the value of ASCENDER_WEB_INTERNAL_IP type:
 
+```text
+$ echo $ASCENDER_WEB_INTERNAL_IP
+```
 
-## Uninstall
+Now, to use SSH forwarding to connect to your Ascender installation from any workstation you can use
+a command like:
 
-After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
+```text
+$ ssh -L 80:<ASCENDER_WEB_INTERNAL_IP>:80 user@<ASCENDER_SERVER_IP>
+```
+
+For example, if your the value of $ASCENDER_WEB_INTERNAL_IP is `10.43.9.224`, and the
+ASCENDER_SERVER_IP is `1.2.3.4`, the full command to connect as the root user will be:
+
+```text
+$ ssh -L 80:10.43.9.224:80 root@1.2.3.4
+```
+
+After port forwarding, you can visit/browse/administer your Ascender instance by pointing your
+workstation web browser to:
+
+[https://localhost](https://localhost)
+
+The default username is "admin" and the corresponding password is stored in
+`<ASCENDER-INSTALL-SOURCE>/default.config.yml` under the `ASCENDER_ADMIN_PASSWORD` variable.
+
+### Uninstall
+
+After running `setup.sh`, `tmp_dir` (by default `{{ playbook_dir}}/../ascender_install_artifacts`)
+will contain timestamped kubernetes manifests for:
 
 - `ascender-deployment-{{ k8s_platform }}.yml`
 - `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
 
 Remove the timestamp from the filename and then run the following
-commands from within `tmp_dir``:
+commands from within `tmp_dir`:
 
-- `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
-- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
-- `$ kubectl delete -k .`
+```text
+$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml
 
-Running the Ascender deletion will remove all related deployments and
-statefulsets, however, persistent volumes and secrets will remain. To
-enforce secrets also getting removed, you can use
-`ascender_garbage_collect_secrets: true` in the `default.config.yml`
-file.
+$ kubectl delete -f ledger-{{ k8s_platform }}.yml # optional if you have installed ledger
 
-## Reporting Issues
+$ kubectl delete -k .
+```
 
-If you're experiencing a problem that you feel is a bug in the
-installer or have ideas for improving the installer, we encourage you
-to open a Github issue and share your feedback.
+Running the Ascender deletion steps will remove all related deployments and stateful sets, however,
+persistent volumes and secrets will remain. To enforce secrets also getting removed, you can use
+`ascender_garbage_collect_secrets: true` in the `default.config.yml` file.
