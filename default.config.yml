@@ -211,7 +211,7 @@ REACT_OPERATOR_VERSION: 1.0.2
 
 # The OCI container image for Ascender React
 REACT_IMAGE: quay.io/ansible/eda-server
-REACT_IMAGE_VERSON: main
+REACT_IMAGE_VERSION: main
 
 # The OCI container image for Ascender React UI
 REACT_IMAGE_WEB: quay.io/ansible/eda-ui
