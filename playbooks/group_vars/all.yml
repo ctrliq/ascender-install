@@ -162,7 +162,7 @@ ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 
 # The image tag indicating the version of Ascender you wish to install
-ASCENDER_VERSION: 24.0.0
+ASCENDER_VERSION: 24.0.1
 
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.13.1
@@ -192,6 +192,57 @@ ascender_setup_playbooks: true
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
 ascender_replicas: 1
 ascender_image_pull_policy: Always
+
+
+  # ---Ascender React install variables---
+# Determines whether or not Ascender React will be installed
+REACT_INSTALL: false
+
+# DNS resolvable hostname for Ascender React service. This is required for install.
+REACT_HOSTNAME: react.example.com
+
+# k8s namespace for Ascender React k8s objects
+REACT_NAMESPACE: react
+
+# Administrator username for Ascender React
+REACT_ADMIN_USER: admin
+
+# Administrator password for Ascender React
+REACT_ADMIN_PASSWORD: "myadminpassword"
+
+# The version of the EDA Operator used to install Ascender React and its components
+REACT_OPERATOR_VERSION: 1.0.2
+
+# The OCI container image for Ascender React
+REACT_IMAGE: quay.io/ansible/eda-server
+REACT_IMAGE_VERSION: main
+
+# The OCI container image for Ascender React UI
+REACT_IMAGE_WEB: quay.io/ansible/eda-ui
+REACT_IMAGE_WEB_VERSION: 2.4.1132
+
+# TLS Certificate file, required when deploying HTTPS in K3s
+react_tls_crt_path: "~/ascender.crt"
+
+# TLS Private Key file, required when deploying HTTPS in K3s
+react_tls_key_path: "~/ascender.key"
+
+# # External PostgreSQL ip or url resolvable by the cluster
+# REACT_PGSQL_HOST: "reactpghost.example.com"
+
+# # External PostgreSQL port, this usually defaults to 5432
+# REACT_PGSQL_PORT: 5432
+
+# # External PostgreSQL username
+# REACT_PGSQL_USER: react
+
+# # External PostgreSQL password
+# NOTE: Do NOT use the special characters in the postgres password (Django requirement)
+# REACT_PGSQL_PWD: mypgadminpassword
+
+# # External PostgreSQL database name used for Ascender (this DB must exist)
+# REACT_PGSQL_DB: reactdb
+
 
 
 # ---Ledger install variables---
