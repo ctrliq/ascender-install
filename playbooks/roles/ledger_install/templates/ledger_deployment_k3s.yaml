@@ -170,7 +170,11 @@ spec:
           value: /run/secrets/db-ledger-password
         - name: admin-password
           value: /run/secrets/admin-password
-        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-db"  }}:{{ LEDGER_VERSION }}
+{% if k8s_container_registry %}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-db" }}:{{ LEDGER_VERSION }}
+{% else %}
+        image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
+{% endif %}
 {% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
         imagePullPolicy: Never
 {% else %}
@@ -235,7 +239,12 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-parser"  }}:{{ LEDGER_VERSION }}
+{% if k8s_container_registry %}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-parser" }}:{{ LEDGER_VERSION }}
+{% else %}
+        image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
+{% endif %}
+
 {% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
         imagePullPolicy: Never
 {% else %}
@@ -287,7 +296,11 @@ spec:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
           value: /run/secrets/db-ledger-password
-        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-web"  }}:{{ LEDGER_VERSION }}
+{% if k8s_container_registry %}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true)  ~ "/ledger-web" }}:{{ LEDGER_VERSION }}
+{% else %}
+        image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
+{% endif %}
 {% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
         imagePullPolicy: Never
 {% else %}

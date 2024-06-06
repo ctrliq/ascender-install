@@ -1,0 +1,85 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ REACT_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    verify_ssl: false
+    state: present
+
+- name: Ensure React directory exists
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}/react/"
+    state: directory
+
+- name: Generate manifest to install EDA Operator
+  ansible.builtin.template:
+    src: templates/eda-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/react/kustomization.yml"
+
+- name: Generate manifest to install EDA Operator with timestamp attached, for purposes of operator deletion later
+  ansible.builtin.template:
+    src: templates/eda-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/react/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+
+
+# Import EDA Operator images here
+
+
+- name: Install EDA Operator with Kustomize
+  kubernetes.core.k8s:
+    definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir ~'/react/') }}"
+    verify_ssl: false
+
+- name: delete Kustomization file
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}/react/kustomization.yml"
+    state: absent
+
+# Import React images here
+
+- name: Wait for Operator deployment to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: eda-server-operator-controller-manager
+    namespace: "{{ REACT_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+
+- name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: "react-deployment/react-deployment-k3s.yml"
+    dest: "{{ tmp_dir }}/react-deployment-k3s.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+
+- name: "Apply React manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'react-deployment/react-deployment-k3s.yml') }}"
+    verify_ssl: false
+
+- name: Wait for ascender-react-scheduler Deployment to complete setting up (this may take up to 10 minutes)
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: ascender-react-scheduler
+    namespace: "{{ REACT_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+  register: react_deployment
+
+- name: Set the Ascender React URL
+  ansible.builtin.set_fact:
+      react_ip: "{{ REACT_HOSTNAME }}"
+      react_port: "{{ '443' if k8s_lb_protocol == 'https' else '80' }}"
+
+- ansible.builtin.debug:
+    msg: "The Ascender React API endpoint is {{ k8s_lb_protocol }}://{{ react_ip }}:{{ react_port }}/api/v2/ping/"
+
