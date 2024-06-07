@@ -27,3 +27,9 @@ variable "username" {
   description = "The admin username for the new cluster."
   default     = "azureadmin"
 }
+
+variable "home_dir" {
+  description = "Home directory path"
+  type        = string
+  default     = "/home/default"
+}
