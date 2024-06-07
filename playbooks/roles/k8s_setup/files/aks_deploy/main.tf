@@ -65,3 +65,20 @@ resource "azurerm_kubernetes_cluster" "k8s" {
     load_balancer_sku = "standard"
   }
 }
+
+# Obtain the kubeconfig for the cluster
+data "azurerm_kubernetes_cluster" "k8s" {
+  name                = azurerm_kubernetes_cluster.k8s.name
+  resource_group_name = azurerm_kubernetes_cluster.k8s.resource_group_name
+}
+
+resource "local_file" "kubeconfig" {
+  content  = data.azurerm_kubernetes_cluster.k8s.kube_config_raw
+  // filename = "$HOME/.kube/config"
+  filename = "${var.home_dir}/.kube/config"
+}
+
+# Output the kubeconfig file location
+output "kubeconfig_file" {
+  value = local_file.kubeconfig.filename
+}
