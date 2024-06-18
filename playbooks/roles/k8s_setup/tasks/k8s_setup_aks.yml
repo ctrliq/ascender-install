@@ -18,32 +18,52 @@
 
     - name: Ensure that the aks_deploy directory exists
       ansible.builtin.file:
-        path: "{{ playbook_dir }}/ascender_install_artifacts/aks_deploy"
+        path: "{{ playbook_dir }}/../ascender_install_artifacts/aks_deploy"
         state: directory
 
     - name: Copy AKS Terraform Directory
       ansible.builtin.copy:
         src: files/aks_deploy
-        dest: "{{ playbook_dir }}/ascender_install_artifacts"
+        dest: "{{ playbook_dir }}/../ascender_install_artifacts"
         mode: 0777 
 
     - name: Initialize Terraform
       ansible.builtin.command:
         cmd: terraform init
-        chdir: "{{ playbook_dir }}/ascender_install_artifacts/aks_deploy"
+        chdir: "{{ playbook_dir }}/../ascender_install_artifacts/aks_deploy"
     
     - name: Terraform Plan
       ansible.builtin.command:
         cmd: terraform plan
-        chdir: "{{ playbook_dir }}/ascender_install_artifacts/aks_deploy"
+        chdir: "{{ playbook_dir }}/../ascender_install_artifacts/aks_deploy"
 
     - name: Provision AKS cluster via Terraform
       community.general.terraform:
-        project_path: "{{ playbook_dir }}/ascender_install_artifacts/aks_deploy"
+        project_path: "{{ playbook_dir }}/../ascender_install_artifacts/aks_deploy"
         state: present
         variables:
           home_dir: "/home/{{ ansible_user}}"
+          aks_cluster_name: "{{ AKS_CLUSTER_NAME }}"
+          resource_group_location: "{{ AKS_CLUSTER_REGION }}"
+          node_count: "{{ AKS_NUM_WORKER_NODES }}"
+          azure_vm_size: "{{ AKS_INSTANCE_TYPE }}"
+          azure_disk_size: "{{ AKS_WORKER_VOLUME_SIZE }}"
       register: terraform_output
+
+    - name: Ensure that the KUBECONFIG file can successfully authenticate to the AKS cluster
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Node
+      register: result
+      ignore_errors: yes
+      retries: 5
+      delay: 10
+      until: result.resources is defined and result.resources | length > 0
+
+    - name: Fail the playbook if AKS authentication check is unsuccessful
+      ansible.builtin.fail:
+        msg: "Unable to retrieve AKS nodes after multiple retries."
+      when: result.resources is not defined or result.resources | length == 0
 
     
 
@@ -271,3 +291,113 @@
 #   until: albc_pod.resources[0].status.containerStatuses[0].ready | bool
 #   retries: 20
 #   delay: 5
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# - name: Retrieve resource group of the AKS cluster
+#   ansible.builtin.command: >
+#     az aks list --query "[?name=='{{ AKS_CLUSTER_NAME }}'].resourceGroup" --output tsv
+#   register: rg_result
+
+# - name: Ensure resource group was found
+#   ansible.builtin.fail:
+#     msg: "Resource group for the AKS cluster not found."
+#   when: rg_result.stdout == ""
+
+# - name: Retrieve AKS cluster configuration
+#   ansible.builtin.command: >
+#     az aks show --resource-group "{{ rg_result.stdout }}" --name "{{ AKS_CLUSTER_NAME }}"
+#   register: aks_result
+
+# - name: Parse AKS cluster configuration
+#   ansible.builtin.set_fact:
+#     aks_config: "{{ aks_result.stdout | from_json }}"
+
+# - name: Check if Service Principal Profile exists
+#   ansible.builtin.set_fact:
+#     is_service_principal: "{{ 'clientId' in aks_config.servicePrincipalProfile }}"
+
+# - name: Enable AKS add-on for HTTP application routing with Service Principal
+#   azure.azcollection.azure_rm_aks:
+#     resource_group: "{{ rg_result.stdout }}"
+#     name: "{{ AKS_CLUSTER_NAME }}"
+#     dns_prefix: "{{ aks_config.dnsPrefix }}"
+#     agent_pool_profiles:
+#       - name: "{{ aks_config.agentPoolProfiles[0].name }}"
+#         count: "{{ aks_config.agentPoolProfiles[0].count }}"
+#         vm_size: "{{ aks_config.agentPoolProfiles[0].vmSize }}"
+#         os_type: "{{ aks_config.agentPoolProfiles[0].osType }}"
+#         os_disk_size_gb: "{{ aks_config.agentPoolProfiles[0].osDiskSizeGb }}"
+#         max_pods: "{{ aks_config.agentPoolProfiles[0].maxPods }}"
+#         type: "{{ aks_config.agentPoolProfiles[0].type }}"
+#         mode: "{{ aks_config.agentPoolProfiles[0].mode }}"
+#         vnet_subnet_id: "{{ aks_config.agentPoolProfiles[0].vnetSubnetId }}"
+#         availability_zones: "{{ aks_config.agentPoolProfiles[0].availabilityZones }}"
+#         enable_node_public_ip: "{{ aks_config.agentPoolProfiles[0].enableNodePublicIP }}"
+#         orchestrator_version: "{{ aks_config.agentPoolProfiles[0].orchestratorVersion }}"
+#         scale_set_priority: "{{ aks_config.agentPoolProfiles[0].scaleSetPriority }}"
+#         scale_set_eviction_policy: "{{ aks_config.agentPoolProfiles[0].scaleSetEvictionPolicy }}"
+#         tags: "{{ aks_config.agentPoolProfiles[0].tags }}"
+#     linux_profile:
+#       admin_username: "{{ aks_config.linuxProfile.adminUsername }}"
+#       ssh_key:
+#         key_data: "{{ aks_config.linuxProfile.ssh.publicKeys[0].keyData }}"
+#     service_principal_profile:
+#       client_id: "{{ aks_config.servicePrincipalProfile.clientId }}"
+#       secret: "{{ aks_config.servicePrincipalProfile.secret | default(omit) }}"
+#     enable_addons:
+#       - http_application_routing
+#   when: is_service_principal
+#   register: result_sp
+
+# - name: Enable AKS add-on for HTTP application routing with Managed Identity
+#   azure.azcollection.azure_rm_aks:
+#     resource_group: "{{ rg_result.stdout }}"
+#     name: "{{ AKS_CLUSTER_NAME }}"
+#     dns_prefix: "{{ aks_config.dnsPrefix }}"
+#     agent_pool_profiles:
+#       - name: "{{ aks_config.agentPoolProfiles[0].name }}"
+#         count: "{{ aks_config.agentPoolProfiles[0].count }}"
+#         vm_size: "{{ aks_config.agentPoolProfiles[0].vmSize }}"
+#         os_type: "{{ aks_config.agentPoolProfiles[0].osType }}"
+#         os_disk_size_gb: "{{ aks_config.agentPoolProfiles[0].osDiskSizeGb }}"
+#         max_pods: "{{ aks_config.agentPoolProfiles[0].maxPods }}"
+#         type: "{{ aks_config.agentPoolProfiles[0].type }}"
+#         mode: "{{ aks_config.agentPoolProfiles[0].mode }}"
+#         vnet_subnet_id: "{{ aks_config.agentPoolProfiles[0].vnetSubnetId }}"
+#         availability_zones: "{{ aks_config.agentPoolProfiles[0].availabilityZones }}"
+#         enable_node_public_ip: "{{ aks_config.agentPoolProfiles[0].enableNodePublicIP }}"
+#         orchestrator_version: "{{ aks_config.agentPoolProfiles[0].orchestratorVersion }}"
+#         scale_set_priority: "{{ aks_config.agentPoolProfiles[0].scaleSetPriority }}"
+#         scale_set_eviction_policy: "{{ aks_config.agentPoolProfiles[0].scaleSetEvictionPolicy }}"
+#         tags: "{{ aks_config.agentPoolProfiles[0].tags }}"
+#     linux_profile:
+#       admin_username: "{{ aks_config.linuxProfile.adminUsername }}"
+#       ssh_key:
+#         key_data: "{{ aks_config.linuxProfile.ssh.publicKeys[0].keyData }}"
+#     enable_addons:
+#       - http_application_routing
+#   when: not is_service_principal
+#   register: result_mi
+
+# - name: Show result for Service Principal
+#   debug:
+#     var: result_sp
+#   when: is_service_principal
+
+# - name: Show result for Managed Identity
+#   debug:
+#     var: result_mi
+#   when: not is_service_principal
