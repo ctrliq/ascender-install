@@ -93,20 +93,20 @@
     - ascender_ingress.resources[0].spec.rules[0].host is defined
   retries: 20
   
-- ansible.builtin.debug: 
-    var: ascender_ingress.resources[0].status.loadBalancer.ingress[0].ip
+# - ansible.builtin.debug: 
+#     var: ascender_ingress.resources[0].status.loadBalancer.ingress[0].ip
 
-- ansible.builtin.debug: 
-    var: ascender_ingress.resources[0].spec.rules[0].host
+# - ansible.builtin.debug: 
+#     var: ascender_ingress.resources[0].spec.rules[0].host
 
 - name: List all DNS zones
   azure.azcollection.azure_rm_dnszone_info:
   register: all_zones
   when: USE_AZURE_DNS
 
-- ansible.builtin.debug:
-    var: all_zones
-  when: USE_AZURE_DNS
+# - ansible.builtin.debug:
+#     var: all_zones
+#   when: USE_AZURE_DNS
 
 - name: Set Resource Group Fact
   ansible.builtin.set_fact:
@@ -116,9 +116,9 @@
     - item.name == ASCENDER_DOMAIN
     - USE_AZURE_DNS
 
-- ansible.builtin.debug:
-    var: resource_group
-  when: USE_AZURE_DNS
+# - ansible.builtin.debug:
+#     var: resource_group
+#   when: USE_AZURE_DNS
 
 - name: create A record set with metadata information
   azure.azcollection.azure_rm_dnsrecordset:

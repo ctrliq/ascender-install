@@ -352,13 +352,6 @@ if [ $k8s_platform == "aks" ]; then
    echo "AKS_CLUSTER_REGION: "$aks_cluster_region >> custom.config.yml
 
    if [ $aks_cluster_status == "provision" ]; then
-      #AKS_CLUSTER_CIDR
-      echo $'\n'
-      read -p "The aks cluster subnet in CIDR notation [10.10.0.0/16]: " a_cluster_cidr
-      aks_cluster_cidr=${a_cluster_cidr:-10.10.0.0/16}
-      echo "# The aks cluster subnet in CIDR notation" >> custom.config.yml
-      echo "AKS_CLUSTER_CIDR: "\"$aks_cluster_cidr\" >> custom.config.yml
-
       #AKS_K8S_VERSION
       echo $'\n'
       read -p "The kubernetes version for the aks cluster; available kubernetes versions can be found here: https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli [1.29]:" a_k8s_version
