@@ -16,6 +16,18 @@ variable "node_count" {
   default     = 3
 }
 
+variable "azure_vm_size" {
+  type        = string
+  description = "The VM Size that will be used for the worker nodes"
+  default     = "Standard_D2_v2"
+}
+
+variable "azure_disk_size" {
+  type        = number
+  description = "The Disk Size that will be used for the worker nodes"
+  default     = 50
+}
+
 variable "msi_id" {
   type        = string
   description = "The Managed Service Identity ID. Set this value if you're running this example using Managed Identity as the authentication method."
@@ -32,4 +44,10 @@ variable "home_dir" {
   description = "Home directory path"
   type        = string
   default     = "/home/default"
+}
+
+variable "aks_cluster_name" {
+  type        = string
+  default     = "aks_cluster"
+  description = "Name of the AKS Kubernetes cluster"
 }
