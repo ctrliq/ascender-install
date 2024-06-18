@@ -39,11 +39,10 @@ resource "azapi_resource" "ssh_public_key" {
 
 resource "azurerm_kubernetes_cluster" "k8s" {
   location            = azurerm_resource_group.rg.location
-  /* name                = random_pet.azurerm_kubernetes_cluster_name.id */
   name                = var.aks_cluster_name
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = random_pet.azurerm_kubernetes_cluster_dns_prefix.id
-  http_application_routing_enabled = true
+  /* http_application_routing_enabled = true */
 
   identity {
     type = "SystemAssigned"
