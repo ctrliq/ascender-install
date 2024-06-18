@@ -4,7 +4,7 @@ rm ./custom.config.yml
 
 # k8s_platform
 echo $'\n'
-platforms=(k3s eks rke2 dkp)
+platforms=(k3s eks aks rke2 dkp)
 selected=()
 PS3='Select the number of the Kubernetes platform you are using to install Ascender: '
 select name in "${platforms[@]}" ; do
@@ -300,6 +300,97 @@ if [ $k8s_platform == "eks" ]; then
    fi
 fi
 
+if [ $k8s_platform == "aks" ]; then
+   
+   # USE_AZURE_DNS
+   echo $'\n'
+   use_azuredns=(true false)
+   selected=()
+   PS3='Boolean indicating Determines whether to use Azure DNS Domain Management (true) Or a third-party service such as Cloudflare or GoDaddy (false). If this value is set to false, you will have to manually set an A record for Ascender/Ledger to point to their respective Azure Load Balancers: '
+   select name in "${use_azuredns[@]}" ; do
+       for reply in $REPLY ; do
+           selected+=(${use_azuredns[reply - 1]})
+       done
+       [[ $selected ]] && break
+   done
+
+   use_azuredns=${selected[@]}
+   echo "# Determines whether to use Azure DNS Domain Management (which is automated)" >> custom.config.yml
+   echo "# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)" >> custom.config.yml
+   echo "# If this value is set to false, you will have to manually set an A record for" >> custom.config.yml
+   echo "# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the Azure" >> custom.config.yml
+   echo "# Loadbalancers" >> custom.config.yml
+   echo "USE_AZURE_DNS: "$use_azuredns >> custom.config.yml
+
+   #AKS_CLUSTER_NAME
+   echo $'\n'
+   read -p "The name of the aks cluster to install Ascender on - if it does not already exist, the installer can set it up [ascender-aks-cluster]: " a_cluster_name
+   aks_cluster_name=${a_cluster_name:-ascender-aks-cluster}
+   echo "# The name of the eks cluster to install Ascender on - if it does not already exist, the installer can set it up" >> custom.config.yml
+   echo "AKS_CLUSTER_NAME: "$aks_cluster_name >> custom.config.yml
+
+   #AKS_CLUSTER_STATUS:
+   echo $'\n'
+   a_cluster_status=(provision configure no_action)
+   selected=()
+   PS3='Specifies whether the AKS cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action): '
+   select name in "${a_cluster_status[@]}" ; do
+       for reply in $REPLY ; do
+           selected+=(${a_cluster_status[reply - 1]})
+       done
+       [[ $selected ]] && break
+   done
+   aks_cluster_status=${selected[@]}
+   echo "# Specifies whether the AKS cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)" >> custom.config.yml
+   echo "AKS_CLUSTER_STATUS: "$aks_cluster_status >> custom.config.yml
+
+   #AKS_CLUSTER_REGION
+   echo $'\n'
+   read -p "The Azure region hosting the eks cluster [eastus]: " a_cluster_region
+   aks_cluster_region=${e_cluster_region:-eastus}
+   echo "# The Azure region hosting the aks cluster" >> custom.config.yml
+   echo "AKS_CLUSTER_REGION: "$aks_cluster_region >> custom.config.yml
+
+   if [ $aks_cluster_status == "provision" ]; then
+      #AKS_CLUSTER_CIDR
+      echo $'\n'
+      read -p "The aks cluster subnet in CIDR notation [10.10.0.0/16]: " a_cluster_cidr
+      aks_cluster_cidr=${a_cluster_cidr:-10.10.0.0/16}
+      echo "# The aks cluster subnet in CIDR notation" >> custom.config.yml
+      echo "AKS_CLUSTER_CIDR: "\"$aks_cluster_cidr\" >> custom.config.yml
+
+      #AKS_K8S_VERSION
+      echo $'\n'
+      read -p "The kubernetes version for the aks cluster; available kubernetes versions can be found here: https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli [1.29]:" a_k8s_version
+      aks_k8s_version=${a_k8s_version:-1.29}
+      echo "# The kubernetes version for the aks cluster; available kubernetes versions can be found here:" >> custom.config.yml
+      echo "AKS_K8S_VERSION: "\"$aks_k8s_version\" >> custom.config.yml
+ 
+      #AKS_INSTANCE_TYPE
+      echo $'\n'
+      read -p "The aks worker node instance types [Standard_D2_v2]:" a_instance_type
+      aks_instance_type=${a_instance_type:-Standard_D2_v2}
+      echo "# The aks worker node instance types" >> custom.config.yml
+      echo "AKS_INSTANCE_TYPE: "\"$aks_instance_type\" >> custom.config.yml
+
+      #AKS_NUM_WORKER_NODES: 3
+      echo $'\n'
+      read -p "The desired number of aks worker nodes [3]:" a_num_worker_nodes
+      aks_num_worker_nodes=${a_num_worker_nodes:-3}
+      echo "# The desired number of aks worker nodes" >> custom.config.yml
+      echo "AKS_NUM_WORKER_NODES: "$aks_num_worker_nodes >> custom.config.yml
+
+      #AKS_WORKER_VOLUME_SIZE
+      echo $'\n'
+      read -p "The volume size of aks worker nodes in GB [100]:" a_worker_volume_size
+      aks_worker_volume_size=${a_worker_volume_size:-100}
+      echo "# The volume size of aks worker nodes in GB" >> custom.config.yml
+      echo "AKS_WORKER_VOLUME_SIZE: "$aks_worker_volume_size >> custom.config.yml
+   
+   fi 
+
+fi
+
 if [ $k8s_platform == "dkp" ]; then
    #DKP_CLUSTER_NAME
    echo $'\n'
@@ -324,7 +415,7 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rk
    echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
 fi
 
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" ) && $k8s_lb_protocol == "https" ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "aks" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
    echo $'\n'
    read -p "TLS Certificate file location on the local installing machine [~/ascender.crt]:" t_cert_path
@@ -356,7 +447,7 @@ read -p "DNS resolvable hostname for Ascender service [ascender.example.com]: " 
 ascender_hostname=${a_hostname:-ascender.example.com}
 echo "ASCENDER_HOSTNAME: "$ascender_hostname >> custom.config.yml
 
-if [ $k8s_platform == "eks" ]; then
+if [[ $k8s_platform == "eks" || $k8s_platform == "aks" ]]; then
    # ASCENDER_DOMAIN
    echo $'\n'
    echo "# DNS domain for Ascender service. This is required when hosting on cloud services." >> custom.config.yml
