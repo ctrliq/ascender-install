@@ -74,15 +74,15 @@ The following variables will be present after running the script:
 - `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
 - `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
   - this is a SINGLE domain for both Ascender AND Ledger.
-- USE_AZURE_DNS: Determines whether to use Azure DNS Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
-- AKS_CLUSTER_NAME: The name of the aks cluster on which Ascender will be installed. This can be an existing aks cluster, or the name of the one to create.
-- AKS_CLUSTER_STATUS: Determines whether to create a new cluster (`provision`) or use an existing cluster (`no_action`)
-- AKS_CLUSTER_REGION: The Azure region in which a cluster that the installer creates should reside. 
-- AKS_INSTANCE_TYPE: The aks worker node instance types
-- AKS_NUM_WORKER_NODES: The desired number of aks worker nodes
-- AKS_WORKER_VOLUME_SIZE: The volume size of aks worker nodes in GB
-tls_crt_path: TLS Certificate file location on the local installing machine
-tls_key_path: TLS Private Key file location on the local installing machine
+- `USE_AZURE_DNS`: Determines whether to use Azure DNS Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
+- `AKS_CLUSTER_NAME`: The name of the aks cluster on which Ascender will be installed. This can be an existing aks cluster, or the name of the one to create.
+- `AKS_CLUSTER_STATUS`: Determines whether to create a new cluster (`provision`) or use an existing cluster (`no_action`)
+- `AKS_CLUSTER_REGION`: The Azure region in which a cluster that the installer creates should reside. 
+- `AKS_INSTANCE_TYPE`: The aks worker node instance types
+- `AKS_NUM_WORKER_NODES`: The desired number of aks worker nodes
+- `AKS_WORKER_VOLUME_SIZE`: The volume size of aks worker nodes in GB
+- `tls_crt_path`: TLS Certificate file location on the local installing machine
+- `tls_key_path`: TLS Private Key file location on the local installing machine
 
 ### Run the setup script
 
