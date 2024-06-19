@@ -8,8 +8,9 @@ Github repository.
 ## Table of Contents
 
 - [General Prerequisites](#general-prerequisites)
-- [EKS-specific Prerequisites](#eks-specific-prerequisites)
+- [AKS-specific Prerequisites](#aks-specific-prerequisites)
 - [Install Instructions](#install-instructions)
+- [Uninstall Instructions](#uninstall-instructions)
 
 ## General Prerequisites
 
@@ -41,7 +42,7 @@ This will create a directory named `ascender-install` in your present working di
 
 We will refer to this directory as the `<repository root>` in the remainder of this instructions.
 
-### Set the configuration variables for an eks Install
+### Set the configuration variables for an aks Install
 
 #### inventory file
 
@@ -67,42 +68,21 @@ The following variables will be present after running the script:
 
 - `k8s_platform`: This variable specificies which Kubernetes platform Ascender and its components will be installed on.
 - `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+- AKS_K8S_VERSION: The kubernetes version for the aks cluster; available kubernetes versions can be found here: [Supported Kubernetes versions in AKS](https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli)
 - `USE_AZURE_DNS`: Determines whether to use Route53's Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
 - `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
 - `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
 - `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
   - this is a SINGLE domain for both Ascender AND Ledger.
-- `EKS_CLUSTER_NAME`: The name of the eks cluster on which Ascender will be installed. This can be an existing eks cluster, or the name of the one to create, should the `eksctl` tool not find this name amongst its existing clusters.
-- `EKS_CLUSTER_REGION`: The AWS region hosting the eks cluster
-- `EKS_CLUSTER_CIDR`: The eks cluster subnet in CIDR notation
-- `EKS_K8S_VERSION`: The kubernetes version for the eks cluster; available kubernetes versions can be found [here](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html)
-- `EKS_INSTANCE_TYPE`: The worker node instance type. 
-- `EKS_MIN_WORKER_NODES`: The minimum number of worker nodes that the cluster will run
-- `EKS_MAX_WORKER_NODES`: The maximum number of worker nodes that the cluster will run
-- `EKS_NUM_WORKER_NODES`: The desired number of worker nodes for the eks cluster
-- `EKS_WORKER_VOLUME_SIZE`: The size of the Elastic Block Storage volume for each worker node
-- `EKS_SSL_CERT`: The ARN for the SSL certificate; required when k8s_lb_protocol is https. The same certificate is used for all components (currently Ascender and Ledger); as such, we recommend that the certificate is set for a wildcard domain, (e.g., *.example.com).
-
-
-USE_AZURE_DNS: Determines whether to use Azure DNS Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
-# The name of the eks cluster to install Ascender on - if it does not already exist, the installer can set it up
-AKS_CLUSTER_NAME: ascender-aks-cluster
-# Specifies whether the AKS cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)
-AKS_CLUSTER_STATUS: provision
-# The Azure region hosting the aks cluster
-AKS_CLUSTER_REGION: eastus
-# The kubernetes version for the aks cluster; available kubernetes versions can be found here:
-AKS_K8S_VERSION: "1.29"
-# The aks worker node instance types
-AKS_INSTANCE_TYPE: "Standard_D2_v2"
-# The desired number of aks worker nodes
-AKS_NUM_WORKER_NODES: 3
-# The volume size of aks worker nodes in GB
-AKS_WORKER_VOLUME_SIZE: 100
-# TLS Certificate file location on the local installing machine
-tls_crt_path: "/home/rocky/ascender.crt"
-# TLS Private Key file location on the local installing machine
-tls_key_path: "/home/rocky/ascender.key"
+- USE_AZURE_DNS: Determines whether to use Azure DNS Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
+- AKS_CLUSTER_NAME: The name of the aks cluster on which Ascender will be installed. This can be an existing aks cluster, or the name of the one to create.
+- AKS_CLUSTER_STATUS: Determines whether to create a new cluster (`provision`) or use an existing cluster (`no_action`)
+- AKS_CLUSTER_REGION: The Azure region in which a cluster that the installer creates should reside. 
+- AKS_INSTANCE_TYPE: The aks worker node instance types
+- AKS_NUM_WORKER_NODES: The desired number of aks worker nodes
+- AKS_WORKER_VOLUME_SIZE: The volume size of aks worker nodes in GB
+tls_crt_path: TLS Certificate file location on the local installing machine
+tls_key_path: TLS Private Key file location on the local installing machine
 
 ### Run the setup script
 
@@ -138,7 +118,8 @@ After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifest
 - `ascender-deployment-{{ k8s_platform }}.yml`
 - `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
-- `eks-cluster-manifest.yml` (if you provisioned a new EKS cluster with the Ascender installer)
+
+It will also contain a directory called `aks-deploy`, if you provisioned a new AKS cluster with the Ascender installer. This directory will contain the terraform state files and artifacts for your AKS cluster.
 
 Remove the timestamp from the filename and then run the following
 commands from within `tmp_dir``:
@@ -147,6 +128,6 @@ commands from within `tmp_dir``:
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
-To delete an EKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`
+To delete an AKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`
 
-- `$ eksctl delete cluster -f eks-cluster-manifest.yml --disable-nodegroup-eviction --force`
+- `$ terraform -chdir=<tmp_dir>/ destroy --auto-approve`
