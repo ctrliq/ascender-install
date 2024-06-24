@@ -17,7 +17,7 @@ admins rejoice!
 - [General Prerequisites](#general-prerequisites)
 - [Optional Components](#optional-components)
 - [Configuration File](#configuration-file)
-- [Instructions by Kubernetes Platform](#instructions-by-kubernetes-platform)
+- [Instructions by Kubernetes Platform](#installation-instructions-by-kubernetes-platform)
 - [Upgrading](#upgrading-ascender)
 - [Uninstall](#uninstall)
 - [Contributing](#contributing)
@@ -98,6 +98,7 @@ description/proper usage directly present in the comments.
 
 - [K3s](docs/k3s/README.md)
 - [Elastic Kubernetes Service](docs/eks/README.md)
+- [Azure Kubernetes Service](docs/aks/README.md)
 - [RKE Government](docs/rke2/README.md)
 
 ## Adding Components/Configuration Changes

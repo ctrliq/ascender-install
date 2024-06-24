@@ -5,14 +5,15 @@
 
 - name: Generate manifest to install Ledger k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
-    src: ledger_deployment_dkp.yaml
-    dest: "{{ tmp_dir }}/ledger_deployment_dkp.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+    src: ledger_deployment_aks.yaml
+    dest: "{{ tmp_dir }}/ledger_deployment_aks.yaml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: "Apply ledger manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
     namespace: "{{ LEDGER_NAMESPACE }}"
-    definition: "{{ lookup('template', 'templates/ledger_deployment_dkp.yaml') | from_yaml_all }}"
+    definition: "{{ lookup('template', 'templates/ledger_deployment_aks.yaml') | from_yaml_all }}"
+    verify_ssl: false
 
 - name: Wait for Ledger web Deployment to complete setting up
   kubernetes.core.k8s_info:
@@ -22,6 +23,7 @@
     namespace: "{{ LEDGER_NAMESPACE }}"
     wait_sleep: 10
     wait_timeout: 360
+    verify_ssl: false
 
 - name: Wait for Ledger parser Service to be up
   kubernetes.core.k8s_info:
@@ -31,10 +33,65 @@
     namespace: "{{ LEDGER_NAMESPACE }}"
     wait_sleep: 10
     wait_timeout: 360
+    verify_ssl: false
   register: parser_svc
       
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
+
+- name: Retrieve the ledger-web-ingress Ingress object
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Ingress
+    name: ledger-web-ingress
+    namespace: "{{ LEDGER_NAMESPACE }}"
+  register: ledger_ingress
+  until:
+    - ledger_ingress.resources[0].status.loadBalancer.ingress[0].ip is defined
+    - ledger_ingress.resources[0].spec.rules[0].host is defined
+  retries: 20
+
+- ansible.builtin.debug: 
+    var: ledger_ingress.resources[0].status.loadBalancer.ingress[0].ip
+
+- ansible.builtin.debug: 
+    var: ledger_ingress.resources[0].spec.rules[0].host
+
+- name: List all DNS zones
+  azure.azcollection.azure_rm_dnszone_info:
+  register: all_zones
+  when: USE_AZURE_DNS
+
+- ansible.builtin.debug:
+    var: all_zones
+  when: USE_AZURE_DNS
+
+- name: Set Resource Group Fact
+  ansible.builtin.set_fact:
+    resource_group: "{{ item.id.split('/')[4] }}"
+  loop: "{{ all_zones.ansible_info.azure_dnszones }}"
+  when: 
+    - item.name == ASCENDER_DOMAIN
+    - USE_AZURE_DNS
+
+- ansible.builtin.debug:
+    var: resource_group
+  when: USE_AZURE_DNS
+
+- name: create A record set with metadata information
+  azure.azcollection.azure_rm_dnsrecordset:
+    resource_group: "{{ resource_group }}"
+    relative_name: "{{ LEDGER_NAMESPACE }}"
+    zone_name: "{{ ASCENDER_DOMAIN }}"
+    record_type: A
+    records:
+      - entry: "{{ ledger_ingress.resources[0].status.loadBalancer.ingress[0].ip }}"
+  when: USE_AZURE_DNS
+
+- name: Indicate Instructions for non-AzureDNS Domain Management
+  ansible.builtin.debug: 
+    msg: "Please manually create a DNS A record for {{ LEDGER_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ ledger_ingress.resources[0].status.loadBalancer.ingress[0].ip }}"
+  when: not USE_AZURE_DNS
 
 - name: Set the Ledger URL
   ansible.builtin.set_fact:
@@ -99,7 +156,6 @@
     controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
-    validate_certs: false
     settings:
       LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"

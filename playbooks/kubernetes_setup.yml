@@ -10,7 +10,7 @@
   environment:
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
     NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
-    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
+    PATH: "/usr/bin:/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
   
   tasks: 
 
@@ -34,17 +34,17 @@
         tasks_from: "k8s_setup_{{ k8s_platform }}"
       # when: kube_install 
 
-# - hosts: ascender_workers
-#   gather_facts: no
-#   become: false
+# # - hosts: ascender_workers
+# #   gather_facts: no
+# #   become: false
 
-#   vars_files:
-#     - ["../custom.config.yml", "../default.config.yml"]
+# #   vars_files:
+# #     - ["../custom.config.yml", "../default.config.yml"]
 
-#   tasks:
+# #   tasks:
 
-#     - name: Run k8s_setup role for {{ k8s_platform }}
-#       ansible.builtin.include_role:
-#         name: k8s_setup
-#         tasks_from: "k8s_setup_{{ k8s_platform }}_workers"
-#       # when: kube_install
+# #     - name: Run k8s_setup role for {{ k8s_platform }}
+# #       ansible.builtin.include_role:
+# #         name: k8s_setup
+# #         tasks_from: "k8s_setup_{{ k8s_platform }}_workers"
+# #       # when: kube_install
