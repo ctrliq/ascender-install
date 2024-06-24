@@ -53,7 +53,7 @@ You can copy the contents of [aks.inventory](./aks.inventory) in this directory,
 You can run the bash script at 
 
 ```
-<repository root>>/config_vars.sh
+<repository root>/config_vars.sh
 ```
 
 The script will take you through a series of questions, that will populate the variables file requires to install Ascender. This variables file will be located at:
