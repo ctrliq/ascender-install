@@ -25,7 +25,7 @@ tls_key_path: "/root/ascender.key"
 # A directory in which to place both temporary artifacts
 # and timestamped Kubernetes Manifests to make Ascender/Ledger easy
 # to uninstall
-tmp_dir: "/tmp/ascender_install_artifacts"
+tmp_dir: "{{ playbook_dir }}/../ascender_install_artifacts"
 # DNS resolvable hostname for Ascender service. This is required for install.
 ASCENDER_HOSTNAME: ascender.example.com
 # Namespace for Ascender Kubernetes objects

@@ -43,7 +43,7 @@
       src: "{{ item }}"
       dest: "/var/lib/rancher/k3s/agent/images/{{ item | basename }}"
       remote_src: true
-    with_fileglob: "{{ playbook_dir }}/../offline/images/*.tar.gz"
+    with_fileglob: "{{ playbook_dir }}/../offline/images/*"
 
   - name: Make Installer executable
     ansible.builtin.file:
@@ -121,9 +121,24 @@
     mode: '0644'
   become: true
   delegate_to: localhost
-  when: 
+  when:
     - use_etc_hosts
     - LEDGER_INSTALL
+
+- name: "Ensure a local DNS entry for {{ REACT_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ REACT_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ REACT_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when:
+    - use_etc_hosts
+    - REACT_INSTALL
+
     
 # - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
 #   ansible.builtin.lineinfile:
