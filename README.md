@@ -99,6 +99,7 @@ description/proper usage directly present in the comments.
 - [K3s](docs/k3s/README.md)
 - [Elastic Kubernetes Service](docs/eks/README.md)
 - [Azure Kubernetes Service](docs/aks/README.md)
+- [Google Kubernetes Engine](docs/gke/README.md)
 - [RKE Government](docs/rke2/README.md)
 
 ## Adding Components/Configuration Changes
