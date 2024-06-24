@@ -64,6 +64,18 @@
       - botocore
   when: k8s_platform == "eks"
 
+# - name: Read collections paths from ansible.cfg
+#   ansible.builtin.set_fact:
+#     collections_paths: "{{ lookup('ini', 'collections_path section=defaults file=../ansible.cfg') }}"
+#   when: k8s_platform == "aks"
+
+# - name: Install pip packages for Azure collections
+#   ansible.builtin.pip:
+#     chdir: "{{ playbook_dir }}/.."
+#     requirements: "{{ collections_paths.split(':') | first }}/ansible_collections/azure/azcollection/requirements.txt"
+#   when: k8s_platform == "aks"
+#   become: yes
+
 - name: Check for existing eksctl installation
   ansible.builtin.stat:
     path: /usr/local/bin/eksctl
@@ -92,3 +104,6 @@
   when:
     - not eksctl_file.stat.exists or not eksctl_file.stat.xusr or not eksctl_file.stat.xgrp or not eksctl_file.stat.xoth
     - k8s_platform == "eks"
+
+- name: Install AKS Packages
+  ansible.builtin.include_tasks: aks_packages.yml

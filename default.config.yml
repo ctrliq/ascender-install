@@ -106,6 +106,36 @@ EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxx
 # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
 EKS_EBS_CSI_DRIVER_VERSION: "v1.24.0"
 
+# ---aks variables---
+# The name of the aks cluster to install Ascender on - if it does not already exist, the installer can set it up
+AKS_CLUSTER_NAME: ascender-aks-cluster
+
+# Determines whether to use Azure DNS' Domain Management (which is automated)
+# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
+#If this value is set to false, you will have to manually set an A record for 
+# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to their corresponding
+# Azure Loadbalancers
+USE_AZURE_DNS: true
+
+# Specifies whether the AKS cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)
+AKS_CLUSTER_STATUS: provision
+
+# The Azure region hosting the aks cluster
+AKS_CLUSTER_REGION: southcentralus
+
+# The kubernetes version for the aks cluster; available kubernetes versions can be found here:
+# https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli
+AKS_K8S_VERSION: "1.29"
+
+# The aks worker node instance types
+AKS_INSTANCE_TYPE: "Standard_D2_v2"
+
+# The desired number of aks worker nodes
+AKS_NUM_WORKER_NODES: 3
+
+# The volume size of aks worker nodes in GB
+AKS_WORKER_VOLUME_SIZE: 100
+
 # ---dkp variables---
 # The name of the dkp cluster you wish to deploy Ascender to and/or create
 # See a list of all dkp clusters with the command 
@@ -135,7 +165,7 @@ use_etc_hosts: true
 # A directory in which to place both temporary artifacts
 # and timestamped Kubernetes Manifests to make Ascender/Ledger easy
 # to uninstall
-tmp_dir: "/tmp/ascender_install_artifacts"
+tmp_dir: "{{ playbook_dir }}/../ascender_install_artifacts"
 
 # ---Ascender install variables---
 

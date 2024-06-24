@@ -1,6 +1,8 @@
 collections:
   - name: amazon.aws
     version: ">=6.5.0"
+  - name: azure.azcollection
+    version: ">=2.4.0"
   - name: ansible.posix
     version: ">=1.5.4"
   - name: awx.awx
