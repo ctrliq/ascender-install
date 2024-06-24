@@ -1,0 +1,70 @@
+---
+# This variable specificies which Kubernetes platform Ascender and its components will be installed on.
+k8s_platform: aks
+# Boolean indicating whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+download_kubeconfig: true
+# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+# If set to https, you MUST provide certificate/key options for the Installer to use.
+k8s_lb_protocol: https
+# Determines whether to use Azure DNS Domain Management (which is automated)
+# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
+# If this value is set to false, you will have to manually set an A record for
+# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the Azure
+# Loadbalancers
+USE_AZURE_DNS: true
+# The name of the eks cluster to install Ascender on - if it does not already exist, the installer can set it up
+AKS_CLUSTER_NAME: ascender-aks-cluster
+# Specifies whether the AKS cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)
+AKS_CLUSTER_STATUS: provision
+# The Azure region hosting the aks cluster
+AKS_CLUSTER_REGION: eastus
+# The kubernetes version for the aks cluster; available kubernetes versions can be found here:
+AKS_K8S_VERSION: "1.29"
+# The aks worker node instance types
+AKS_INSTANCE_TYPE: "Standard_D2_v2"
+# The desired number of aks worker nodes
+AKS_NUM_WORKER_NODES: 3
+# The volume size of aks worker nodes in GB
+AKS_WORKER_VOLUME_SIZE: 100
+# TLS Certificate file location on the local installing machine
+tls_crt_path: "/home/rocky/ascender.crt"
+# TLS Private Key file location on the local installing machine
+tls_key_path: "/home/rocky/ascender.key"
+# A directory in which to place both temporary artifacts
+# and timestamped Kubernetes Manifests to make Ascender/Ledger easy
+# to uninstall
+tmp_dir: "{{ playbook_dir}}/../ascender_install_artifacts"
+# DNS resolvable hostname for Ascender service. This is required for install.
+ASCENDER_HOSTNAME: ascender.example.com
+# DNS domain for Ascender service. This is required when hosting on cloud services.
+ASCENDER_DOMAIN: example.com
+# Namespace for Ascender Kubernetes objects
+ASCENDER_NAMESPACE: ascender
+# Administrator username for Ascender
+ASCENDER_ADMIN_USER: admin
+# Administrator password for Ascender
+ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+# The image tag indicating the version of Ascender you wish to install
+ASCENDER_VERSION: 24.0.0
+# The version of the AWX Operator used to install Ascender and its components
+ANSIBLE_OPERATOR_VERSION: 2.13.1
+# Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
+ascender_garbage_collect_secrets: false
+# External PostgreSQL database name used for Ascender (this DB must exist)
+ascender_replicas: 1
+# Determines whether or not Ledger will be installed
+LEDGER_INSTALL: true
+# DNS resolvable hostname for Ledger service. This is required for install
+LEDGER_HOSTNAME: ledger.example.com
+# Number of replicas for the Ledger web container
+ledger_web_replicas: 1
+# Number of replicas for the Ledger Parser container
+ledger_parser_replicas: 1
+# The image tag indicating the version of Ledger you wish to install
+LEDGER_VERSION: latest
+# The Kubernetes namespace in which Ledger objects will live
+LEDGER_NAMESPACE: ledger
+# Admin password for Ledger (the username is admin by default)
+LEDGER_ADMIN_PASSWORD: myadminpassword
+# Password for Ledger database
+LEDGER_DB_PASSWORD: mydbpassword

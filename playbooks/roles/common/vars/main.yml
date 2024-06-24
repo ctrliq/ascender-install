@@ -11,3 +11,33 @@ common_packages:
     - python3-pip
     - kubectl
     - python3-kubernetes
+
+azure_gpg_keys:
+  8:
+    - https://rpm.releases.hashicorp.com/gpg
+    - https://packages.microsoft.com/keys/microsoft.asc
+  9:
+    - https://rpm.releases.hashicorp.com/gpg
+    - https://packages.microsoft.com/keys/microsoft.asc
+
+azure_microsoft_repo:
+  8:
+    - https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
+  9:
+    - https://packages.microsoft.com/config/rhel/9.0/packages-microsoft-prod.rpm
+
+azure_pip_packages:
+  8:
+    - azure-cli-core
+  9:
+    - azure-cli-core
+
+azure_rpm_packages:
+  8:
+    - azure-cli
+    - yum-utils
+    - terraform
+  9:
+    - azure-cli
+    - yum-utils
+    - terraform
