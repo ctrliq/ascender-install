@@ -17,7 +17,7 @@ admins rejoice!
 - [General Prerequisites](#general-prerequisites)
 - [Optional Components](#optional-components)
 - [Configuration File](#configuration-file)
-- [Instructions by Kubernetes Platform](#instructions-by-kubernetes-platform)
+- [Instructions by Kubernetes Platform](#installation-instructions-by-kubernetes-platform)
 - [Uninstall](#uninstall)
 - [Contributing](#contributing)
 - [Reporting Issues](#reporting-issues)
