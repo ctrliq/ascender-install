@@ -32,6 +32,7 @@ README](../../README.md#general-prerequisites)
 - gke-gcloud-auth-plugin
   - $sudo yum install google-cloud-sdk-gke-gcloud-auth-plugin
   - $gcloud components update
+- pip install jmespath
 - Google Cloud Project must exist
   - Cloud DNS API must be enabled
     - Cloud DNS Zone must be created
