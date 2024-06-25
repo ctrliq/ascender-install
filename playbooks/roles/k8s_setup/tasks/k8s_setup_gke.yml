@@ -1,0 +1,123 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Determine if ~/.kube/config already exists
+  ansible.builtin.stat:
+    path: ~/.kube/config
+  register: existing_kubeconfig
+
+- name: create backup of existing ~/.kube/config
+  ansible.builtin.copy:
+    src: ~/.kube/config
+    dest: "~/.kube/config.{{ ansible_date_time.iso8601_basic_short }}"
+  when: 
+    - existing_kubeconfig.stat.exists
+    - download_kubeconfig
+
+- name: Delete existing ~/.kube/config
+  ansible.builtin.file:
+    path: ~/.kube/config
+    state: absent
+  when: 
+    - existing_kubeconfig.stat.exists
+    - download_kubeconfig
+
+# Check for existing gke cluster
+- name: Get list of all GKE clusters
+  ansible.builtin.command: >
+    gcloud container clusters list --format="json"
+    {% if GKE_CLUSTER_ZONE %}
+    --zone {{ GKE_CLUSTER_ZONE }}
+    {% endif %}
+  register: gke_clusters
+
+- name: Parse GKE clusters JSON
+  ansible.builtin.set_fact:
+    clusters_list: "{{ gke_clusters.stdout | from_json }}"
+
+- name: Check if the specified GKE cluster exists
+  ansible.builtin.set_fact:
+    gke_cluster_exists: "{{ GKE_CLUSTER_NAME in clusters_list | map(attribute='name') | list }}"
+
+- name: Debug output
+  ansible.builtin.debug:
+    msg: >
+      The cluster {{ GKE_CLUSTER_NAME }} 
+      {% if gke_cluster_exists %}exists{% else %}does not exist{% endif %}.
+  
+
+# # If GKE_CLUSTER_NAME does not exist, set up new gke cluster
+- name: "If target cluster {{ GKE_CLUSTER_NAME }} does not exist, create it"
+  block: 
+
+    - name: Ensure that the gke_deploy directory exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
+        state: directory
+
+    - name: Copy GKE Terraform Directory
+      ansible.builtin.copy:
+        src: files/gke_deploy
+        dest: "{{ playbook_dir }}/../ascender_install_artifacts"
+        mode: 0777 
+
+    - name: Initialize Terraform
+      ansible.builtin.command:
+        cmd: terraform init
+        chdir: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
+    
+    - name: Terraform Plan
+      ansible.builtin.command:
+        cmd: terraform plan
+        chdir: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
+
+    - name: Provision GKE cluster via Terraform
+      community.general.terraform:
+        project_path: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
+        state: present
+        variables:
+          home_dir: "/home/{{ ansible_user}}"
+          gke_cluster_name: "{{ GKE_CLUSTER_NAME }}"
+          project_id: "{{ GKE_PROJECT_NAME }}"
+          zone: "{{ GKE_CLUSTER_ZONE }}"
+          num_nodes: "{{ GKE_NUM_WORKER_NODES }}"
+          gcloud_vm_size: "{{ GKE_INSTANCE_TYPE }}"
+          volume_size: "{{ GKE_WORKER_VOLUME_SIZE }}"
+      register: terraform_output
+  
+  when: not gke_cluster_exists and GKE_CLUSTER_STATUS=="provision"
+
+- name: Ensure kubeconfig exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.kube/config"
+    state: touch
+    owner: "{{ ansible_user }}"
+    mode: '0644'
+  when: 
+    - download_kubeconfig
+
+- name: Retrieve kubeconfig for the GKE cluster
+  ansible.builtin.shell:
+    cmd: "gcloud container clusters get-credentials {{ GKE_CLUSTER_NAME }} --zone {{ GKE_CLUSTER_ZONE }}"
+  register: get_credentials_result
+  environment:
+    KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+  when: 
+    - download_kubeconfig
+
+- name: Ensure that the KUBECONFIG file can successfully authenticate to the GKE cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+  register: result
+  ignore_errors: yes
+  retries: 5
+  delay: 10
+  until: result.resources is defined and result.resources | length > 0
+
+- name: Fail the playbook if GKE authentication check is unsuccessful
+  ansible.builtin.fail:
+    msg: "Unable to retrieve GKE nodes after multiple retries."
+  when: result.resources is not defined or result.resources | length == 0
