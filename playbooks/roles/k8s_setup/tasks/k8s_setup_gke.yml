@@ -80,7 +80,7 @@
         variables:
           home_dir: "/home/{{ ansible_user}}"
           gke_cluster_name: "{{ GKE_CLUSTER_NAME }}"
-          project_id: "{{ GKE_PROJECT_NAME }}"
+          project_id: "{{ GKE_PROJECT_ID }}"
           zone: "{{ GKE_CLUSTER_ZONE }}"
           num_nodes: "{{ GKE_NUM_WORKER_NODES }}"
           gcloud_vm_size: "{{ GKE_INSTANCE_TYPE }}"
