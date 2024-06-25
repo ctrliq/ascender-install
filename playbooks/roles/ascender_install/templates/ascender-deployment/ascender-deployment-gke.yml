@@ -1,0 +1,77 @@
+# jinja2: keep_trailing_newline:True
+---
+# Ascender admin password
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-admin-password
+  namespace: {{ ASCENDER_NAMESPACE }}
+stringData:
+  password: {{ ASCENDER_ADMIN_PASSWORD }}
+
+{% if ASCENDER_PGSQL_HOST is defined %}
+---
+# Ascender postgres host/port and credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-postgres-configuration
+  namespace: {{ ASCENDER_NAMESPACE }}
+stringData:
+  host: {{ ASCENDER_PGSQL_HOST }}
+  port: '{{ ASCENDER_PGSQL_PORT }}'
+  database: {{ ASCENDER_PGSQL_DB }}
+  username: {{ ASCENDER_PGSQL_USER }}
+  password: {{ ASCENDER_PGSQL_PWD }}
+  sslmode: prefer
+  type: unmanaged
+type: Opaque
+{% endif %}
+---
+{% if k8s_lb_protocol == 'https' %}
+# Ascender TLS Certificate and Key
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ ASCENDER_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
+---
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: ascender-app
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+{% include 'additional-spec.yml' %}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_password_secret: ascender-app-admin-password
+  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
+{% if ASCENDER_PGSQL_HOST is defined %}
+  postgres_configuration_secret: ascender-app-postgres-configuration
+{% endif %}
+  service_type: ClusterIP
+{% if k8s_lb_protocol == 'https' %}
+  ingress_annotations: |
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+{% endif %}
+  ingress_type: ingress
+  ingress_controller: nginx
+  ingress_class_name: nginx
+  ingress_path: "/"
+  ingress_path_type: Prefix
+  ingress_hosts:
+    - hostname: {{ ASCENDER_HOSTNAME }}
+{% if k8s_lb_protocol == 'https' %}
+      tls_secret: ascender-tls-secret
+{% endif %}
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}
