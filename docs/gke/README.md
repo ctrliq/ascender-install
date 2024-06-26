@@ -27,6 +27,8 @@ README](../../README.md#general-prerequisites)
   - After logging in, you must select a Google Cloud Project in which to create the GKE cluster. A Google Cloud Project is a resource container within Google Cloud Platform (GCP) that organizes and manages resources like virtual machines, databases, and storage. It provides boundaries for access control, billing, and quotas. 
     - Instructions on how to create a Google Cloud Project can be found here: (Creating and managing projects)[https://cloud.google.com/resource-manager/docs/creating-managing-projects]
     - Once a project is created, you can select the project to use with the gCloud Command Line Interface with this command: `$ gcloud config set project PROJECT_ID`
+    - Lastly, set up [application default credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc):
+      - `gcloud auth application-default login`
 
 - There are some other google cloud components that are required:  
   - Ensure that the latest version of all installed components is installed, by one of two methods:
@@ -104,7 +106,7 @@ The following variables will be present after running the script:
 To begin the setup process, from the <repository root> directory in this repository, type:
 
 ```
-sudo <repository root>/setup.sh
+<repository root>/setup.sh
 ```
 
 Once the setup is completed successfully, you should see a final output similar to:
