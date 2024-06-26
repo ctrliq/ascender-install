@@ -28,7 +28,7 @@ README](../../README.md#general-prerequisites)
     - Instructions on how to create a Google Cloud Project can be found here: (Creating and managing projects)[https://cloud.google.com/resource-manager/docs/creating-managing-projects]
     - Once a project is created, you can select the project to use with the gCloud Command Line Interface with this command: `$ gcloud config set project PROJECT_ID`
     - Lastly, set up [application default credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc):
-      - `gcloud auth application-default login`
+      - `$ gcloud auth application-default login`
 
 - There are some other google cloud components that are required:  
   - Ensure that the latest version of all installed components is installed, by one of two methods:
