@@ -389,6 +389,13 @@ fi
 
 if [ $k8s_platform == "gke" ]; then
    
+   #GKE_PROJECT_ID
+   echo $'\n'
+   read -p "The name of the Google Cloud Project ID where the gke cluster should live [ascender-gke-project]: " g_project
+   google_project=${g_project:-ascender-gke-project}
+   echo "# The name of the Google Cloud Project ID where the gke cluster should live" >> custom.config.yml
+   echo "GKE_PROJECT_ID: "$google_project >> custom.config.yml
+
    # USE_GOOGLE_DNS
    echo $'\n'
    use_googledns=(true false)
@@ -436,7 +443,7 @@ if [ $k8s_platform == "gke" ]; then
    read -p "The Google Cloud zone hosting the gke cluster. To see a list of all available zones in your Google Cloud project, you can type the following command into your terminal: $ gcloud compute zones list --project <your-project-id> [us-central1-a]: " g_cluster_zone
    gke_cluster_zone=${g_cluster_zone:-us-central1-a}
    echo "# The Google Cloud zone hosting the gke cluster" >> custom.config.yml
-   echo "GKE_CLUSTER_ZONE: "$gke_cluster_region >> custom.config.yml
+   echo "GKE_CLUSTER_ZONE: "$gke_cluster_zone >> custom.config.yml
 
    if [ $gke_cluster_status == "provision" ]; then
       #GKE_K8S_VERSION
