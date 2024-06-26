@@ -19,17 +19,17 @@
         name: common
 
 
-# - hosts: ascender
-#   gather_facts: no
-#   become: false
+- hosts: ascender
+  gather_facts: no
+  become: false
 
-#   vars_files:
-#     - ["../custom.config.yml", "../default.config.yml"]
+  vars_files:
+    - ["../custom.config.yml", "../default.config.yml"]
 
-#   tasks:
+  tasks:
 
-#     - name: Run k8s_setup role for {{ k8s_platform }}
-#       ansible.builtin.include_role:
-#         name: k8s_setup
-#         tasks_from: "k8s_setup_{{ k8s_platform }}"
-#       # when: kube_install 
+    - name: Run k8s_setup role for {{ k8s_platform }}
+      ansible.builtin.include_role:
+        name: k8s_setup
+        tasks_from: "k8s_setup_{{ k8s_platform }}"
+      # when: kube_install 
