@@ -3,6 +3,12 @@
     gather_subset:
      - date_time
 
+- name: Ensure .kube directory exists
+  ansible.builtin.file:
+    path: "~/.kube"
+    state: directory
+    mode: '0755'
+
 - name: Determine if ~/.kube/config already exists
   ansible.builtin.stat:
     path: ~/.kube/config
