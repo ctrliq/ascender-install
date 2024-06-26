@@ -42,11 +42,21 @@ azure_rpm_packages:
     - yum-utils
     - terraform
 
+gcloud_gpg_keys:
+  8:
+    - https://rpm.releases.hashicorp.com/gpg
+  9:
+    - https://rpm.releases.hashicorp.com/gpg
+
 gcloud_rpm_packages:
   8:
     - google-cloud-sdk-gke-gcloud-auth-plugin
+    - yum-utils
+    - terraform
   9:
     - google-cloud-sdk-gke-gcloud-auth-plugin
+    - yum-utils
+    - terraform
 
 gcloud_pip_packages:
   8:
