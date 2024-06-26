@@ -1,7 +1,7 @@
 resource "google_container_cluster" "primary" {
   name     = var.gke_cluster_name
+  min_master_version = var.kubernetes_version
   location = var.zone
-
   initial_node_count = var.num_nodes
 
   node_config {
