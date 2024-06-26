@@ -107,3 +107,9 @@
 
 - name: Install AKS Packages
   ansible.builtin.include_tasks: aks_packages.yml
+  when: k8s_platform == "aks"
+
+- name: Install GKE Packages
+  ansible.builtin.include_tasks: gke_packages.yml
+  when: k8s_platform == "gke"
+
