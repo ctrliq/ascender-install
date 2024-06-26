@@ -28,6 +28,8 @@ admins rejoice!
 - On the local server (on which the installer script will run), you
   will need the following prerequisites met:
   - The The OS family must be Rocky, Fedora or CentOS and the major version must be 8 or 9.
+  - git needs to be installed
+    - `$ sudo dnf install git -y`
   - The [ansible inventory file](inventory) file needs to be changed
     to:
     - `ascender_host`
