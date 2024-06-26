@@ -8,7 +8,7 @@ Github repository.
 ## Table of Contents
 
 - [General Prerequisites](#general-prerequisites)
-- [AKS-specific Prerequisites](#aks-specific-prerequisites)
+- [GKE-specific Prerequisites](#gke-specific-prerequisites)
 - [Install Instructions](#install-instructions)
 - [Uninstall Instructions](#uninstall-instructions)
 
@@ -22,10 +22,8 @@ README](../../README.md#general-prerequisites)
 
 ### GKE User, policy and tool requirements
 - The Ascender installer for GKE requires installation of the [gcloud Commmand Line Interface](https://cloud.google.com/cli) before it is invoked. Instructions for the Linux installer can be found at [this link](https://cloud.google.com/sdk/docs/install#rpm).
-  - Once the Azure Command Line Interface is installed, run the following command to set the active Azure user to one with the appropriate permissions to run the Ascender installer on AKS: `$ az login`. 
-    - If the Azure CLI can open your default browser, it initiates authorization code flow and opens the default browser to load an Azure sign-in page.
-    - Otherwise, it initiates the [device code flow](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code) and instructs you to open a browser page at [https://aka.ms/devicelogin](https://aka.ms/devicelogin). Then, enter the code displayed in your terminal.
-    - If no web browser is available or the web browser fails to open, you may force device code flow with az login --use-device-code.
+  - Once the gcloud Commmand Line Interface is installed, run the following command to set the active Google Cloud user to one with the appropriate permissions to run the Ascender installer on GKE: `$ gcloud init`. This will open a web browser tab that will prompt you to sign in with your Google account, and provide a verfication code that will be used back on the command line. If you prefer not to use a browser, you can type the command `$ gcloud auth login --no-launch-browser`:
+    - ![gcloud cli signin](./images/gcloud_cli_signin.jpg)
 
 - google cloud sdk
   - $gcloud init
