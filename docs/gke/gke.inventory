@@ -1,5 +1,5 @@
 [localhost]
-localhost ansible_host=localhost ansible_connection=local ansible_user=rocky
+localhost ansible_host=localhost ansible_connection=local ansible_user=root
 
 [ascender]
-ascender_host ansible_host=localhost ansible_connection=local ansible_user=rocky
+ascender_host ansible_host=localhost ansible_connection=local ansible_user=root
