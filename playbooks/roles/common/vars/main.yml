@@ -41,3 +41,15 @@ azure_rpm_packages:
     - azure-cli
     - yum-utils
     - terraform
+
+gcloud_rpm_packages:
+  8:
+    - google-cloud-sdk-gke-gcloud-auth-plugin
+  9:
+    - google-cloud-sdk-gke-gcloud-auth-plugin
+
+gcloud_pip_packages:
+  8:
+    - jmespath
+  9:
+    - jmespath

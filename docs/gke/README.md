@@ -27,13 +27,22 @@ README](../../README.md#general-prerequisites)
 
 - There are some other google cloud components that are required:  
   - Ensure that the latest version of all installed components is installed, by one of two methods:
-    - $gcloud components update
+    - `$ gcloud components update`
     - If the gcloud Commmand Line Interface is installed in such a way that the Google Cloud CLI component manager is disabled, you can run the following command instead:
       - ``` sudo yum makecache && sudo yum update google-cloud-sdk-enterprise-certificate-proxy google-cloud-sdk-app-engine-python-extras google-cloud-sdk-app-engine-go google-cloud-sdk google-cloud-sdk-bundled-python3 google-cloud-sdk-bigtable-emulator google-cloud-sdk-package-go-module google-cloud-sdk-nomos kubectl google-cloud-sdk-spanner-emulator google-cloud-sdk-app-engine-java google-cloud-sdk-anthos-auth google-cloud-sdk-terraform-tools google-cloud-sdk-pubsub-emulator google-cloud-sdk-minikube google-cloud-sdk-gke-gcloud-auth-plugin google-cloud-sdk-cloud-build-local google-cloud-sdk-skaffold google-cloud-sdk-spanner-migration-tool google-cloud-sdk-app-engine-python google-cloud-sdk-kubectl-oidc google-cloud-sdk-datastore-emulator google-cloud-sdk-harbourbridge google-cloud-sdk-kpt google-cloud-sdk-firestore-emulator google-cloud-sdk-log-streaming google-cloud-sdk-cloud-run-proxy google-cloud-sdk-app-engine-grpc google-cloud-sdk-cbt google-cloud-sdk-config-connector google-cloud-sdk-local-extract google-cloud-cli-docker-credential-gcr google-cloud-sdk-istioctl ```
-- Google Cloud Project must exist
-  - Cloud DNS API must be enabled
-    - Cloud DNS Zone must be created
-  - Kubernetes Engine API must be enabled
+
+
+In order to run the Ascender installer for GKE, some Google Cloud artifacts must be created manually:
+- A Google Cloud Project must exist to place the GKE cluster into. A Google Cloud Project is a resource container within Google Cloud Platform (GCP) that organizes and manages resources like virtual machines, databases, and storage. It provides boundaries for access control, billing, and quotas. 
+  - Instructions on how to create a Google Cloud Project can be found here: (Creating and managing projects)[https://cloud.google.com/resource-manager/docs/creating-managing-projects]
+- APIs within the Project must be enabled:
+  - [Cloud DNS API](https://console.cloud.google.com/marketplace/product/google/dns.googleapis.com)
+  - [Kubernetes Engine API](https://console.cloud.google.com/marketplace/product/google/container.googleapis.com)
+- If you plan to use Google [Cloud DNS](https://cloud.google.com/dns) to resolve your URLs for Ascender, you must do the following within Cloud DNS:
+  - Create a hosted zone within Google Cloud DNS. A Google Cloud DNS hosted zone is a container for managing DNS records for a specific domain within Google Cloud Platform (GCP). It allows you to define how DNS queries for your domain are resolved.
+  - Instructions for creating a hosted zone are here: [Create, modify, and delete zones](https://cloud.google.com/dns/docs/zones). This assumes you already have a domain registered. After you have created your zone, it should appear like this:
+    - ![hosted zone](./images/hosted_zone.jpg)
+  - The entry under `Zone name` will be required to use as the variable `GOOGLE_DNS_MANAGED_ZONE`, and the field under `DNS name` will be used as the install variable `ASCENDER_DOMAIN`.
 
 
 ## Install Instructions
@@ -51,11 +60,11 @@ This will create a directory named `ascender-install` in your present working di
 
 We will refer to this directory as the `<repository root>` in the remainder of this instructions.
 
-### Set the configuration variables for an aks Install
+### Set the configuration variables for an gke Install
 
 #### inventory file
 
-You can copy the contents of [aks.inventory](./aks.inventory) in this directory, to `<repository root>`/inventory.
+You can copy the contents of [gke.inventory](./gke.inventory) in this directory, to `<repository root>`/inventory.
 
 #### custom.config.yml file
 
@@ -77,21 +86,17 @@ The following variables will be present after running the script:
 
 - `k8s_platform`: This variable specificies which Kubernetes platform Ascender and its components will be installed on.
 - `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender and Ledger.
-- AKS_K8S_VERSION: The kubernetes version for the aks cluster; available kubernetes versions can be found here: [Supported Kubernetes versions in AKS](https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli)
-- `USE_AZURE_DNS`: Determines whether to use Route53's Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
-- `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
-- `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
-- `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
-  - this is a SINGLE domain for both Ascender AND Ledger.
-- `USE_AZURE_DNS`: Determines whether to use Azure DNS Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
-- `AKS_CLUSTER_NAME`: The name of the aks cluster on which Ascender will be installed. This can be an existing aks cluster, or the name of the one to create.
-- `AKS_CLUSTER_STATUS`: Determines whether to create a new cluster (`provision`) or use an existing cluster (`no_action`)
-- `AKS_CLUSTER_REGION`: The Azure region in which a cluster that the installer creates should reside. 
-- `AKS_INSTANCE_TYPE`: The aks worker node instance types
-- `AKS_NUM_WORKER_NODES`: The desired number of aks worker nodes
-- `AKS_WORKER_VOLUME_SIZE`: The volume size of aks worker nodes in GB
+- `USE_GOOGLE_DNS`: Determines whether to use Google Cloud DNS Domain Management (which is automated), Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
+- `GKE_CLUSTER_NAME`: The name of the gke cluster to install Ascender on - if it does not already exist, the installer can set it up
+- `GKE_CLUSTER_STATUS`: Specifies whether the GKE cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)
+- `GKE_CLUSTER_ZONE`: The Google Cloud zone hosting the gke cluster
+- `GKE_K8S_VERSION`: The kubernetes version for the gke cluster
+- `GKE_INSTANCE_TYPE`: The gke worker node instance types
+- `GKE_NUM_WORKER_NODES`: The desired number of gke worker nodes
+- `GKE_WORKER_VOLUME_SIZE`: The volume size of gke worker nodes in GB
 - `tls_crt_path`: TLS Certificate file location on the local installing machine
 - `tls_key_path`: TLS Private Key file location on the local installing machine
+- `GOOGLE_DNS_MANAGED_ZONE`: In Google Cloud DNS the name of an existing hosted DNS zone for your DNS record.
 
 ### Run the setup script
 
@@ -128,7 +133,7 @@ After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifest
 - `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
 
-It will also contain a directory called `aks-deploy`, if you provisioned a new AKS cluster with the Ascender installer. This directory will contain the terraform state files and artifacts for your AKS cluster.
+It will also contain a directory called `gke-deploy`, if you provisioned a new GKE cluster with the Ascender installer. This directory will contain the terraform state files and artifacts for your GKE cluster.
 
 Remove the timestamp from the filename and then run the following
 commands from within `tmp_dir``:
@@ -137,6 +142,6 @@ commands from within `tmp_dir``:
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
-To delete an AKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`
+To delete an GKE cluster created with the Ascender installer, run the following command from within the `tmp_dir`
 
-- `$ terraform -chdir=<tmp_dir>/ destroy --auto-approve`
+- `$ terraform -chdir=gke_deploy/ destroy --auto-approve`
