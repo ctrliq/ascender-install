@@ -25,12 +25,11 @@ README](../../README.md#general-prerequisites)
   - Once the gcloud Commmand Line Interface is installed, run the following command to set the active Google Cloud user to one with the appropriate permissions to run the Ascender installer on GKE: `$ gcloud init`. This will open a web browser tab that will prompt you to sign in with your Google account, and provide a verfication code that will be used back on the command line. If you prefer not to use a browser, you can type the command `$ gcloud auth login --no-launch-browser`:
     - ![gcloud cli signin](./images/gcloud_cli_signin.jpg)
 
-- google cloud sdk
-  - $gcloud init
-- gke-gcloud-auth-plugin
-  - $sudo yum install google-cloud-sdk-gke-gcloud-auth-plugin
-  - $gcloud components update
-- pip install jmespath
+- There are some other google cloud components that are required:  
+  - Ensure that the latest version of all installed components is installed, by one of two methods:
+    - $gcloud components update
+    - If the gcloud Commmand Line Interface is installed in such a way that the Google Cloud CLI component manager is disabled, you can run the following command instead:
+      - ``` sudo yum makecache && sudo yum update google-cloud-sdk-enterprise-certificate-proxy google-cloud-sdk-app-engine-python-extras google-cloud-sdk-app-engine-go google-cloud-sdk google-cloud-sdk-bundled-python3 google-cloud-sdk-bigtable-emulator google-cloud-sdk-package-go-module google-cloud-sdk-nomos kubectl google-cloud-sdk-spanner-emulator google-cloud-sdk-app-engine-java google-cloud-sdk-anthos-auth google-cloud-sdk-terraform-tools google-cloud-sdk-pubsub-emulator google-cloud-sdk-minikube google-cloud-sdk-gke-gcloud-auth-plugin google-cloud-sdk-cloud-build-local google-cloud-sdk-skaffold google-cloud-sdk-spanner-migration-tool google-cloud-sdk-app-engine-python google-cloud-sdk-kubectl-oidc google-cloud-sdk-datastore-emulator google-cloud-sdk-harbourbridge google-cloud-sdk-kpt google-cloud-sdk-firestore-emulator google-cloud-sdk-log-streaming google-cloud-sdk-cloud-run-proxy google-cloud-sdk-app-engine-grpc google-cloud-sdk-cbt google-cloud-sdk-config-connector google-cloud-sdk-local-extract google-cloud-cli-docker-credential-gcr google-cloud-sdk-istioctl ```
 - Google Cloud Project must exist
   - Cloud DNS API must be enabled
     - Cloud DNS Zone must be created
