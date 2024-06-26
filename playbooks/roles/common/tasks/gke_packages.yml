@@ -17,44 +17,37 @@
 #   with_items: "{{ azure_gpg_keys[ansible_distribution_major_version|int] }}"
 #   become: true
 
-# - name: Set Hashicorp repository configuration for Rocky Linux 8
-#   ansible.builtin.copy:
-#     dest: /etc/yum.repos.d/hashicorp.repo
-#     content: |
-#       [hashicorp]
-#       name=HashiCorp Stable - $basearch
-#       baseurl=https://rpm.releases.hashicorp.com/RHEL/8/$basearch/stable
-#       enabled=1
-#       gpgcheck=1
-#       gpgkey=https://rpm.releases.hashicorp.com/gpg
-#   when: ansible_distribution_major_version|int == 8
-#   become: true
+- name: Set Hashicorp repository configuration for Rocky Linux 8
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/hashicorp.repo
+    content: |
+      [hashicorp]
+      name=HashiCorp Stable - $basearch
+      baseurl=https://rpm.releases.hashicorp.com/RHEL/8/$basearch/stable
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://rpm.releases.hashicorp.com/gpg
+  when: ansible_distribution_major_version|int == 8
+  become: true
 
-# - name: Set repository configuration for Rocky Linux 9
-#   ansible.builtin.copy:
-#     dest: /etc/yum.repos.d/hashicorp.repo
-#     content: |
-#       [hashicorp]
-#       name=HashiCorp Stable - $basearch
-#       baseurl=https://rpm.releases.hashicorp.com/RHEL/9/$basearch/stable
-#       enabled=1
-#       gpgcheck=1
-#       gpgkey=https://rpm.releases.hashicorp.com/gpg
-#   when: ansible_distribution_major_version|int == 9
-#   become: true
+- name: Set repository configuration for Rocky Linux 9
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/hashicorp.repo
+    content: |
+      [hashicorp]
+      name=HashiCorp Stable - $basearch
+      baseurl=https://rpm.releases.hashicorp.com/RHEL/9/$basearch/stable
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://rpm.releases.hashicorp.com/gpg
+  when: ansible_distribution_major_version|int == 9
+  become: true
 
-# - name: Install microsoft repo for Microsoft Azure
-#   ansible.builtin.dnf:
-#     name: "{{ azure_microsoft_repo[ansible_distribution_major_version|int] }}"
-# #    update_cache: true
-#     state: present
-#   become: true
-
-# - name: Update repository cache
-#   ansible.builtin.dnf:
-#     update_cache: yes
-#     state: latest
-#   become: true
+- name: Update repository cache
+  ansible.builtin.dnf:
+    update_cache: yes
+    state: latest
+  become: true
 
 - name: Enable EPEL Repo (Online)
   ansible.builtin.dnf:
