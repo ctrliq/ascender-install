@@ -4,7 +4,7 @@ rm ./custom.config.yml
 
 # k8s_platform
 echo $'\n'
-platforms=(k3s eks aks rke2 dkp)
+platforms=(k3s eks aks gke rke2 dkp)
 selected=()
 PS3='Select the number of the Kubernetes platform you are using to install Ascender: '
 select name in "${platforms[@]}" ; do
@@ -384,6 +384,94 @@ if [ $k8s_platform == "aks" ]; then
 
 fi
 
+
+
+
+if [ $k8s_platform == "gke" ]; then
+   
+   # USE_GOOGLE_DNS
+   echo $'\n'
+   use_googledns=(true false)
+   selected=()
+   PS3='Boolean indicating Determines whether to use Google Cloud DNS Domain Management (true) Or a third-party service such as Cloudflare or GoDaddy (false). If this value is set to false, you will have to manually set an A record for Ascender/Ledger to point to their respective Google Cloud Load Balancers: '
+   select name in "${use_googledns[@]}" ; do
+       for reply in $REPLY ; do
+           selected+=(${use_googledns[reply - 1]})
+       done
+       [[ $selected ]] && break
+   done
+
+   use_googledns=${selected[@]}
+   echo "# Determines whether to use Google Cloud DNS Domain Management (which is automated)" >> custom.config.yml
+   echo "# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)" >> custom.config.yml
+   echo "# If this value is set to false, you will have to manually set an A record for" >> custom.config.yml
+   echo "# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to the Google Cloud" >> custom.config.yml
+   echo "# Loadbalancers" >> custom.config.yml
+   echo "USE_GOOGLE_DNS: "$use_googledns >> custom.config.yml
+
+   #GKE_CLUSTER_NAME
+   echo $'\n'
+   read -p "The name of the gke cluster to install Ascender on - if it does not already exist, the installer can set it up [ascender-gke-cluster]: " g_cluster_name
+   gke_cluster_name=${g_cluster_name:-ascender-gke-cluster}
+   echo "# The name of the gke cluster to install Ascender on - if it does not already exist, the installer can set it up" >> custom.config.yml
+   echo "GKE_CLUSTER_NAME: "$gke_cluster_name >> custom.config.yml
+
+   #GKE_CLUSTER_STATUS:
+   echo $'\n'
+   g_cluster_status=(provision configure no_action)
+   selected=()
+   PS3='Specifies whether the GKE cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action): '
+   select name in "${g_cluster_status[@]}" ; do
+       for reply in $REPLY ; do
+           selected+=(${g_cluster_status[reply - 1]})
+       done
+       [[ $selected ]] && break
+   done
+   gke_cluster_status=${selected[@]}
+   echo "# Specifies whether the GKE cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)" >> custom.config.yml
+   echo "GKE_CLUSTER_STATUS: "$gke_cluster_status >> custom.config.yml
+
+   #GKE_CLUSTER_ZONE
+   echo $'\n'
+   read -p "The Google Cloud zone hosting the gke cluster. To see a list of all available zones in your Google Cloud project, you can type the following command into your terminal: $ gcloud compute zones list --project <your-project-id> [us-central1-a]: " g_cluster_zone
+   gke_cluster_zone=${g_cluster_zone:-us-central1-a}
+   echo "# The Google Cloud zone hosting the gke cluster" >> custom.config.yml
+   echo "GKE_CLUSTER_ZONE: "$gke_cluster_region >> custom.config.yml
+
+   if [ $gke_cluster_status == "provision" ]; then
+      #GKE_K8S_VERSION
+      echo $'\n'
+      read -p "The kubernetes version for the gke cluster; available kubernetes versions can be determined by typing the following command into your terminal: &gcloud container get-server-config --zone < zone > [1.29.4-gke.1043002]:" a_k8s_version
+      gke_k8s_version=${g_k8s_version:-1.29.4-gke.1043002}
+      echo "# The kubernetes version for the gke cluster" >> custom.config.yml
+      echo "GKE_K8S_VERSION: "\"$gke_k8s_version\" >> custom.config.yml
+ 
+      #GKE_INSTANCE_TYPE
+      echo $'\n'
+      read -p "The gke worker node instance types [e2-medium]:" g_instance_type
+      gke_instance_type=${g_instance_type:-e2-medium}
+      echo "# The gke worker node instance types" >> custom.config.yml
+      echo "GKE_INSTANCE_TYPE: "\"$gke_instance_type\" >> custom.config.yml
+
+      #GKE_NUM_WORKER_NODES: 3
+      echo $'\n'
+      read -p "The desired number of gke worker nodes [3]:" g_num_worker_nodes
+      gke_num_worker_nodes=${g_num_worker_nodes:-3}
+      echo "# The desired number of gke worker nodes" >> custom.config.yml
+      echo "GKE_NUM_WORKER_NODES: "$gke_num_worker_nodes >> custom.config.yml
+
+      #GKE_WORKER_VOLUME_SIZE
+      echo $'\n'
+      read -p "The volume size of gke worker nodes in GB [100]:" g_worker_volume_size
+      gke_worker_volume_size=${g_worker_volume_size:-100}
+      echo "# The volume size of gke worker nodes in GB" >> custom.config.yml
+      echo "GKE_WORKER_VOLUME_SIZE: "$gke_worker_volume_size >> custom.config.yml
+   
+   fi 
+
+fi
+
+
 if [ $k8s_platform == "dkp" ]; then
    #DKP_CLUSTER_NAME
    echo $'\n'
@@ -408,7 +496,7 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rk
    echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
 fi
 
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "aks" ) && $k8s_lb_protocol == "https" ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "aks" || $k8s_platform == "gke" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
    echo $'\n'
    read -p "TLS Certificate file location on the local installing machine [~/ascender.crt]:" t_cert_path
@@ -440,13 +528,22 @@ read -p "DNS resolvable hostname for Ascender service [ascender.example.com]: " 
 ascender_hostname=${a_hostname:-ascender.example.com}
 echo "ASCENDER_HOSTNAME: "$ascender_hostname >> custom.config.yml
 
-if [[ $k8s_platform == "eks" || $k8s_platform == "aks" ]]; then
+if [[ $k8s_platform == "eks" || $k8s_platform == "aks" || $k8s_platform == "gke" ]]; then
    # ASCENDER_DOMAIN
    echo $'\n'
    echo "# DNS domain for Ascender service. This is required when hosting on cloud services." >> custom.config.yml
    read -p "DNS domain for Ascender service. This is required when hosting on cloud services [example.com]: " a_domain
-   ascender_domain=${a_domain:-ascender.example.com}
+   ascender_domain=${a_domain:-example.com}
    echo "ASCENDER_DOMAIN: "$ascender_domain >> custom.config.yml
+fi
+
+if [[ (  $k8s_platform == "gke" ) && $use_googledns == "true" ]]; then
+   #GOOGLE_DNS_MANAGED_ZONE
+   echo $'\n'
+   read -p "If using Google Cloud DNS, provide the name of an existing hosted DNS zone for your DNS record. [example-com]:" g_hosted_zone
+   google_hosted_zone=${g_hosted_zone:-example-com} 
+   echo "# In Google Cloud DNS the name of an existing hosted DNS zone for your DNS record." >> custom.config.yml
+   echo "GOOGLE_DNS_MANAGED_ZONE: "\"$google_hosted_zone\" >> custom.config.yml
 fi
 
 # ASCENDER_NAMESPACE
@@ -569,6 +666,21 @@ if [ "$k8s_offline" == "false" ]; then
     echo "# The Ascender web container image pull policy (If unsure, choose IfNotPresent)" >> custom.config.yml
     echo "image_pull_policy: "$image_pull_policy >> custom.config.yml
 fi
+
+# ascender_setup_playbooks
+echo $'\n'
+a_setup_playbooks=(true false)
+selected=()
+PS3='Boolean indicating whether to add standard playbooks into Ascender after installation: '
+select name in "${a_setup_playbooks[@]}" ; do
+    for reply in $REPLY ; do
+        selected+=(${a_setup_playbooks[reply - 1]})
+    done
+    [[ $selected ]] && break
+done
+ascender_setup_playbooks=${selected[@]}
+echo "# Boolean indicating whether to add standard playbooks into Ascender after installation" >> custom.config.yml
+echo "ascender_setup_playbooks: "$ascender_setup_playbooks >> custom.config.yml
 
 # LEDGER_INSTALL
 echo $'\n'
