@@ -80,6 +80,7 @@
         variables:
           home_dir: "/home/{{ ansible_user}}"
           gke_cluster_name: "{{ GKE_CLUSTER_NAME }}"
+          kubernetes_version: "{{ GKE_K8S_VERSION }}"
           project_id: "{{ GKE_PROJECT_ID }}"
           zone: "{{ GKE_CLUSTER_ZONE }}"
           num_nodes: "{{ GKE_NUM_WORKER_NODES }}"

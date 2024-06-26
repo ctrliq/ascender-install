@@ -12,12 +12,11 @@ variable "project_id" {
   default     = "dummy_project"
 }
 
-/*
-variable "billing_account" {
-  description = "The ID of the billing account to associate with the project."
+variable "kubernetes_version" {
+  description = "The Kubernetes version for the master and nodes."
   type        = string
+  default     = "1.27.11-gke.1062004" 
 }
-*/
 
 variable "zone" {
   description = "The zone to deploy the GKE cluster."
