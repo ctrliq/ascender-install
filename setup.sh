@@ -63,7 +63,7 @@ check_collections() {
 check_ansible
 if [ $? -ne 0 ]; then
   echo "#### INSTALLING ANSIBLE ####"
-  dnf install -y ansible-core
+  sudo dnf install -y ansible-core
 fi
 
 check_collections
