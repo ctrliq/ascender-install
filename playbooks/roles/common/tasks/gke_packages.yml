@@ -1,0 +1,67 @@
+- name: Read collections paths from ansible.cfg
+  ansible.builtin.set_fact:
+    collections_paths: "{{ lookup('ini', 'collections_path section=defaults file=../ansible.cfg') }}"
+
+- name: Install pip packages for Google Cloud collections
+  ansible.builtin.pip:
+    chdir: "{{ playbook_dir }}/.."
+    requirements: "{{ collections_paths.split(':') | first }}/ansible_collections/google/cloud/requirements.txt"
+  become: yes
+
+# - name: Import GPG keys
+#   ansible.builtin.rpm_key:
+#     state: present
+#     key: "{{ item}}"
+#   with_items: "{{ azure_gpg_keys[ansible_distribution_major_version|int] }}"
+#   become: true
+
+- name: Set Hashicorp repository configuration for Rocky Linux 8
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/hashicorp.repo
+    content: |
+      [hashicorp]
+      name=HashiCorp Stable - $basearch
+      baseurl=https://rpm.releases.hashicorp.com/RHEL/8/$basearch/stable
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://rpm.releases.hashicorp.com/gpg
+  when: ansible_distribution_major_version|int == 8
+  become: true
+
+- name: Set repository configuration for Rocky Linux 9
+  ansible.builtin.copy:
+    dest: /etc/yum.repos.d/hashicorp.repo
+    content: |
+      [hashicorp]
+      name=HashiCorp Stable - $basearch
+      baseurl=https://rpm.releases.hashicorp.com/RHEL/9/$basearch/stable
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://rpm.releases.hashicorp.com/gpg
+  when: ansible_distribution_major_version|int == 9
+  become: true
+
+- name: Update repository cache
+  ansible.builtin.dnf:
+    update_cache: yes
+    state: latest
+  become: true
+
+- name: Enable EPEL Repo (Online)
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+  become: true
+
+- name: Install necessary pip packages for Google Cloud
+  ansible.builtin.pip:
+    name: "{{ gcloud_pip_packages[ansible_distribution_major_version|int] }}"
+    state: present
+  become: true
+
+- name: Install necessary rpm packages for Google Cloud
+  ansible.builtin.dnf:
+    name: "{{ gcloud_rpm_packages[ansible_distribution_major_version|int] }}"
+    state: present
+  become: true
+  

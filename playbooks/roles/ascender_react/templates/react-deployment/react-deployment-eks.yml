@@ -1,0 +1,68 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-react-admin-password
+  namespace: {{ REACT_NAMESPACE }}
+stringData:
+  password: {{ REACT_ADMIN_PASSWORD }}
+{% if ASCENDER_PGSQL_HOST is defined %}
+---
+# Ascender postgres host/port and credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-postgres-configuration
+  namespace: {{ REACT_NAMESPACE }}
+stringData:
+  host: {{ REACT_PGSQL_HOST }}
+  port: '{{ REACT_PGSQL_PORT }}'
+  database: {{ REACT_PGSQL_DB }}
+  username: {{ REACT_PGSQL_USER }}
+  password: {{ REACT_PGSQL_PWD }}
+  sslmode: prefer
+  type: unmanaged
+type: Opaque
+{% endif %}
+{% if k8s_lb_protocol == 'https' %}
+---
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', react_tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', react_tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-react-tls-secret
+  namespace: {{ REACT_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
+---
+# EDA Server Object
+apiVersion: eda.ansible.com/v1alpha1
+kind: EDA
+metadata:
+  name: ascender-react
+  namespace: {{ REACT_NAMESPACE }}
+spec:
+  automation_server_url: https://{{ ASCENDER_HOSTNAME }}
+  image: {{ REACT_IMAGE }}
+  image_version: {{ REACT_IMAGE_VERSION }}
+  image_web: {{ REACT_IMAGE_WEB }}
+  image_web_version: {{ REACT_IMAGE_WEB_VERSION }}
+  admin_user: {{ REACT_ADMIN_USER }}
+  admin_password_secret: ascender-react-admin-password
+  service_type: ClusterIP
+  ingress_type: ingress
+{% if k8s_lb_protocol == 'https' %}
+  ingress_tls_secret: ascender-react-tls-secret
+{% endif %}
+  ingress_path: "/"
+  ingress_path_type: Prefix
+  hostname: {{ REACT_HOSTNAME }}
+  no_log: false
+  websocket_ssl_verify: false
+  image_pull_policy: Always
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ REACT_HOSTNAME }}
