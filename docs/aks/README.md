@@ -52,6 +52,13 @@ README](../../README.md#general-prerequisites)
   - Create a Service Principal to obtain the client ID, client secret, and tenant ID
     - `$ az ad sp create-for-rbac --name <your-service-principal-name> --role Contributor --scopes /subscriptions/<your-subscription-id>`
     - This command will return JSON output with the appId (client ID), password (client secret), and tenant.
+    - **NOTE** the password/Client Secret will only be presented once, so be sure to record it here.
+    - If you later wish to delete your Service Principal, you can run the following two commands:
+      - List all Service Principals to find the one you want to delete
+        - `$ az ad sp list --all --output table | grep <your-service-principal-name>`
+      - Use either the appId or objectID to delete it:
+        - `$ az ad sp delete --id <your-app-id>` OR `<your-object-id>`
+
   - Create the ~/.azure directory if it doesn’t exist:
     - `mkdir -p ~/.azure`
   - Create the credentials file:
