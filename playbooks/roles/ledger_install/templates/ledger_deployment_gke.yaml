@@ -1,0 +1,290 @@
+apiVersion: v1
+stringData:
+  admin-password: {{ LEDGER_ADMIN_PASSWORD }}
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: admin-password
+  name: admin-password
+  namespace: {{ LEDGER_NAMESPACE }}
+type: Opaque
+{% if 'https' == k8s_lb_protocol  %}
+---
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ LEDGER_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
+---
+apiVersion: v1
+stringData:
+  db-ledger-password: {{ LEDGER_DB_PASSWORD }}
+kind: Secret
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: db-ledger-password
+  name: db-ledger-password
+  namespace: {{ LEDGER_NAMESPACE }}
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: db
+  name: db
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  ports:
+  - name: "3306"
+    port: 3306
+    targetPort: 3306
+  selector:
+    io.kompose.service: db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: parser
+  name: parser
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  type: ClusterIP
+  ports:
+  - name: parser-port
+    port: 5000
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    io.kompose.service: parser
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: web-svc
+  name: web-svc
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  type: ClusterIP
+  ports:
+  - name: web-port
+    port: 80
+    targetPort: 80
+  selector:
+    io.kompose.service: web
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+{% if 'https' == k8s_lb_protocol  %}
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+{% endif %}
+  name: ledger-web-ingress
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ LEDGER_HOSTNAME }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: web-svc
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - {{ LEDGER_HOSTNAME }}
+    secretName: ascender-tls-secret
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: mysql-data
+  name: mysql-data
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10240Mi
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: db
+  name: db
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.network/ledger-default: "true"
+        io.kompose.service: db
+    spec:
+      containers:
+      - env:
+        - name: ADMIN_USER
+          value: admin
+        - name: MYSQL_LEDGER_PASSWORD
+          value: /run/secrets/db-ledger-password
+        - name: admin-password
+          value: /run/secrets/admin-password
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true) }}{{ "/ledger-db:" ~ LEDGER_VERSION }}
+        imagePullPolicy: Always
+        name: db
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /run/secrets/db-ledger-password
+          name: db-ledger-password
+        - mountPath: /run/secrets/admin-password
+          name: admin-password
+        - mountPath: /var/lib/mysql
+          name: mysql-data
+      restartPolicy: Always
+      volumes:
+      - name: db-ledger-password
+        secret:
+          items:
+          - key: db-ledger-password
+            path: db-ledger-password
+          secretName: db-ledger-password
+      - name: admin-password
+        secret:
+          items:
+          - key: admin-password
+            path: admin-password
+          secretName: admin-password
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-data
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: parser
+  name: parser
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  replicas: {{ ledger_parser_replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: parser
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.28.0 (c4137012e)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/ledger-default: "true"
+        io.kompose.service: parser
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_LEDGER_PASSWORD
+          value: /run/secrets/db-ledger-password
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true) }}{{ "/ledger-parser:" ~ LEDGER_VERSION }}
+        imagePullPolicy: Always
+        name: parser
+        ports:
+        - containerPort: 5000
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /run/secrets/db-ledger-password
+          name: db-ledger-password
+      restartPolicy: Always
+      volumes:
+      - name: db-ledger-password
+        secret:
+          items:
+          - key: db-ledger-password
+            path: db-ledger-password
+          secretName: db-ledger-password
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: web
+  name: web
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  replicas: {{ ledger_web_replicas }}
+  selector:
+    matchLabels:
+      io.kompose.service: web
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.28.0 (c4137012e)
+      creationTimestamp: null
+      labels:
+        io.kompose.network/ledger-default: "true"
+        io.kompose.service: web
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_LEDGER_PASSWORD
+          value: /run/secrets/db-ledger-password
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-ledger", true) }}{{ "/ledger-web:" ~ LEDGER_VERSION }}
+        imagePullPolicy: Always
+        name: web
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /run/secrets/db-ledger-password
+          name: db-ledger-password
+      restartPolicy: Always
+      volumes:
+      - name: db-ledger-password
+        secret:
+          items:
+          - key: db-ledger-password
+            path: db-ledger-password
+          secretName: db-ledger-password
+status: {}
