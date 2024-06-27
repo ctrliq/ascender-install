@@ -56,12 +56,13 @@ README](../../README.md#general-prerequisites)
     - `mkdir -p ~/.azure`
   - Create the credentials file:
     - ```cat <<EOF > ~/.azure/credentials
-[default]
-subscription_id=<your-subscription-id>
-client_id=<your-client-id>
-secret=<your-client-secret>
-tenant=<your-tenant-id>
-EOF```
+         [default]
+         subscription_id=<your-subscription-id>
+         client_id=<your-client-id>
+         secret=<your-client-secret>
+         tenant=<your-tenant-id>
+         EOF
+      ```
   - Make sure the file has the correct permissions to protect your credentials
     - `$ chmod 600 ~/.azure/credentials`
 
