@@ -22,13 +22,15 @@ README](../../README.md#general-prerequisites)
 
 ### GKE User, policy and tool requirements
 - The Ascender installer for GKE requires installation of the [gcloud Commmand Line Interface](https://cloud.google.com/cli) before it is invoked. Instructions for the Linux installer can be found at [this link](https://cloud.google.com/sdk/docs/install#rpm).
-  - Once the gcloud Commmand Line Interface is installed, run the following command to set the active Google Cloud user to one with the appropriate permissions to run the Ascender installer on GKE: `$ gcloud init`. This will open a web browser tab that will prompt you to sign in with your Google account, and provide a verfication code that will be used back on the command line. 
+  - Once the gcloud Commmand Line Interface is installed, run the following command to set the active Google Cloud user to one with the appropriate permissions to run the Ascender installer on GKE: `$ gcloud auth application-default login`. This will open a web browser tab that will prompt you to sign in with your Google account, and provide a verfication code that will be used back on the command line. 
     - ![gcloud cli signin](./images/gcloud_cli_signin.jpg)
   - After logging in, you must select a Google Cloud Project in which to create the GKE cluster. A Google Cloud Project is a resource container within Google Cloud Platform (GCP) that organizes and manages resources like virtual machines, databases, and storage. It provides boundaries for access control, billing, and quotas. 
     - Instructions on how to create a Google Cloud Project can be found here: [Creating and managing projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-    - Once a project is created, you can select the project to use with the gCloud Command Line Interface with this command: `$ gcloud config set project PROJECT_ID`
-    - Lastly, set up [application default credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc):
-      - `$ gcloud auth application-default login`
+    - Once a project is created, you can select the project to use with the gCloud Command Line Interface with one of two commands:
+      - `$ gcloud config set project PROJECT_ID`
+        - This command will set the active project for the gcloud SDK user, and you must know the name of the project ID.
+      - `$ gcloud init`
+        - This command will take you through options of the active project and region/zone. The existing projects and regions/zones will be presented as a list you can choose from.
 
 - There are some other google cloud components that are required:  
   - Ensure that the latest version of all installed components is installed, by one of two methods:
