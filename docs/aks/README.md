@@ -21,11 +21,29 @@ README](../../README.md#general-prerequisites)
 ## AKS-specific Prerequisites
 
 ### AKS User, policy and tool requirements
+- Before doing anything, you must have a valid Microsoft Azure subscription, and an account with access to that subscription, and appropriate permissions to create and manage an AKS cluster.
+  - Instructions to create a new Microsoft accunt can be found here: [How to create a new Microsoft account](https://support.microsoft.com/en-us/account-billing/how-to-create-a-new-microsoft-account-a84675c3-3e9e-17cf-2911-3d56b15c0aaf)
+  - Instructions to create a subscription can be found here: [Create a Microsoft Customer Agreement subscription](https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/create-subscription)
 - The Ascender installer for AKS requires installation of the [Azure Commmand Line Interface](https://learn.microsoft.com/en-us/cli/azure/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux).
   - Once the Azure Command Line Interface is installed, run the following command to set the active Azure user to one with the appropriate permissions to run the Ascender installer on AKS: `$ az login`. 
     - If the Azure CLI can open your default browser, it initiates authorization code flow and opens the default browser to load an Azure sign-in page.
     - Otherwise, it initiates the [device code flow](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code) and instructs you to open a browser page at [https://aka.ms/devicelogin](https://aka.ms/devicelogin). Then, enter the code displayed in your terminal.
     - If no web browser is available or the web browser fails to open, you may force device code flow with az login --use-device-code.
+    - Here are some images showing the general flow of authentication if your server cannot open a web browser directly:
+      - Initial `az login` command with resulting random authentication code:
+        - ![az login prompt](./images/azure_login_step_1.jpg)
+      - After going to https://microsoft.com/devicelogin, presentation of a field in which to paste/type the authentication code:
+        - ![enter code prompt](./images/azure_login_step_2.png)
+      - If you already have microsoft accounts, you can select an account to log into the az cli as:
+        - ![pick account](./images/azure_login_step_3.png)
+      - If using multi-factor authentication with the Microsoft Authenticator app, you can see a prompt to approve sign in:
+        - ![mfa authentication](./images/azure_login_step_4.png)
+      - Verification that you are logging into Azure CLI:
+        - ![login verification](./images/azure_login_step_5.png)
+      - Confirmation of successful sign in to Azure CLI:
+        - ![login confirmation](./images/azure_login_step_6.png)
+      - Back on the Command Line, confirmation of sign in and selection of subcription to use for Microsoft Azure:
+        - ![login confirmation cli](./images/azure_login_step_7.png)
 
 ## Install Instructions
 
