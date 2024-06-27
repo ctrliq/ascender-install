@@ -21,11 +21,58 @@ README](../../README.md#general-prerequisites)
 ## AKS-specific Prerequisites
 
 ### AKS User, policy and tool requirements
+- Before doing anything, you must have a valid Microsoft Azure subscription, and an account with access to that subscription, and appropriate permissions to create and manage an AKS cluster.
+  - Instructions to create a new Microsoft accunt can be found here: [How to create a new Microsoft account](https://support.microsoft.com/en-us/account-billing/how-to-create-a-new-microsoft-account-a84675c3-3e9e-17cf-2911-3d56b15c0aaf)
+  - Instructions to create a subscription can be found here: [Create a Microsoft Customer Agreement subscription](https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/create-subscription)
 - The Ascender installer for AKS requires installation of the [Azure Commmand Line Interface](https://learn.microsoft.com/en-us/cli/azure/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-linux).
   - Once the Azure Command Line Interface is installed, run the following command to set the active Azure user to one with the appropriate permissions to run the Ascender installer on AKS: `$ az login`. 
     - If the Azure CLI can open your default browser, it initiates authorization code flow and opens the default browser to load an Azure sign-in page.
     - Otherwise, it initiates the [device code flow](https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code) and instructs you to open a browser page at [https://aka.ms/devicelogin](https://aka.ms/devicelogin). Then, enter the code displayed in your terminal.
     - If no web browser is available or the web browser fails to open, you may force device code flow with az login --use-device-code.
+    - Here are some images showing the general flow of authentication if your server cannot open a web browser directly:
+      - Initial `az login` command with resulting random authentication code:
+        - ![az login prompt](./images/azure_login_step_1.jpg)
+      - After going to https://microsoft.com/devicelogin, presentation of a field in which to paste/type the authentication code:
+        - ![enter code prompt](./images/azure_login_step_2.png)
+      - If you already have microsoft accounts, you can select an account to log into the az cli as:
+        - ![pick account](./images/azure_login_step_3.png)
+      - If using multi-factor authentication with the Microsoft Authenticator app, you can see a prompt to approve sign in:
+        - ![mfa authentication](./images/azure_login_step_4.png)
+      - Verification that you are logging into Azure CLI:
+        - ![login verification](./images/azure_login_step_5.png)
+      - Confirmation of successful sign in to Azure CLI:
+        - ![login confirmation](./images/azure_login_step_6.png)
+      - Back on the Command Line, confirmation of sign in and selection of subcription to use for Microsoft Azure:
+        - ![login confirmation cli](./images/azure_login_step_7.png)
+
+
+- The Ascender installer for AKS also expects Service Account/Service Principal credentials to be at ~/.azure/credentials to run modules from the azure.azcollection Ansible collection. This can be done be running the following after logging into Azure CLI:
+  - List your subscriptions to get the subscription ID
+    - `$ az account list --output table`
+  - Create a Service Principal to obtain the client ID, client secret, and tenant ID
+    - `$ az ad sp create-for-rbac --name <your-service-principal-name> --role Contributor --scopes /subscriptions/<your-subscription-id>`
+    - This command will return JSON output with the appId (client ID), password (client secret), and tenant.
+    - **NOTE** the password/Client Secret will only be presented once, so be sure to record it here.
+    - If you later wish to delete your Service Principal, you can run the following two commands:
+      - List all Service Principals to find the one you want to delete
+        - `$ az ad sp list --all --output table | grep <your-service-principal-name>`
+      - Use either the appId or objectID to delete it:
+        - `$ az ad sp delete --id <your-app-id>` OR `<your-object-id>`
+
+  - Create the ~/.azure directory if it doesn’t exist:
+    - `mkdir -p ~/.azure`
+  - Create the credentials file:
+    - ```
+      cat <<EOF > ~/.azure/credentials
+      [default]
+      subscription_id=<your-subscription-id>
+      client_id=<your-client-id>
+      secret=<your-client-secret>
+      tenant=<your-tenant-id>
+      EOF
+      ```
+  - Make sure the file has the correct permissions to protect your credentials
+    - `$ chmod 600 ~/.azure/credentials`
 
 ## Install Instructions
 
@@ -89,7 +136,7 @@ The following variables will be present after running the script:
 To begin the setup process, from the <repository root> directory in this repository, type:
 
 ```
-sudo <repository root>/setup.sh
+<repository root>/setup.sh
 ```
 
 Once the setup is completed successfully, you should see a final output similar to:
@@ -130,4 +177,4 @@ commands from within `tmp_dir``:
 
 To delete an AKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`
 
-- `$ terraform -chdir=<tmp_dir>/ destroy --auto-approve`
+- `$ terraform -chdir=aks_deploy/ destroy --auto-approve`

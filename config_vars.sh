@@ -346,7 +346,7 @@ if [ $k8s_platform == "aks" ]; then
 
    #AKS_CLUSTER_REGION
    echo $'\n'
-   read -p "The Azure region hosting the eks cluster [eastus]: " a_cluster_region
+   read -p "The Azure region hosting the aks cluster [eastus]: " a_cluster_region
    aks_cluster_region=${a_cluster_region:-eastus}
    echo "# The Azure region hosting the aks cluster" >> custom.config.yml
    echo "AKS_CLUSTER_REGION: "$aks_cluster_region >> custom.config.yml
