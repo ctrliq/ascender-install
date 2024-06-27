@@ -25,7 +25,7 @@ README](../../README.md#general-prerequisites)
   - Once the gcloud Commmand Line Interface is installed, run the following command to set the active Google Cloud user to one with the appropriate permissions to run the Ascender installer on GKE: `$ gcloud init`. This will open a web browser tab that will prompt you to sign in with your Google account, and provide a verfication code that will be used back on the command line. 
     - ![gcloud cli signin](./images/gcloud_cli_signin.jpg)
   - After logging in, you must select a Google Cloud Project in which to create the GKE cluster. A Google Cloud Project is a resource container within Google Cloud Platform (GCP) that organizes and manages resources like virtual machines, databases, and storage. It provides boundaries for access control, billing, and quotas. 
-    - Instructions on how to create a Google Cloud Project can be found here: (Creating and managing projects)[https://cloud.google.com/resource-manager/docs/creating-managing-projects]
+    - Instructions on how to create a Google Cloud Project can be found here: [Creating and managing projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
     - Once a project is created, you can select the project to use with the gCloud Command Line Interface with this command: `$ gcloud config set project PROJECT_ID`
     - Lastly, set up [application default credentials](https://cloud.google.com/docs/authentication/provide-credentials-adc):
       - `$ gcloud auth application-default login`
@@ -68,6 +68,8 @@ We will refer to this directory as the `<repository root>` in the remainder of t
 #### inventory file
 
 You can copy the contents of [gke.inventory](./gke.inventory) in this directory, to `<repository root>`/inventory.
+  - **Be sure to set the ansible_user variable for both the ansible_host and localhost to match the linux user that will be running the installer.**
+
 
 #### custom.config.yml file
 
