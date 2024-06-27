@@ -89,7 +89,7 @@ The following variables will be present after running the script:
 To begin the setup process, from the <repository root> directory in this repository, type:
 
 ```
-sudo <repository root>/setup.sh
+<repository root>/setup.sh
 ```
 
 Once the setup is completed successfully, you should see a final output similar to:
@@ -130,4 +130,4 @@ commands from within `tmp_dir``:
 
 To delete an AKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`
 
-- `$ terraform -chdir=<tmp_dir>/ destroy --auto-approve`
+- `$ terraform -chdir=aks_deploy/ destroy --auto-approve`
