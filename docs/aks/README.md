@@ -45,6 +45,26 @@ README](../../README.md#general-prerequisites)
       - Back on the Command Line, confirmation of sign in and selection of subcription to use for Microsoft Azure:
         - ![login confirmation cli](./images/azure_login_step_7.png)
 
+
+- The Ascender installer for AKS also expects Service Account/Service Principal credentials to be at ~/.azure/credentials to run modules from the azure.azcollection Ansible collection. This can be done be running the following after logging into Azure CLI:
+  - List your subscriptions to get the subscription ID
+    - `$ az account list --output table`
+  - Create a Service Principal to obtain the client ID, client secret, and tenant ID
+    - `$ az ad sp create-for-rbac --name <your-service-principal-name> --role Contributor --scopes /subscriptions/<your-subscription-id>`
+    - This command will return JSON output with the appId (client ID), password (client secret), and tenant.
+  - Create the ~/.azure directory if it doesn’t exist:
+    - `mkdir -p ~/.azure`
+  - Create the credentials file:
+    - ```cat <<EOF > ~/.azure/credentials
+[default]
+subscription_id=<your-subscription-id>
+client_id=<your-client-id>
+secret=<your-client-secret>
+tenant=<your-tenant-id>
+EOF```
+  - Make sure the file has the correct permissions to protect your credentials
+    - `$ chmod 600 ~/.azure/credentials`
+
 ## Install Instructions
 
 ### Obtain the sources
