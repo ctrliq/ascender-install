@@ -21,13 +21,16 @@ README](../../README.md#general-prerequisites)
 ## GKE-specific Prerequisites
 
 ### GKE User, policy and tool requirements
-- The Ascender installer for GKE requires installation of the [gcloud Commmand Line Interface](https://cloud.google.com/cli) before it is invoked. Instructions for the Linux installer can be found at [this link](https://cloud.google.com/sdk/docs/install#rpm).
-  - Once the gcloud Commmand Line Interface is installed, run the following command to set the active Google Cloud user to one with the appropriate permissions to run the Ascender installer on GKE: `$ gcloud auth application-default login`. This will open a web browser tab that will prompt you to sign in with your Google account, and provide a verfication code that will be used back on the command line. 
+- The first step for running the Ascender installer will be to create a Google Cloud Project in which to create the GKE cluster, in the Google Cloud Web console. A Google Cloud Project is a resource container within Google Cloud Platform (GCP) that organizes and manages resources like virtual machines, databases, and storage. It provides boundaries for access control, billing, and quotas.
+  - Instructions on how to create a Google Cloud Project can be found here: [Creating and managing projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
+- Next, the Ascender installer for GKE requires installation of the [gcloud Commmand Line Interface](https://cloud.google.com/cli) before it is invoked. Instructions for the Linux installer can be found at [this link](https://cloud.google.com/sdk/docs/install#rpm).
+  - Once the gcloud Commmand Line Interface is installed, run the following command to set the active Google Cloud user to one with the appropriate permissions to run the Ascender installer on GKE: `gcloud init`. This will open a web browser tab that will prompt you to sign in with your Google account, and provide a verfication code that will be used back on the command line. Then, it will take you through options of the active project and region/zone. The existing projects and regions/zones will be presented as a list you can choose from and you can select the project you created.
     - ![gcloud cli signin](./images/gcloud_cli_signin.jpg)
-  - After logging in, you must select a Google Cloud Project in which to create the GKE cluster. A Google Cloud Project is a resource container within Google Cloud Platform (GCP) that organizes and manages resources like virtual machines, databases, and storage. It provides boundaries for access control, billing, and quotas. 
-    - Instructions on how to create a Google Cloud Project can be found here: [Creating and managing projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-    - Once a project is created, you can select the project to use with the gCloud Command Line Interface with one of two commands:
-      - `$ gcloud config set project PROJECT_ID`
+  - Lastly, create [Application Default Credentials](https://cloud.google.com/sdk/gcloud/reference/auth/application-default/login) 
+    - `$ gcloud auth application-default login`
+
+  - If you already have the gCloud Command Line Interface installed and are logged in and need to select a project only, you can do this in one of two ways:
+    - `$ gcloud config set project PROJECT_ID`
         - This command will set the active project for the gcloud SDK user, and you must know the name of the project ID.
       - `$ gcloud init`
         - This command will take you through options of the active project and region/zone. The existing projects and regions/zones will be presented as a list you can choose from.
