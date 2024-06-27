@@ -55,7 +55,8 @@ README](../../README.md#general-prerequisites)
   - Create the ~/.azure directory if it doesn’t exist:
     - `mkdir -p ~/.azure`
   - Create the credentials file:
-    - ```cat <<EOF > ~/.azure/credentials
+    - ```
+         cat <<EOF > ~/.azure/credentials
          [default]
          subscription_id=<your-subscription-id>
          client_id=<your-client-id>
