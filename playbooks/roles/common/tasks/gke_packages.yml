@@ -1,13 +1,11 @@
 - name: Read collections paths from ansible.cfg
   ansible.builtin.set_fact:
     collections_paths: "{{ lookup('ini', 'collections_path section=defaults file=../ansible.cfg') }}"
-  when: k8s_platform == "gke"
 
 - name: Install pip packages for Google Cloud collections
   ansible.builtin.pip:
     chdir: "{{ playbook_dir }}/.."
     requirements: "{{ collections_paths.split(':') | first }}/ansible_collections/google/cloud/requirements.txt"
-  when: k8s_platform == "aks"
   become: yes
 
 # - name: Import GPG keys
@@ -58,14 +56,12 @@
 - name: Install necessary pip packages for Google Cloud
   ansible.builtin.pip:
     name: "{{ gcloud_pip_packages[ansible_distribution_major_version|int] }}"
-#    update_cache: true
     state: present
   become: true
 
 - name: Install necessary rpm packages for Google Cloud
   ansible.builtin.dnf:
     name: "{{ gcloud_rpm_packages[ansible_distribution_major_version|int] }}"
-#    update_cache: true
     state: present
   become: true
   
