@@ -21,6 +21,7 @@ README](../../README.md#general-prerequisites)
 ## GKE-specific Prerequisites
 
 ### GKE User, policy and tool requirements
+- Remember that the Enterprise Linux machine used to install Ascender on GKE must be of **major version 9, NOT 8**.
 - The first step for running the Ascender installer will be to create a Google Cloud Project in which to create the GKE cluster, in the Google Cloud Web console. A Google Cloud Project is a resource container within Google Cloud Platform (GCP) that organizes and manages resources like virtual machines, databases, and storage. It provides boundaries for access control, billing, and quotas.
   - Instructions on how to create a Google Cloud Project can be found here: [Creating and managing projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
 - Next, the Ascender installer for GKE requires installation of the [gcloud Commmand Line Interface](https://cloud.google.com/cli) before it is invoked. Instructions for the Linux installer can be found at [this link](https://cloud.google.com/sdk/docs/install#rpm).
