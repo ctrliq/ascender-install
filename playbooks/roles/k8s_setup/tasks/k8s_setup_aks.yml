@@ -106,7 +106,6 @@
   register: aks_resource_group
   when: 
     - download_kubeconfig
-    - AKS_CLUSTER_STATUS=="configure" or AKS_CLUSTER_STATUS=="no_action"
 
 - name: Retrieve kubeconfig for the AKS cluster
   ansible.builtin.command: >
@@ -114,4 +113,3 @@
   register: get_credentials_result
   when: 
     - download_kubeconfig
-    - AKS_CLUSTER_STATUS=="configure" or AKS_CLUSTER_STATUS=="no_action"
