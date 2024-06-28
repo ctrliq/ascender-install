@@ -29,7 +29,7 @@ if [[ "$k8s_platform" == "gke" || "$k8s_platform" == "aks" ]]; then
   os_family=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release | tr -d '"')
   os_version=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | cut -d. -f1)
 
-  if [[ "$os_family" == *"rhel"* || "$os_family" == *"fedora"* | "$os_family" == *"centos"* ]]; then
+  if [[ "$os_family" == *"rhel"* || "$os_family" == *"fedora"* || "$os_family" == *"centos"* ]]; then
     if [ "$os_version" -lt 9 ]; then
       echo "Error: This script must be run on RHEL or Rocky Linux version 9 or higher when k8s_platform is $k8s_platform."
       exit 1
