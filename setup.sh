@@ -2,6 +2,44 @@
 
 # Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
 
+# Determine the configuration file to use
+config_file=""
+
+if [ -f "custom.config.yml" ]; then
+  config_file="custom.config.yml"
+elif [ -f "default.config.yml" ]; then
+  config_file="default.config.yml"
+else
+  echo "Error: Neither custom.config.yml nor default.config.yml found."
+  exit 1
+fi
+
+# Read the k8s_platform value from the configuration file
+k8s_platform=$(grep '^k8s_platform:' "$config_file" | awk '{print $2}')
+
+# Check if the k8s_platform is either "gke" or "aks"
+if [[ "$k8s_platform" == "gke" || "$k8s_platform" == "aks" ]]; then
+  # Check if the script is run as root or with sudo
+  if [ "$(id -u)" -eq 0 ]; then
+    echo "Error: This script must not be run as root or with sudo when k8s_platform is $k8s_platform."
+    exit 1
+  fi
+
+  # Check if the system is RHEL or Rocky Linux version 9 or higher
+  os_family=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release | tr -d '"')
+  os_version=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | cut -d. -f1)
+
+  if [[ "$os_family" == *"rhel"* || "$os_family" == *"fedora"* | "$os_family" == *"centos"* ]]; then
+    if [ "$os_version" -lt 9 ]; then
+      echo "Error: This script must be run on RHEL or Rocky Linux version 9 or higher when k8s_platform is $k8s_platform."
+      exit 1
+    fi
+  else
+    echo "Error: Unsupported OS family $os_family. This script must be run on RHEL or Rocky Linux when k8s_platform is $k8s_platform."
+    exit 1
+  fi
+fi
+
 # Verify that the CPU architecture of the local machine is x86_64
 LINUX_ARCH=$(arch)
 if [[ $LINUX_ARCH != "x86_64" ]]; then
