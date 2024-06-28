@@ -21,6 +21,7 @@ README](../../README.md#general-prerequisites)
 ## AKS-specific Prerequisites
 
 ### AKS User, policy and tool requirements
+- Remember that the Enterprise Linux machine used to install Ascender on AKS must be of **major version 9, NOT 8**.
 - Before doing anything, you must have a valid Microsoft Azure subscription, and an account with access to that subscription, and appropriate permissions to create and manage an AKS cluster.
   - Instructions to create a new Microsoft accunt can be found here: [How to create a new Microsoft account](https://support.microsoft.com/en-us/account-billing/how-to-create-a-new-microsoft-account-a84675c3-3e9e-17cf-2911-3d56b15c0aaf)
   - Instructions to create a subscription can be found here: [Create a Microsoft Customer Agreement subscription](https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/create-subscription)
