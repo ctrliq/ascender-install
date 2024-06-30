@@ -26,6 +26,11 @@
   vars_files:
     - ["../custom.config.yml", "../default.config.yml"]
 
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+    NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
+    PATH: "/usr/bin:/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
+
   tasks:
 
     - name: Run k8s_setup role for {{ k8s_platform }}
