@@ -20,6 +20,10 @@ README](../../README.md#general-prerequisites)
 ## EKS-specific Prerequisites
 
 ### AWS User, policy and tool requirements
+- sudo dnf install unzip -y
+
+
+
 - The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
   - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender installer will look for it there.
   - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
