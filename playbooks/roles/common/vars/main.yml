@@ -66,11 +66,9 @@ gcloud_pip_packages:
 
 aws_rpm_packages:
   8:
-    - google-cloud-sdk-gke-gcloud-auth-plugin
     - yum-utils
     - terraform
   9:
-    - google-cloud-sdk-gke-gcloud-auth-plugin
     - yum-utils
     - terraform
 
