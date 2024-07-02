@@ -57,54 +57,6 @@
   become: true
   when: not k8s_offline
 
-- name: Install aws python packages
-  ansible.builtin.pip:
-    name:
-      - boto3
-      - botocore
-  when: k8s_platform == "eks"
-
-# - name: Read collections paths from ansible.cfg
-#   ansible.builtin.set_fact:
-#     collections_paths: "{{ lookup('ini', 'collections_path section=defaults file=../ansible.cfg') }}"
-#   when: k8s_platform == "aks"
-
-# - name: Install pip packages for Azure collections
-#   ansible.builtin.pip:
-#     chdir: "{{ playbook_dir }}/.."
-#     requirements: "{{ collections_paths.split(':') | first }}/ansible_collections/azure/azcollection/requirements.txt"
-#   when: k8s_platform == "aks"
-#   become: yes
-
-- name: Check for existing eksctl installation
-  ansible.builtin.stat:
-    path: /usr/local/bin/eksctl
-  register: eksctl_file
-
-# - ansible.builtin.debug:
-#     var: eksctl_file
-
-# - name: Ensure eksctl is installed
-#   block:
-#     - name: Download eksctl
-#       ansible.builtin.get_url:
-#         url: https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_linux_amd64.tar.gz
-#         dest: /tmp/eksctl_linux_amd64.tar.gz
-    
-#     - name:
-#       ansible.builtin.unarchive:
-#         src: /tmp/eksctl_linux_amd64.tar.gz
-#         dest: /usr/local/bin/
-
-#     - name:
-#       ansible.builtin.file:
-#         path: /tmp/eksctl_linux_amd64.tar.gz
-#         state: absent
-
-#   when:
-#     - not eksctl_file.stat.exists or not eksctl_file.stat.xusr or not eksctl_file.stat.xgrp or not eksctl_file.stat.xoth
-#     - k8s_platform == "eks"
-
 - name: Install AKS Packages
   ansible.builtin.include_tasks: aks_packages.yml
   when: k8s_platform == "aks"
@@ -112,4 +64,8 @@
 - name: Install GKE Packages
   ansible.builtin.include_tasks: gke_packages.yml
   when: k8s_platform == "gke"
+
+- name: Install EKS Packages
+  ansible.builtin.include_tasks: gke_packages.yml
+  when: k8s_platform == "eks"
 

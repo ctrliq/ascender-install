@@ -1,305 +1,3 @@
-# - name: Retrieve the current time in order to timestamp files
-#   ansible.builtin.setup:
-#     gather_subset:
-#      - date_time
-
-# # Check for existing eks cluster
-
-# - name: "Check the status of target eks cluster named {{ EKS_CLUSTER_NAME }}"
-#   ansible.builtin.command:
-#     cmd: "eksctl get cluster -n {{ EKS_CLUSTER_NAME }}"
-#   register: eks_cluster_status
-#   ignore_errors: true
-
-# # If EKS_CLUSTER_NAME does exist, Ensure an IAM OIDC provider exists for it, and apply AmazonEBSCSIDriverPolicy
-# - name: "If target cluster {{ EKS_CLUSTER_NAME }} does exist, configure it"
-#   block: 
-
-#     - name: Indicate that the cluster has been found
-#       ansible.builtin.debug:
-#         msg: "The eks cluster {{ EKS_CLUSTER_NAME }} is present."  
-    
-#     - name: Determine the OIDC issuer ID for your cluster
-#       ansible.builtin.shell:
-#         cmd: "aws eks describe-cluster --name {{ EKS_CLUSTER_NAME }} --query \"cluster.identity.oidc.issuer\" --output text | cut -d '/' -f 5"
-#       register: oidc_query
-
-#     # - name: Print out OIDC issuer
-#     #   ansible.builtin.debug: 
-#     #     var: oidc_query
-
-#     - name: Determine whether an IAM OIDC provider with your cluster's issuer ID is already in your account
-#       ansible.builtin.shell:
-#         cmd: "aws iam list-open-id-connect-providers | grep {{ oidc_query.stdout }} | cut -d \"/\" -f4"
-#       register: oidc_provider_query
-
-#     # - name: Print out OIDC identity provider
-#     #   ansible.builtin.debug: 
-#     #     var: oidc_provider_query
-
-#     - name: Create an IAM OIDC identity provider for your cluster if one does not exist
-#       ansible.builtin.shell:
-#         cmd: "eksctl utils associate-iam-oidc-provider --cluster {{ EKS_CLUSTER_NAME }} --approve"
-#       when: oidc_provider_query.stdout == ""
-
-#     - name: Query for aws account number
-#       amazon.aws.aws_caller_info:
-#       register: caller_info
-#       no_log: true
-    
-#     # - debug:
-#     #     var: caller_info
-
-#     - name: Create the ebs-csi-controller-sa iamserviceaccount for the cluster
-#       ansible.builtin.shell:
-#         cmd: "eksctl create iamserviceaccount --name ebs-csi-controller-sa --namespace kube-system --cluster {{ EKS_CLUSTER_NAME }} --role-name Ascender_EBS_CSI_DriverRole --role-only --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy  --override-existing-serviceaccounts --approve"
-#         # cmd: "eksctl create iamserviceaccount --name ebs-csi-controller-sa --namespace kube-system --cluster ascender-eks-cluster --role-name Ascender_EBS_CSI_DriverRole --role-only --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy  --override-existing-serviceaccounts --approve"
-
-
-#     - name: add the Amazon EBS CSI add-on using eksctl
-#       ansible.builtin.shell:
-#         cmd: "eksctl create addon --name aws-ebs-csi-driver --cluster {{ EKS_CLUSTER_NAME }} --service-account-role-arn arn:aws:iam::{{ caller_info.account }}:role/Ascender_EBS_CSI_DriverRole --force"
-#       no_log: true
-#   when: not eks_cluster_status.failed and EKS_CLUSTER_STATUS=="configure"
-  
-
-# # If EKS_CLUSTER_NAME does not exist, set up new eks cluster
-# - name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
-#   block: 
-
-#     - name: Query for AmazonEBSCSIDriverPolicy policy ARN
-#       ansible.builtin.command:
-#         cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn' --output yaml"
-#       register: policy_query
-        
-#     # - ansible.builtin.debug:
-#     #     var: policy_query
-    
-#     - name: Create the EBS SCSI Driver Policy File
-#       ansible.builtin.template:
-#         src: templates/eks/ebs-scsi-driver-policy.json
-#         dest: "{{ playbook_dir }}/ebs-scsi-driver-policy.json"
-#       when: policy_query.stdout == "[]"
-
-#     - name: Ensure IAM AmazonEBSCSIDriverPolicy exists
-#       ansible.builtin.command:
-#         chdir: "{{ playbook_dir }}"
-#         cmd: "aws iam create-policy --policy-name AmazonEBSCSIDriverPolicy --policy-document file://ebs-scsi-driver-policy.json"
-#       when: policy_query.stdout == "[]"
-
-#     - name: Clean Up the EBS SCSI Driver Policy File
-#       ansible.builtin.file:
-#         path: "{{ playbook_dir }}/ebs-scsi-driver-policy.json"
-#         state: absent
-#       when: policy_query.stdout == "[]"
-      
-#     - name: Retrieve AmazonEBSCSIDriverPolicy policy ARN
-#       ansible.builtin.command:
-#         cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AmazonEBSCSIDriverPolicy`].Arn' --output yaml"
-#       register: policy_arn
-
-#     # - name: Print out the arn for the policy AmazonEBSCSIDriverPolicy
-#     #   ansible.builtin.debug:
-#     #     msg: "ARN is {{ policy_arn.stdout[2:] }}"
-#     #   when: policy_arn.stdout != "[]"
-
-#     - name: Set fact ebs_scsi_driver_policy_arn
-#       ansible.builtin.set_fact:
-#         ebs_scsi_driver_policy_arn: "{{ policy_arn.stdout[2:] }}"
-
-#     - name: Generate manifest to set up new eks cluster
-#       ansible.builtin.template:
-#         src: templates/eks/eks-cluster-manifest.yml
-#         dest: "{{ tmp_dir }}/eks-cluster-manifest.yml"
-
-#     - name: Generate manifest to set up new eks cluster with timestamp attached, for purposes of cluster deletion later
-#       ansible.builtin.template:
-#         src: templates/eks/eks-cluster-manifest.yml
-#         dest: "{{ tmp_dir }}/eks-cluster-manifest.yml.{{ ansible_date_time.iso8601_basic_short }}"
-
-#     - name: Set up new eks cluster (this will take upwards of 30 mins)
-#       ansible.builtin.command:
-#         cmd: "eksctl create cluster -f {{ tmp_dir }}/eks-cluster-manifest.yml"
-
-#     - name: Delete eks cluster manifest
-#       ansible.builtin.file:
-#         path: "{{ tmp_dir }}/eks-cluster-manifest.yml"
-#         state: absent
-    
-#   when: eks_cluster_status.failed and EKS_CLUSTER_STATUS=="provision"
-
-# - name: Determine if ~/.kube/config already exists
-#   ansible.builtin.stat:
-#     path: ~/.kube/config
-#   register: existing_kubeconfig
-
-# - name: create backup of existing ~/.kube/config
-#   ansible.builtin.copy:
-#     src: ~/.kube/config
-#     dest: "~/.kube/config.{{ ansible_date_time.iso8601_basic_short }}"
-#   when: 
-#     - existing_kubeconfig.stat.exists
-#     - download_kubeconfig
-
-# - name: Delete existing ~/.kube/config
-#   ansible.builtin.file:
-#     path: ~/.kube/config
-#     state: absent
-#   when: 
-#     - existing_kubeconfig.stat.exists
-#     - download_kubeconfig
-
-# - name: "Retrieve kubeconfig for new eks cluster {{ EKS_CLUSTER_NAME }}"
-#   ansible.builtin.command:
-#     cmd: "aws eks update-kubeconfig --region {{ EKS_CLUSTER_REGION }} --name {{ EKS_CLUSTER_NAME }}"
-#   when: download_kubeconfig
-
-# - name: Query for AWSLoadBalancerControllerIAMPolicy policy ARN
-#   ansible.builtin.command:
-#     cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].Arn' --output yaml"
-#   register: policy_query
-    
-# # - ansible.builtin.debug:
-# #     var: policy_query
-
-# - name: Create the IAM Policy Json file
-#   ansible.builtin.template:
-#     src: templates/eks/iam-policy.json
-#     dest: "{{ playbook_dir }}/iam-policy.json"
-#   when: policy_query.stdout == "[]"
-
-# - name: Ensure IAM AWS Load Balancer Controller Policy exists
-#   ansible.builtin.command:
-#     chdir: "{{ playbook_dir }}"
-#     cmd: "aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam-policy.json"
-#   when: policy_query.stdout == "[]"
-
-# - name: Clean up the IAM Policy Json file
-#   ansible.builtin.file: 
-#     path: "{{ playbook_dir }}/iam-policy.json"
-#     state: absent 
-#   when: policy_query.stdout == "[]"
-
-# - name: Retrieve AWSLoadBalancerControllerIAMPolicy policy ARN
-#   ansible.builtin.command:
-#     cmd: "aws iam list-policies --query 'Policies[?PolicyName==`AWSLoadBalancerControllerIAMPolicy`].Arn' --output yaml"
-#   register: policy_arn
-
-# # - ansible.builtin.debug:
-# #     var: policy_arn
-
-# # - name: Print out the arn for the policy AWSLoadBalancerControllerIAMPolicy
-# #   ansible.builtin.debug:
-# #     msg: "ARN is {{ policy_arn.stdout[2:] }}"
-# #   when: policy_arn.stdout != "[]"
-
-# - name: Set fact aws_lb_controller_policy_arn
-#   ansible.builtin.set_fact:
-#     aws_lb_controller_policy_arn: "{{ policy_arn.stdout[2:] }}"
-
-# - name: create aws-load-balancer-controller iamserviceaccount
-#   ansible.builtin.command:
-#     cmd: "eksctl create iamserviceaccount --cluster={{ EKS_CLUSTER_NAME }} --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn={{ aws_lb_controller_policy_arn }} --override-existing-serviceaccounts --approve"
-#     # cmd: "eksctl create iamserviceaccount --cluster=ascender-eks-cluster --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn=arn:aws:iam::980128770015:policy/AWSLoadBalancerControllerIAMPolicy --override-existing-serviceaccounts --approve"
-
-# - name: Get an existing Service object
-#   kubernetes.core.k8s_info:
-#     api_version: v1
-#     kind: serviceaccount
-#     name: aws-load-balancer-controller
-#     namespace: kube-system
-#   register: alb_sa
-
-# # - name: debug
-# #   ansible.builtin.debug:
-# #     var: alb_sa
-
-# # - name: debug
-# #   ansible.builtin.debug:
-# #     var: alb_sa.resources[0].metadata.annotations
-
-# - name: Install cert-manager in the cluster
-#   kubernetes.core.k8s:
-#     state: present
-#     apply: yes
-#     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/cert-manager.yml') }}"
-#   retries: 3
-#   delay: 5
-
-# - name: Query for CertificateRequest objects (ensure that the API is active in the cluster before proceeding)
-#   kubernetes.core.k8s_info:
-#     api_version: cert-manager.io/v1
-#     kind: CertificateRequest
-#   register: certificaterequest_list
-#   retries: 3
-#   delay: 3
-#   until: certificaterequest_list.api_found
-
-# - ansible.builtin.pause:
-#     seconds: 30
-
-# - name: install the ingress controller
-#   kubernetes.core.k8s:
-#     state: present
-#     apply: yes
-#     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-controller.yml') }}"
-#   retries: 3
-#   delay: 5
-
-# - name: Query for IngressClassParams objects (ensure that the API is active in the cluster before proceeding)
-#   kubernetes.core.k8s_info:
-#     api_version: elbv2.k8s.aws/v1beta1
-#     kind: IngressClassParams
-#   register: ingressclassparams_list
-#   retries: 3
-#   delay: 3
-#   until: ingressclassparams_list.api_found
-
-# - ansible.builtin.pause:
-#     seconds: 30
-    
-# - name: install the ingress class params
-#   kubernetes.core.k8s:
-#     state: present
-#     apply: yes
-#     definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-class-params.yml') }}"
-#   retries: 3
-#   delay: 5
-
-# # kubectl get pod -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
-# - name: Query for aws-load-balancer-controller
-#   kubernetes.core.k8s_info:
-#     api_version: v1
-#     kind: Pod
-#     label_selectors: 
-#       - app.kubernetes.io/name = aws-load-balancer-controller
-#     namespace: kube-system
-#   register: albc_query
-
-# # - ansible.builtin.debug:
-# #     var: albc_query.resources[0].metadata.name 
-
-# # kubectl get pod -n kube-system -l aws-load-balancer-controller-dbb8df444-msld4
-# - name: Query for aws-load-balancer-controller
-#   kubernetes.core.k8s_info:
-#     api_version: v1
-#     kind: Pod
-#     name: "{{ albc_query.resources[0].metadata.name }}"
-#     namespace: kube-system
-#   register: albc_pod
-#   until: albc_pod.resources[0].status.containerStatuses[0].ready | bool
-#   retries: 20
-#   delay: 5
-
-
-
-
-
-
-
-
-
-
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:
     gather_subset:
@@ -332,25 +30,15 @@
     - existing_kubeconfig.stat.exists
     - download_kubeconfig
 
-
-- name: Ensure AWS CLI is installed
-  ansible.builtin.command: "which aws"
-  register: aws_cli_check
-  failed_when: aws_cli_check.rc != 0
-
-- ansible.builtin.debug:
-    var: aws_cli_check
-
 # Check for existing eks cluster
 - name: Get list of all EKS clusters
   ansible.builtin.shell:
     cmd: "aws eks list-clusters --region={{ EKS_CLUSTER_REGION }} --output=json"
   register: eks_clusters
-  when: aws_cli_check.rc == 0
 
-- name: Debug - Show the list of clusters
-  ansible.builtin.debug:
-    var: eks_clusters.stdout
+# - name: Debug - Show the list of clusters
+#   ansible.builtin.debug:
+#     var: eks_clusters.stdout
 
 - name: Set fact for list of clusters
   ansible.builtin.set_fact:
@@ -360,111 +48,188 @@
   ansible.builtin.set_fact:
     cluster_exists: "{{ EKS_CLUSTER_NAME in clusters_list }}"
 
-- name: Debug - Show if the desired cluster exists
-  ansible.builtin.debug:
-    msg: "Cluster exists: {{ cluster_exists }}"
-
-# Example usage: Conditional task based on the existence of the cluster
-- name: Perform some action if the cluster exists
-  ansible.builtin.debug:
-    msg: "Cluster {{ EKS_CLUSTER_NAME }} exists and action is being performed."
-  when: cluster_exists
-
-- name: Perform some action if the cluster does not exist
-  ansible.builtin.debug:
-    msg: "Cluster {{ EKS_CLUSTER_NAME }} does not exist and action is being performed."
-  when: not cluster_exists
-
-
-
-
-
-# - name: Parse GKE clusters JSON
-#   ansible.builtin.set_fact:
-#     clusters_list: "{{ gke_clusters.stdout | from_json }}"
-
-# - name: Check if the specified GKE cluster exists
-#   ansible.builtin.set_fact:
-#     gke_cluster_exists: "{{ GKE_CLUSTER_NAME in clusters_list | map(attribute='name') | list }}"
-
-# - name: Debug output
+# - name: Debug - Show if the desired cluster exists
 #   ansible.builtin.debug:
-#     msg: >
-#       The cluster {{ GKE_CLUSTER_NAME }} 
-#       {% if gke_cluster_exists %}exists{% else %}does not exist{% endif %}.
-  
+#     msg: "Cluster exists: {{ cluster_exists }}"
 
-# # # If GKE_CLUSTER_NAME does not exist, set up new gke cluster
-# - name: "If target cluster {{ GKE_CLUSTER_NAME }} does not exist, create it"
-#   block: 
+# If EKS_CLUSTER_NAME does not exist, set up new eks cluster
+- name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
+  block: 
 
-#     - name: Ensure that the gke_deploy directory exists
-#       ansible.builtin.file:
-#         path: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
-#         state: directory
+    - name: Ensure that the eks_deploy directory exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../ascender_install_artifacts/eks_deploy"
+        state: directory
 
-#     - name: Copy GKE Terraform Directory
-#       ansible.builtin.copy:
-#         src: files/gke_deploy
-#         dest: "{{ playbook_dir }}/../ascender_install_artifacts"
-#         mode: 0777 
+    - name: Copy EKS Terraform Directory
+      ansible.builtin.copy:
+        src: files/eks_deploy
+        dest: "{{ playbook_dir }}/../ascender_install_artifacts"
+        mode: 0777 
 
-#     - name: Initialize Terraform
-#       ansible.builtin.command:
-#         cmd: terraform init
-#         chdir: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
+    - name: Initialize Terraform
+      ansible.builtin.command:
+        cmd: terraform init
+        chdir: "{{ playbook_dir }}/../ascender_install_artifacts/eks_deploy"
     
-#     - name: Terraform Plan
-#       ansible.builtin.command:
-#         cmd: terraform plan
-#         chdir: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
+    - name: Terraform Plan
+      ansible.builtin.command:
+        cmd: terraform plan
+        chdir: "{{ playbook_dir }}/../ascender_install_artifacts/eks_deploy"
 
-#     - name: Provision GKE cluster via Terraform
-#       community.general.terraform:
-#         project_path: "{{ playbook_dir }}/../ascender_install_artifacts/gke_deploy"
-#         state: present
-#         variables:
-#           home_dir: "/home/{{ ansible_user}}"
-#           gke_cluster_name: "{{ GKE_CLUSTER_NAME }}"
-#           kubernetes_version: "{{ GKE_K8S_VERSION }}"
-#           project_id: "{{ GKE_PROJECT_ID }}"
-#           zone: "{{ GKE_CLUSTER_ZONE }}"
-#           num_nodes: "{{ GKE_NUM_WORKER_NODES }}"
-#           gcloud_vm_size: "{{ GKE_INSTANCE_TYPE }}"
-#           volume_size: "{{ GKE_WORKER_VOLUME_SIZE }}"
-#       register: terraform_output
+    - name: Provision EKS cluster via Terraform
+      community.general.terraform:
+        project_path: "{{ playbook_dir }}/../ascender_install_artifacts/eks_deploy"
+        state: present
+        variables:
+          # home_dir: "/home/{{ ansible_user}}"
+          eks_cluster_name: "{{ EKS_CLUSTER_NAME }}"
+          kubernetes_version: "{{ EKS_K8S_VERSION }}"
+          region: "{{ EKS_CLUSTER_REGION }}"
+          num_nodes: "{{ EKS_NUM_WORKER_NODES }}"
+          aws_vm_size: "{{ EKS_INSTANCE_TYPE }}"
+          volume_size: "{{ EKS_WORKER_VOLUME_SIZE }}"
+      register: terraform_output
   
-#   when: not gke_cluster_exists and GKE_CLUSTER_STATUS=="provision"
+  when: not cluster_exists and EKS_CLUSTER_STATUS=="provision"
 
-# - name: Ensure kubeconfig exists
-#   ansible.builtin.file:
-#     path: "/home/{{ ansible_user }}/.kube/config"
-#     state: touch
-#     owner: "{{ ansible_user }}"
-#     mode: '0644'
-#   when: 
-#     - download_kubeconfig
 
-# - name: Retrieve kubeconfig for the GKE cluster
-#   ansible.builtin.shell:
-#     cmd: "gcloud container clusters get-credentials {{ GKE_CLUSTER_NAME }} --zone {{ GKE_CLUSTER_ZONE }}"
-#   register: get_credentials_result
-#   environment:
-#     KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
-#   when: 
-#     - download_kubeconfig
+- name: Ensure kubeconfig exists
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.kube/config"
+    state: touch
+    owner: "{{ ansible_user }}"
+    mode: '0644'
+  when: 
+    - download_kubeconfig
 
-# - name: Ensure that the KUBECONFIG file can successfully authenticate to the GKE cluster
-#   kubernetes.core.k8s_info:
-#     api_version: v1
-#     kind: Node
-#   register: result
-#   ignore_errors: yes
-#   retries: 5
-#   delay: 10
-#   until: result.resources is defined and result.resources | length > 0
+- name: Retrieve kubeconfig for the EKS cluster
+  ansible.builtin.shell:
+    cmd: "aws eks update-kubeconfig --region {{ EKS_CLUSTER_REGION }} --name {{ EKS_CLUSTER_NAME }}"
+  register: get_credentials_result
+  environment:
+    KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+  when: 
+    - download_kubeconfig
 
-# - name: Fail the playbook if GKE authentication check is unsuccessful
-#   ansible.builtin.fail:
-#     msg: "Unable to retrieve GKE nodes after multiple retries."
-#   when: result.resources is not defined or result.resources | length == 0
+- name: Ensure that the KUBECONFIG file can successfully authenticate to the EKS cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+  register: result
+  ignore_errors: yes
+  retries: 5
+  delay: 10
+  until: result.resources is defined and result.resources | length > 0
+
+- name: Fail the playbook if EKS authentication check is unsuccessful
+  ansible.builtin.fail:
+    msg: "Unable to retrieve EKS nodes after multiple retries."
+  when: result.resources is not defined or result.resources | length == 0
+
+# Ensure an IAM OIDC provider exists for it, and apply AmazonEBSCSIDriverPolicy
+- name: "Apply AmazonEBSCSIDriverPolicy to {{ EKS_CLUSTER_NAME }}"
+  block:   
+
+    # - name: Debug - Show if the desired cluster exists
+    #   ansible.builtin.debug:
+    #     msg: "Applying configurations"
+
+    - name: Get node group name
+      ansible.builtin.shell: aws eks list-nodegroups --region {{ EKS_CLUSTER_REGION }} --cluster-name {{ EKS_CLUSTER_NAME }} --query 'nodegroups[0]' --output text
+      register: nodegroup_name
+
+    # - name: Debug - nodegroup_name
+    #   ansible.builtin.debug:
+    #     var: nodegroup_name  
+
+    - name: Get IAM role of EKS worker nodes
+      ansible.builtin.shell: aws eks describe-nodegroup --region {{ EKS_CLUSTER_REGION }} --cluster-name {{ EKS_CLUSTER_NAME }} --nodegroup-name {{ nodegroup_name.stdout }} --query 'nodegroup.nodeRole' --output text
+      register: node_role_arn
+
+    # - name: Debug - node_role_arn
+    #   ansible.builtin.debug:
+    #     msg: "{{ node_role_arn.stdout.split('/')[1] }}"
+
+    - name: Define worker node required managed policies
+      set_fact:
+        new_policies:
+          - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+          - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+          - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+          - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+
+    - name: Get current IAM role managed policies
+      amazon.aws.iam_role_info:
+        name: "{{ node_role_arn.stdout.split('/')[1] }}"
+      register: role_info
+
+    # - name: Debug - node_role_arn
+    #   ansible.builtin.debug:
+    #     var: role_info
+
+    - name: Extract managed policy ARNs
+      ansible.builtin.set_fact:
+        existing_policies: "{{ role_info.iam_roles[0].managed_policies | map(attribute='policy_arn') | list }}"
+
+    # - name: Debug - node_role_arn
+    #   ansible.builtin.debug:
+    #    var: existing_policies
+
+    - name: Combine existing and new managed policies
+      ansible.builtin.set_fact:
+        combined_policies: "{{ existing_policies | union(new_policies) }}"
+
+    # - name: Debug - node_role_arn
+    #   ansible.builtin.debug:
+    #    var: combined_policies
+
+    - name: Attach policies to IAM role
+      amazon.aws.iam_role:
+        name: "{{ node_role_arn.stdout.split('/')[1] }}"
+        assume_role_policy_document: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "eks.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          }
+        state: present
+        managed_policies: "{{ combined_policies }}"
+
+    - name: Determine the OIDC issuer ID for your cluster
+      ansible.builtin.shell:
+        cmd: "aws eks describe-cluster --region {{ EKS_CLUSTER_REGION }} --name {{ EKS_CLUSTER_NAME }} --query \"cluster.identity.oidc.issuer\" --output text | cut -d '/' -f 5"
+      register: oidc_query
+
+    # - name: Print out OIDC issuer
+    #   ansible.builtin.debug: 
+    #     var: oidc_query
+
+    - name: Determine whether an IAM OIDC provider with your cluster's issuer ID is already in your account
+      ansible.builtin.shell:
+        cmd: "aws iam list-open-id-connect-providers | grep {{ oidc_query.stdout }} | cut -d \"/\" -f4"
+      register: oidc_provider_query
+
+    # - name: Print out OIDC identity provider
+    #   ansible.builtin.debug: 
+    #     var: oidc_provider_query
+
+    - name: Create an IAM OIDC identity provider for your cluster if one does not exist
+      ansible.builtin.shell:
+        cmd: "eksctl utils associate-iam-oidc-provider --region {{ EKS_CLUSTER_REGION }} --cluster {{ EKS_CLUSTER_NAME }} --approve"
+      when: oidc_provider_query.stdout == ""
+
+    - name: Create IAM service account for EBS CSI Driver
+      command: eksctl create iamserviceaccount --name ebs-csi-controller-sa --namespace kube-system --region {{ EKS_CLUSTER_REGION }} --cluster {{ EKS_CLUSTER_NAME }} --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy --approve --override-existing-serviceaccounts
+
+    - name: Deploy Amazon EBS CSI Driver
+      command: kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.32"    
+
+  when: "(not cluster_exists and EKS_CLUSTER_STATUS == 'provision') or EKS_CLUSTER_STATUS == 'configure'"
