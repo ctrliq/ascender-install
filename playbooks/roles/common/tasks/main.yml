@@ -66,6 +66,6 @@
   when: k8s_platform == "gke"
 
 - name: Install EKS Packages
-  ansible.builtin.include_tasks: gke_packages.yml
+  ansible.builtin.include_tasks: eks_packages.yml
   when: k8s_platform == "eks"
 
