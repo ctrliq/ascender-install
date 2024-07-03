@@ -233,7 +233,7 @@
     - name: Save updated policy document to file
       ansible.builtin.copy:
         content: "{{ updated_policy_document | to_nice_json }}"
-        dest: "{{ tmp_dir_ }}/updated-assume-role-policy.json"
+        dest: "{{ tmp_dir }}/updated-assume-role-policy.json"
       when: updated_policy_document is defined
     
     - name: Update IAM role with new assume role policy document
