@@ -201,6 +201,7 @@
             ]
           }
         state: present
+        purge_polices: true
         managed_policies: "{{ combined_policies }}"
 
     - name: Determine the OIDC issuer ID for your cluster
