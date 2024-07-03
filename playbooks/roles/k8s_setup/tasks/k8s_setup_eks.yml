@@ -184,25 +184,74 @@
     #   ansible.builtin.debug:
     #    var: combined_policies
 
-    - name: Attach policies to IAM role
-      amazon.aws.iam_role:
-        name: "{{ node_role_arn.stdout.split('/')[1] }}"
-        assume_role_policy_document: |
+    # - name: Attach policies to IAM role
+    #   amazon.aws.iam_role:
+    #     name: "{{ node_role_arn.stdout.split('/')[1] }}"
+    #     assume_role_policy_document: |
+    #       {
+    #         "Version": "2012-10-17",
+    #         "Statement": [
+    #           {
+    #             "Effect": "Allow",
+    #             "Principal": {
+    #               "Service": "eks.amazonaws.com"
+    #             },
+    #             "Action": "sts:AssumeRole"
+    #           }
+    #         ]
+    #       }
+    #     state: present
+    #     purge_policies: true
+    #     managed_policies: "{{ combined_policies }}"
+
+    - name: Set new policy document
+      ansible.builtin.set_fact:
+        new_statement: |
           {
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": {
-                  "Service": "eks.amazonaws.com"
-                },
-                "Action": "sts:AssumeRole"
-              }
-            ]
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "eks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
           }
-        state: present
-        purge_policies: true
-        managed_policies: "{{ combined_policies }}"
+        
+    - name: Get current assume role policy document
+      ansible.builtin.shell:
+        cmd: aws iam get-role --role-name {{ node_role_arn.stdout.split('/')[1] }} --query "Role.AssumeRolePolicyDocument" --output json
+      register: current_policy
+      changed_when: false
+
+    - name: Load current policy document
+      ansible.builtin.set_fact:
+        current_policy_document: "{{ current_policy.stdout | from_json }}"
+
+    - name: Add new statement to policy document
+      ansible.builtin.set_fact:
+        updated_policy_document: "{{ current_policy_document | combine({'Statement': current_policy_document.Statement + [ new_statement | from_json ]}, recursive=True) }}"
+      when: new_statement not in current_policy_document.Statement
+
+    - name: Save updated policy document to file
+      ansible.builtin.copy:
+        content: "{{ updated_policy_document | to_nice_json }}"
+        dest: "{{ tmp_dir_ }}/updated-assume-role-policy.json"
+      when: updated_policy_document is defined
+    
+    - name: Update IAM role with new assume role policy document
+      ansible.builtin.shell:
+        cmd: "aws iam update-assume-role-policy --role-name {{ node_role_arn.stdout.split('/')[1] }} --policy-document file://{{ tmp_dir }}/updated-assume-role-policy.json"
+      when: updated_policy_document is defined
+
+    - name: Clean up temporary policy file
+      ansible.builtin.file:
+        path: "{{ tmp_dir }}/updated-assume-role-policy.json"
+        state: absent
+      when: updated_policy_document is defined
+
+    - name: Attach policies to IAM role
+      ansible.builtin.shell:
+        cmd: "aws iam attach-role-policy --role-name {{ node_role_arn.stdout.split('/')[1] }} --policy-arn {{ item }}"
+      with_items: "{{ combined_policies }}"
+
 
     - name: Determine the OIDC issuer ID for your cluster
       ansible.builtin.shell:
