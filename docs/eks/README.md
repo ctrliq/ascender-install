@@ -20,13 +20,13 @@ README](../../README.md#general-prerequisites)
 ## EKS-specific Prerequisites
 
 ### AWS User, policy and tool requirements
-- sudo dnf install unzip -y
-
-
-
+- Remember that the Enterprise Linux machine used to install Ascender on GKE must be of **major version 9, NOT 8**.
+- The unzip rpm package must be installed: `$ sudo dnf install unzip -y` 
 - The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
   - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender installer will look for it there.
   - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
+    - The AWS CLI requires Programmatic access to AWS: Instructions on setting up Programmatic access can be found here: [AWS security credentials: Programmatic Access](https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html#sec-access-keys-and-secret-access-keys)
+    - Be sure to ensure that the user that will be installing ascender has appropriate access to create an EKS cluster
 - IF INSTALLING ASCENDER ON AN EXISTING EKS CLUSTER, the aws user that will be performing the installation must have appropriate permissions for the kubernetes cluster itself. This can be given by editing the aws-auth [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/), in the kube-system namespace:
   - Assuming you have the correct kubeconfig file already, use the following command to access the configmap: 
     - `$ kubectl edit -n kube-system configmap/aws-auth`
