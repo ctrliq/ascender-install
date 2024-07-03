@@ -51,13 +51,18 @@ We will refer to this directory as the `<repository root>` in the remainder of t
 #### inventory file
 
 You can copy the contents of [eks.inventory](./eks.inventory) in this directory, to `<repository root>`/inventory.
+  - **Be sure to set the ansible_user variable for both the ansible_host and localhost to match the linux user that will be running the installer.**
+
+```
+$ cp <repository root>/docs/eks/eks.inventory <repository root>/inventory 
+```
 
 #### custom.config.yml file
 
 You can run the bash script at 
 
 ```
-<repository root>>/config_vars.sh
+<repository root>/config_vars.sh
 ```
 
 The script will take you through a series of questions, that will populate the variables file requires to install Ascender. This variables file will be located at:

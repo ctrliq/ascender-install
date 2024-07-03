@@ -76,6 +76,10 @@ We will refer to this directory as the `<repository root>` in the remainder of t
 You can copy the contents of [gke.inventory](./gke.inventory) in this directory, to `<repository root>`/inventory.
   - **Be sure to set the ansible_user variable for both the ansible_host and localhost to match the linux user that will be running the installer.**
 
+```
+$ cp <repository root>/docs/gke/gke.inventory <repository root>/inventory 
+```
+
 
 #### custom.config.yml file
 
