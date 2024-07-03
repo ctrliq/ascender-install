@@ -46,36 +46,79 @@
     name: ledger-web-ingress
     namespace: "{{ LEDGER_NAMESPACE }}"
   register: ledger_ingress
-  until: ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
+  until:
+    - ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
+    - ledger_ingress.resources[0].spec.rules[0].host is defined
   retries: 20
 
 - ansible.builtin.debug: 
     var: ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname
 
-- name: Get The Canonical Hosted Zone ID of the Ledger AWS Load Balancer
-  ansible.builtin.command:
-    cmd: "aws elbv2 describe-load-balancers --query 'LoadBalancers[?DNSName==`{{ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname}}`].CanonicalHostedZoneId' --output yaml"
-  register: hosted_zone
+- ansible.builtin.debug: 
+    var: ledger_ingress.resources[0].spec.rules[0].host
+
+- name: Retrieve the hosted zone ID
+  ansible.builtin.command: >
+    aws route53 list-hosted-zones
+    --query "HostedZones[?Name == '{{ ASCENDER_DOMAIN }}.'].Id | [0]"
+    --output text
+  register: hosted_zone_id
   when: USE_ROUTE_53
 
-# - ansible.builtin.debug: 
-#     msg: "{{ hosted_zone.stdout [2:] }}"
+- name: Check if hosted zone ID was found
+  ansible.builtin.fail:
+    msg: "Hosted zone ID not found for domain {{ ASCENDER_DOMAIN }}"
+  when: 
+    - hosted_zone_id.stdout == ""
+    - USE_ROUTE_53
 
-- name: "Add an alias record for the Ledger Loadbalancer to map to {{ LEDGER_HOSTNAME }}"
-  amazon.aws.route53:
-    state: present
-    zone: "{{ ASCENDER_DOMAIN }}"
-    record: "{{ LEDGER_HOSTNAME }}"
-    type: A
-    value: "{{ ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
-    alias: True
-    alias_hosted_zone_id: "{{ hosted_zone.stdout [2:]}}"
-    overwrite: true
+- name: Prepare change batch JSON
+  ansible.builtin.set_fact:
+    change_batch: |
+      {{
+        {
+          "Comment": "Updating or creating CNAME record for " + LEDGER_HOSTNAME,
+          "Changes": [
+            {
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": LEDGER_HOSTNAME,
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                  {
+                    "Value": ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname
+                  }
+                ]
+              }
+            }
+          ]
+        } | to_nice_json
+      }}
   when: USE_ROUTE_53
 
-- name: Indicate Instructions for non-Route53 Domain Management
+- name: Write change batch JSON to file
+  ansible.builtin.copy:
+    content: "{{ change_batch }}"
+    dest: /tmp/change-batch.json
+  when: USE_ROUTE_53
+
+- name: Update or create CNAME record
+  ansible.builtin.command: >
+    aws route53 change-resource-record-sets
+    --hosted-zone-id {{ hosted_zone_id.stdout }}
+    --change-batch file:///tmp/change-batch.json
+  register: update_result
+  when: USE_ROUTE_53
+
+- name: Indicate Instructions for non-AWS DNS Domain Management
   ansible.builtin.debug: 
-    msg: "Please manually create a CNAME record in your DNS Manager of choice, mapping to {{ ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+    msg: "Please manually create a DNS CNAME record for {{ ASCENDER_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+  when: not USE_ROUTE_53
+
+- name: Indicate Instructions for non-AWS DNS Domain Management
+  ansible.builtin.debug: 
+    msg: "Please manually create a DNS A record for {{ LEDGER_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ ledger_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
   when: not USE_ROUTE_53
 
 - name: Set the Ledger URL
@@ -141,7 +184,6 @@
     controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
-    validate_certs: false
     settings:
       LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
@@ -149,3 +191,4 @@
       LOG_AGGREGATOR_ENABLED: true
       LOG_AGGREGATOR_VERIFY_CERT: false
       LOG_AGGREGATOR_LEVEL: INFO
+    validate_certs: false

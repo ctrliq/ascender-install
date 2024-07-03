@@ -28,11 +28,24 @@ stringData:
 type: Opaque
 {% endif %}
 ---
+{% if k8s_lb_protocol == 'https' %}
+# Ascender TLS Certificate and Key
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ ASCENDER_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
+---
 apiVersion: awx.ansible.com/v1beta1
 kind: AWX
 metadata:
   name: ascender-app
-  namespace: ascender
+  namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
@@ -42,19 +55,22 @@ spec:
   postgres_configuration_secret: ascender-app-postgres-configuration
 {% endif %}
   service_type: ClusterIP
-  ingress_annotations: |
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: 'ip'
 {% if k8s_lb_protocol == 'https' %}
-    alb.ingress.kubernetes.io/certificate-arn: {{ EKS_SSL_CERT }}
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
+  ingress_annotations: |
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 {% endif %}
   ingress_type: ingress
-  ingress_class_name: alb
+  ingress_controller: nginx
+  ingress_class_name: nginx
   ingress_path: "/"
   ingress_path_type: Prefix
+  ingress_hosts:
+    - hostname: {{ ASCENDER_HOSTNAME }}
+{% if k8s_lb_protocol == 'https' %}
+      tls_secret: ascender-tls-secret
+{% endif %}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:

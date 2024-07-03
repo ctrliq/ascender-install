@@ -201,14 +201,6 @@ if [ $k8s_platform == "eks" ]; then
    echo "USE_ROUTE_53: "$use_route_53 >> custom.config.yml
 
 
-   # EKS_USER
-   echo $'\n'
-   read -p "If you need to apply AWS IAM permissions to a user to install Ascender on EKS, specify that user here (if a user already has permissions, you can ignore this variable) [ascenderuser]: " eksuser
-   eks_user=${eksuser:-ascenderuser}
-   echo "# If you need to apply AWS IAM permissions to a user to install Ascender on EKS, specify that user here" >> custom.config.yml
-   echo "# (if a user already has permissions, you can ignore this variable)" >> custom.config.yml
-   echo "EKS_USER: "$eks_user >> custom.config.yml
-
    #EKS_CLUSTER_NAME
    echo $'\n'
    read -p "The name of the eks cluster to install Ascender on - if it does not already exist, the installer can set it up [ascender-eks-cluster]: " e_cluster_name
@@ -239,12 +231,6 @@ if [ $k8s_platform == "eks" ]; then
    echo "EKS_CLUSTER_REGION: "$eks_cluster_region >> custom.config.yml
 
    if [ $eks_cluster_status == "provision" ]; then
-      #EKS_CLUSTER_CIDR
-      echo $'\n'
-      read -p "The eks cluster subnet in CIDR notation [10.10.0.0/16]: " e_cluster_cidr
-      eks_cluster_cidr=${e_cluster_cidr:-10.10.0.0/16}
-      echo "# The eks cluster subnet in CIDR notation" >> custom.config.yml
-      echo "EKS_CLUSTER_CIDR: "\"$eks_cluster_cidr\" >> custom.config.yml
 
       #EKS_K8S_VERSION
       echo $'\n'
@@ -289,15 +275,6 @@ if [ $k8s_platform == "eks" ]; then
       echo "EKS_WORKER_VOLUME_SIZE: "$eks_worker_volume_size >> custom.config.yml
    
    fi 
-
-   if [ $k8s_lb_protocol == "https" ]; then
-      # EKS_SSL_CERT
-      echo $'\n'
-      read -p "The ARN of the SSL Certificate of the AWS domain, from AWS Certificate Manager (must exist for the domain before running the installer) [arn:aws:acm:us-east-1:xxxxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]:" e_ssl_cert
-      eks_ssl_cert=${e_ssl_cert:-arn:aws:acm:us-east-1:xxxxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} 
-      echo "# The volume size of eks worker nodes in GB" >> custom.config.yml
-      echo "EKS_SSL_CERT: "$eks_ssl_cert >> custom.config.yml
-   fi
 fi
 
 if [ $k8s_platform == "aks" ]; then
@@ -503,7 +480,7 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rk
    echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
 fi
 
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "aks" || $k8s_platform == "gke" ) && $k8s_lb_protocol == "https" ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "aks" || $k8s_platform == "gke" || $k8s_platform == "eks" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
    echo $'\n'
    read -p "TLS Certificate file location on the local installing machine [~/ascender.crt]:" t_cert_path

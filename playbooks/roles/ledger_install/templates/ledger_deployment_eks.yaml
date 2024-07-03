@@ -9,6 +9,18 @@ metadata:
   name: admin-password
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
+{% if 'https' == k8s_lb_protocol  %}
+---
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ LEDGER_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
 ---
 apiVersion: v1
 stringData:
@@ -78,23 +90,17 @@ kind: Ingress
 metadata:
   annotations:
 {% if 'https' == k8s_lb_protocol  %}
-    alb.ingress.kubernetes.io/certificate-arn: {{ EKS_SSL_CERT }}
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 {% endif %}
-    alb.ingress.kubernetes.io/scheme: internet-facing
-{% if 'https' == k8s_lb_protocol  %}
-    alb.ingress.kubernetes.io/ssl-redirect: "443"
-{% endif %}
-    alb.ingress.kubernetes.io/target-type: ip
-    kubernetes.io/ingress.class: alb
-  finalizers:
-  - ingress.k8s.aws/resources
   name: ledger-web-ingress
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  ingressClassName: alb
+  ingressClassName: nginx
   rules:
-  - http:
+  - host: {{ LEDGER_HOSTNAME }}
+    http:
       paths:
       - backend:
           service:
@@ -103,6 +109,10 @@ spec:
               number: 80
         path: /
         pathType: Prefix
+  tls:
+  - hosts:
+    - {{ LEDGER_HOSTNAME }}
+    secretName: ascender-tls-secret
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
