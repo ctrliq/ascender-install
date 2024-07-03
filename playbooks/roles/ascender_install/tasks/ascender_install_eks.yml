@@ -3,6 +3,12 @@
     gather_subset:
      - date_time
 
+- name: Apply NGINX Ingress Controller manifest
+  kubernetes.core.k8s:
+    state: present
+    src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+    verify_ssl: false
+  
 - name: Create Namespace
   kubernetes.core.k8s:
     name: "{{ ASCENDER_NAMESPACE }}"
@@ -82,36 +88,82 @@
     name: ascender-app-ingress
     namespace: ascender
   register: ascender_ingress
-  until: ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
+  until: 
+    - ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
+    - ascender_ingress.resources[0].spec.rules[0].host is defined
   retries: 20
   
 - ansible.builtin.debug: 
     var: ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname
 
-- name: Get The Canonical Hosted Zone ID of the Ascender AWS Load Balancer
-  ansible.builtin.command:
-    cmd: "aws elbv2 describe-load-balancers --query 'LoadBalancers[?DNSName==`{{ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname}}`].CanonicalHostedZoneId' --output yaml"
-  register: hosted_zone
+- ansible.builtin.debug: 
+    var: ascender_ingress.resources[0].spec.rules[0].host
+
+- name: Retrieve the hosted zone ID
+  ansible.builtin.command: >
+    aws route53 list-hosted-zones
+    --query "HostedZones[?Name == '{{ ASCENDER_DOMAIN }}.'].Id | [0]"
+    --output text
+  register: hosted_zone_id
   when: USE_ROUTE_53
 
-# - ansible.builtin.debug: 
-#     msg: "{{ hosted_zone.stdout [2:] }}"
+- name: Check if hosted zone ID was found
+  ansible.builtin.fail:
+    msg: "Hosted zone ID not found for domain {{ ASCENDER_DOMAIN }}"
+  when: 
+    - hosted_zone_id.stdout == ""
+    - USE_ROUTE_53
 
-- name: "Add an alias record for the Ascender Loadbalancer to map to {{ ASCENDER_HOSTNAME }}"
-  amazon.aws.route53:
-    state: present
-    zone: "{{ ASCENDER_DOMAIN }}"
-    record: "{{ ASCENDER_HOSTNAME }}"
-    type: A
-    value: "{{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
-    alias: True
-    alias_hosted_zone_id: "{{ hosted_zone.stdout [2:]}}"
-    overwrite: true
+- name: Check for existing CNAME record
+  ansible.builtin.command: >
+    aws route53 list-resource-record-sets
+    --hosted-zone-id {{ hosted_zone_id.stdout }}
+    --query "ResourceRecordSets[?Type == 'CNAME' && Name == '{{ ASCENDER_HOSTNAME }}.']"
+  register: existing_cname_record
   when: USE_ROUTE_53
 
-- name: Indicate Instructions for non-Route53 Domain Management
+- name: Prepare change batch JSON
+  ansible.builtin.set_fact:
+    change_batch: |
+      {{
+        {
+          "Comment": "Updating or creating CNAME record for " + ASCENDER_HOSTNAME,
+          "Changes": [
+            {
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": ASCENDER_HOSTNAME,
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                  {
+                    "Value": ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname
+                  }
+                ]
+              }
+            }
+          ]
+        } | to_nice_json
+      }}
+  when: USE_ROUTE_53
+
+- name: Write change batch JSON to file
+  ansible.builtin.copy:
+    content: "{{ change_batch }}"
+    dest: /tmp/change-batch.json
+  when: USE_ROUTE_53
+
+- name: Update or create CNAME record
+  ansible.builtin.command: >
+    aws route53 change-resource-record-sets
+    --hosted-zone-id {{ hosted_zone_id.stdout }}
+    --change-batch file:///tmp/change-batch.json
+  register: update_result
+  when: USE_ROUTE_53
+
+- name: Indicate Instructions for non-AWS DNS Domain Management
   ansible.builtin.debug: 
-    msg: "Please manually create a CNAME record in your DNS Manager of choice, mapping to {{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+    msg: "Please manually create a DNS CNAME record for {{ ASCENDER_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].ip }}"
   when: not USE_ROUTE_53
 
 - name: Set the Ascender URL

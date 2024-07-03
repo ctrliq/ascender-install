@@ -5,14 +5,14 @@
 
 - name: Generate manifest to install Ledger k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
-    src: ledger_deployment_aks.yaml
-    dest: "{{ tmp_dir }}/ledger_deployment_aks.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+    src: ledger_deployment_gke.yaml
+    dest: "{{ tmp_dir }}/ledger_deployment_gke.yaml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: "Apply ledger manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
     namespace: "{{ LEDGER_NAMESPACE }}"
-    definition: "{{ lookup('template', 'templates/ledger_deployment_aks.yaml') | from_yaml_all }}"
+    definition: "{{ lookup('template', 'templates/ledger_deployment_gke.yaml') | from_yaml_all }}"
     verify_ssl: false
 
 - name: Wait for Ledger web Deployment to complete setting up
