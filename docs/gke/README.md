@@ -150,6 +150,7 @@ Remove the timestamp from the filename and then run the following
 commands from within `tmp_dir``:
 
 - `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
+- `$ kubectl delete pvc -n {{ ASCENDER_NAMESPACE }} postgres-15-ascender-app-postgres-15-0 (If you used the default postgres database)
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
