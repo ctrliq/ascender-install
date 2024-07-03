@@ -122,12 +122,12 @@ After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifest
 - `ascender-deployment-{{ k8s_platform }}.yml`
 - `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
-- `eks-cluster-manifest.yml` (if you provisioned a new EKS cluster with the Ascender installer)
 
 Remove the timestamp from the filename and then run the following
 commands from within `tmp_dir``:
 
 - `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
+- `$ kubectl delete pvc -n {{ ASCENDER_NAMESPACE }} postgres-15-ascender-app-postgres-15-0 (If you used the default postgres database)
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
