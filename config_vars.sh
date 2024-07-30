@@ -569,7 +569,7 @@ echo "ASCENDER_VERSION: "$ascender_version >> custom.config.yml
 echo $'\n'
 echo "# The version of the AWX Operator used to install Ascender and its components" >> custom.config.yml
 read -p "The version of the AWX Operator used to install Ascender and its components [2.19.0]: " a_operator_version
-ascender_operator_version=${a_version:-2.19.0}
+ascender_operator_version=${a_operator_version:-2.19.0}
 echo "ANSIBLE_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
 
 # ascender_garbage_collect_secrets
