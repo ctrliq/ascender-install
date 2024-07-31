@@ -155,66 +155,122 @@
         state: absent
 
 ####################### DOCKER IMAGES #######################
+    - name: "K3s : Download Images"
+      when: k8s_platform == "k3s"
+      block:
+        - name: Add Docker repository
+          ansible.builtin.get_url:
+            url: https://download.docker.com/linux/centos/docker-ce.repo
+            dest: /etc/yum.repos.d/docker-ce.repo
+            mode: 0644
 
-    - name: Add Docker repository
-      ansible.builtin.get_url:
-        url: https://download.docker.com/linux/centos/docker-ce.repo
-        dest: /etc/yum.repos.d/docker-ce.repo
-        mode: 0644
+        - name: Install Docker
+          ansible.builtin.dnf:
+            name:
+              - docker-ce
+              - python3-pip
+            state: present
 
-    - name: Install Docker
-      ansible.builtin.dnf:
-        name:
-          - docker-ce
-          - python3-pip
-        state: present
+        - name: Install requests python module
+          ansible.builtin.pip:
+            name: requests
 
-    - name: Install requests python module
-      ansible.builtin.pip:
-        name: requests
+        - name: Enable Docker Service
+          ansible.builtin.service:
+            name: docker
+            state: started
+            enabled: yes
+            
+        - name: Ensure images directory exists
+          ansible.builtin.file:
+            path: "{{ image_dir }}"
+            state: directory
 
-    - name: Enable Docker Service
-      ansible.builtin.service:
-        name: docker
-        state: started
-        enabled: yes
+        - name: Download k3s binary
+          ansible.builtin.get_url:
+            url: "{{ k3s_binary_url }}"
+            dest: "{{ package_dir }}/k3s"
 
-    - name: Ensure images directory exists
-      ansible.builtin.file:
-        path: "{{ image_dir }}"
-        state: directory
+        - name: Download k3s installer
+          ansible.builtin.get_url:
+            url: "https://get.k3s.io/"
+            dest: "{{ package_dir }}/k3s_install.sh"
 
-    - name: Download k3s binary
-      ansible.builtin.get_url:
-        url: "{{ k3s_binary_url }}"
-        dest: "{{ package_dir }}/k3s"
+        - name: Download k3s images
+          ansible.builtin.get_url:
+            url: "{{ k3s_images_url }}"
+            dest: "{{ image_dir }}/k3s-airgap-images-amd64.tar.gz"
 
-    - name: Download k3s installer
-      ansible.builtin.get_url:
-        url: "https://get.k3s.io/"
-        dest: "{{ package_dir }}/k3s_install.sh"
+        - name: Pull current offline images
+          set_fact:
+            images: "{{ lookup('fileglob', '{{ image_dir }}/*.tar', errors='warn') }}"
 
-    - name: Download k3s images
-      ansible.builtin.get_url:
-        url: "{{ k3s_images_url }}"
-        dest: "{{ image_dir }}/k3s-airgap-images-amd64.tar.gz"
+        - name: Pull images and create archives
+          community.docker.docker_image:
+            name: "{{ item.path }}"
+            tag: "{{ item.tag }}"
+    # This parameter doesn't create images the same way that docker save does
+    #        archive_path: "{{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar"
+            source: pull
+          when: item.name ~ '-' ~ item.tag ~ '.tar' not in images
+          loop: "{{ containers }}"
+          
+        - name: Save Docker images
+          ansible.builtin.shell:
+            cmd: docker save {{ item.path }}:{{ item.tag }} > {{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar
+          when: item.name ~ '-' ~ item.tag ~ '.tar' not in images
+          loop: "{{ containers }}"
 
-    - name: Pull current offline images
-      set_fact:
-        images: "{{ lookup('fileglob', '{{ image_dir }}/*.tar', errors='warn') }}"
+    - name: "RKE2 : Download Images"
+      when: 
+        - k8s_platform == "rke2"
+        - k8s_container_registry != ""
+      block:
+        - name: Prompt for push to registry
+          ansible.builtin.pause:
+            prompt: "Pull and push images to internal registry '{{ k8s_container_registry }}'\n(yes or no)"
+            echo: yes
+          register: push
+        - when: push.user_input == "yes"
+          block:
+            - name: Add Docker repository
+              ansible.builtin.get_url:
+                url: https://download.docker.com/linux/centos/docker-ce.repo
+                dest: /etc/yum.repos.d/docker-ce.repo
+                mode: 0644
 
-    - name: Pull images and create archives
-      community.docker.docker_image:
-        name: "{{ item.path }}"
-        tag: "{{ item.tag }}"
-# This parameter doesn't create images the same way that docker save does
-#        archive_path: "{{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar"
-        source: pull
-      when: item.name ~ '-' ~ item.tag ~ '.tar' not in images
-      loop: "{{ containers }}"
+            - name: Install Docker
+              ansible.builtin.dnf:
+                name:
+                  - docker-ce
+                  - python3-pip
+                state: present
 
-    - name: Save Docker images
-      ansible.builtin.shell:
-        cmd: docker save {{ item.path }}:{{ item.tag }} > {{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar
-      when: item.name ~ '-' ~ item.tag ~ '.tar' not in images
-      loop: "{{ containers }}"
+            - name: Install requests python module
+              ansible.builtin.pip:
+                name: requests
+
+            - name: Enable Docker Service
+              ansible.builtin.service:
+                name: docker
+                state: started
+                enabled: yes
+
+            - name: Pull images
+              community.docker.docker_image:
+                name: "{{ item.path }}"
+                tag: "{{ item.tag }}"
+                source: pull
+              loop: "{{ containers }}"
+
+            - name: Tag images
+              community.docker.docker_image_tag:
+                name: "{{ item.path }}:{{ item.tag }}"
+                repository: "{{ k8s_container_registry | regex_replace('\\/$', '') }}/{{ item.path | basename }}:{{ item.tag }}"
+              loop: "{{ containers }}"
+
+            - name: Push images
+              community.docker.docker_image_push:
+                name: "{{ k8s_container_registry | regex_replace('\\/$', '') }}/{{ item.path | basename }}"
+                tag: "{{ item.tag }}"
+              loop: "{{ containers }}"
