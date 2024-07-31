@@ -56,7 +56,7 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2") ]]; then
 
     if [ $k8s_offline == "true" ]; then
         echo $'\n'
-        echo "# Offline Install - Whether to use local assets to complete the install"  >> custom.config.yml
+        echo "# Offline Install - Whether to use local assets to complete the install" >> custom.config.yml
         echo "ANSIBLE_OPERATOR_OFFLINE_VERSION: 2.9.0" >> custom.config.yml
     fi
 
@@ -64,9 +64,9 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "rke2") ]]; then
     # k8s_container_registry
     if [[ ( $k8s_offline == "true" && $k8s_platform == "rke2") ]]; then
         echo $'\n'
-        read -p "Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images [format: registry.io/namespace]: " k_offline_registry
+        read -p "Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images [format: registry.io/namespace]: " k_container_registry
         k8s_container_registry=${k_container_registry:-registry.io/namespace}
-        echo "# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images"
+        echo "# Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images" >> custom.config.yml
         echo "k8s_container_registry: "$k8s_container_registry >> custom.config.yml
 
         # k8s_image_pull_secret
