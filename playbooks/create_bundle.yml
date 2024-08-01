@@ -137,6 +137,13 @@
         line: "        imagePullPolicy: Never"
       when: k8s_platform == 'k3s'
 
+    - name: Fix the awx-operator image path
+      ansible.builtin.lineinfile:
+        path: "{{ offline_dir }}/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
+        search_string: 'quay.io/ansible/awx-operator'
+        line: "  newName: {{ k8s_container_registry | regex_replace('\\/$', '') }}/awx-operator"
+      when: k8s_platform == 'rke2'
+
     - name: Fix the kube-rbac-proxy image path
       ansible.builtin.lineinfile:
         path: "{{ offline_dir }}/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config/default/manager_auth_proxy_patch.yaml"
