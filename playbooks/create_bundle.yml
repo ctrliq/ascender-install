@@ -135,6 +135,7 @@
         path: "{{ offline_dir }}/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config/manager/manager.yaml"
         search_string: 'imagePullPolicy:'
         line: "        imagePullPolicy: Never"
+      when: k8s_platform == 'k3s'
 
     - name: Remove Operator tar
       ansible.builtin.file:
