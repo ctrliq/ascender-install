@@ -137,6 +137,13 @@
         line: "        imagePullPolicy: Never"
       when: k8s_platform == 'k3s'
 
+    - name: Fix the kube-rbac-proxy image path
+      ansible.builtin.lineinfile:
+        path: "{{ offline_dir }}/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config/default/manager_auth_proxy_patch.yaml"
+        search_string: 'gcr.io/kubebuilder/kube-rbac-proxy'
+        line: "        image: {{ k8s_container_registry | regex_replace('\\/$', '') }}/kube-rbac-proxy:v0.15.0"
+      when: k8s_platform == 'rke2'
+
     - name: Remove Operator tar
       ansible.builtin.file:
         path: "{{ offline_dir }}/awx-operator.tar"
