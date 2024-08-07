@@ -48,6 +48,11 @@ download_kubeconfig: false
 # This IP Address must be close reachable by the server from which this installer is running
 k3s_master_node_ip: "127.0.0.1"
 
+# Whether to use the ClusterIP and Ingress rules to access Ascender
+# or access it via NodePort
+# Valid entries are ClusterIP or NodePort
+k3s_service_type: ClusterIP
+
 # ---eks variables---
 
 # Determines whether to use Route53's Domain Management (which is automated)
