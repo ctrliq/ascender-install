@@ -51,7 +51,7 @@
       ledger_ip: "{{ LEDGER_HOSTNAME }}"
       ledger_port: "{{ '30081' if k3s_service_type == 'NodePort' else '443' if k8s_lb_protocol == 'https' else '80' }}"
       ledger_parser_ip: "{{ parser_svc.resources[0].spec.clusterIP }}"
-      ledger_parser_port: "{{ '30500' if k3s_service_type == 'NodePort' else parser_svc.resources[0].spec.ports[0].port }}"
+      ledger_parser_port: "{{ '5000' if k3s_service_type == 'NodePort' else parser_svc.resources[0].spec.ports[0].port }}"
 
 - ansible.builtin.debug:
     msg: "The Ledger endpoint is {{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
