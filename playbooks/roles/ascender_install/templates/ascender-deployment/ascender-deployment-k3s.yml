@@ -48,13 +48,11 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
+{% if k3s_service_type == "NodePort" %}
+  service_type: nodeport 
+  nodeport_port: 30080
+{% else %}
   service_type: ClusterIP
-  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
-  admin_password_secret: ascender-app-admin-password
-{% if ASCENDER_PGSQL_HOST is defined %}
-  postgres_configuration_secret: ascender-app-postgres-configuration
-{% endif %}
   ingress_type: ingress
   ingress_path: "/"
   ingress_path_type: Prefix
@@ -62,6 +60,13 @@ spec:
   ingress_tls_secret: ascender-tls-secret
 {% endif %}
   hostname: {{ ASCENDER_HOSTNAME }}
+{% endif %}
+  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_password_secret: ascender-app-admin-password
+{% if ASCENDER_PGSQL_HOST is defined %}
+  postgres_configuration_secret: ascender-app-postgres-configuration
+{% endif %}
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
