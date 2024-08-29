@@ -11,7 +11,7 @@ resources:
 
 # Set the image tags to match the git version from above
 images:
-  - name: {{ k8s_container_registry | default("quay.io/ansible")  ~ "/awx-operator" }} 
+  - name: {{ k8s_container_registry | default("quay.io/ansible", true)  ~ "/awx-operator" }} 
     newTag: {{ ANSIBLE_OPERATOR_VERSION }}
 
 # Specify a custom namespace in which to install AWX
