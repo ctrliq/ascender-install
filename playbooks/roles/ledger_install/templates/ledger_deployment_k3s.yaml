@@ -59,12 +59,19 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
+{% if k3s_service_type == "NodePort" %}
+  type: NodePort
+{% else %}
   type: ClusterIP
+{% endif %}
   ports:
   - name: parser-port
     port: 5000
     targetPort: 5000
     protocol: TCP
+{% if k3s_service_type == "NodePort" %}
+    nodePort: 30500
+{% endif %}
   selector:
     io.kompose.service: parser
 ---
@@ -77,13 +84,21 @@ metadata:
   name: web-svc
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
+{% if k3s_service_type == "NodePort" %}
+  type: NodePort
+{% else %}
   type: ClusterIP
+{% endif %}
   ports:
   - name: web-port
     port: 80
     targetPort: 80
+{% if k3s_service_type == "NodePort" %}
+    nodePort: 30081
+{% endif %}
   selector:
     io.kompose.service: web
+{% if k3s_service_type != "NodePort" %}
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -122,6 +137,7 @@ spec:
               name: web-svc
               port:
                 number: 80
+{% endif %}
 {% endif %}
 ---
 apiVersion: v1
