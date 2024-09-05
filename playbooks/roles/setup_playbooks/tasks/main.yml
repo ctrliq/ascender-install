@@ -13,6 +13,7 @@
   loop_control:
     label: "{{ project.name }}"
     loop_var: project
+    pause: 1
 
 - name: Create Templates
   include_tasks: templates.yml
