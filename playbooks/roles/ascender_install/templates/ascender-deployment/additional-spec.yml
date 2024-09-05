@@ -3,7 +3,7 @@
 {% else %}
   image: {{ ASCENDER_IMAGE }}
 {% endif %}
-image_version: {{ ASCENDER_VERSION | default("23.5.1") }}
+  image_version: {{ ASCENDER_VERSION | default("23.5.1") }}
 {% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
   image_pull_policy: Never
 {% else %}
