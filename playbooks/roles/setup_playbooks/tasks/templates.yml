@@ -16,6 +16,7 @@
     diff_mode: "{{ template.diff_mode | default(omit) }}"
     extra_vars: "{{ template.extra_vars | default(omit) }}"
     validate_certs: false
+    limit: "{{ template.limit | default(omit) }}"
   register: result
   until: result is succeeded
   retries: 20
