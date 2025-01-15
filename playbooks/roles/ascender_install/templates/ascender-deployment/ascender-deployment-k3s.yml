@@ -70,4 +70,5 @@ spec:
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
-      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}
+      - http://{{ ASCENDER_HOSTNAME }}
+      - https://{{ ASCENDER_HOSTNAME }}
