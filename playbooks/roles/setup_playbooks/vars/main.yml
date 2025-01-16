@@ -64,6 +64,8 @@ templates:
     playbook: site.yml
     ask_credential_on_launch: true
     diff_mode: true
+    extra_vars:
+      rhel9cis_set_boot_pass: false
 
   - name: CIS Benchmark Hardening for Enterprise Linux 8
     description: CIS Benchmark Hardening for Enterprise Linux 8
@@ -73,6 +75,8 @@ templates:
     playbook: site.yml
     ask_credential_on_launch: true
     diff_mode: true
+    extra_vars:
+      rhel8cis_allow_authselect_updates: false
 
   - name: STIG Hardening for Enterprise Linux 8
     description: STIG Hardening for Enterprise Linux 8
