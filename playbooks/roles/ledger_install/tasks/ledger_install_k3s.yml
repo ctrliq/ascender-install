@@ -15,6 +15,20 @@
     src: ledger_deployment_k3s.yaml
     dest: "{{ tmp_dir }}/ledger_deployment_k3s.yaml.{{ ansible_date_time.iso8601_basic_short }}"
 
+- name: Generate manifest for the Ledger registry secret with timestamp, for purposes of deletion later
+  when: LEDGER_REGISTRY.BASE is defined
+  ansible.builtin.template:
+    src: ledger_deployment_registry_secret.yaml
+    dest: "{{ tmp_dir }}/ledger_deployment_registry_secret.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Apply ledger registry secret (if needed) manifest for {{ k8s_platform }}
+  when: LEDGER_REGISTRY.BASE is defined
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/ledger_deployment_registry_secret.yaml') | from_yaml }}"
+    verify_ssl: false
+
 - name: "Apply ledger manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
