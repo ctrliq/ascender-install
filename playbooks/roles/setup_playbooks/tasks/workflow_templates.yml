@@ -1,0 +1,20 @@
+- name: Create Workflow Job Template - {{ workflow_template.name }}
+  awx.awx.workflow_job_template:
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    name: "{{ workflow_template.name }}"
+    organization: Default
+    inventory: "{{ workflow_template.inventory | default('Default Inventory') }}"
+    state: present
+    survey_enabled: "{{ workflow_template.survey_enabled | default(omit) }}"
+    survey_spec: "{% if workflow_template.survey_file is defined %}{{ lookup('file', workflow_template.survey_file) }}{% else %}{{ ''| default(omit, true) }}{% endif %}"
+    ask_inventory_on_launch: "{{ workflow_template.ask_inventory_on_launch | default(omit) }}"
+    ask_variables_on_launch: "{{ workflow_template.ask_variables_on_launch | default(omit) }}"
+    diff_mode: "{{ workflow_template.diff_mode | default(omit) }}"
+    validate_certs: false
+    workflow_nodes: "{{ workflow_template.workflow_nodes | default(omit) }}"
+  register: result
+  until: result is succeeded
+  retries: 20
+  delay: 5

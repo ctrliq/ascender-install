@@ -188,7 +188,7 @@ ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 
 # The image tag indicating the version of Ascender you wish to install
-ASCENDER_VERSION: 24.0.1
+ASCENDER_VERSION: 24.0.4
 
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.13.1
@@ -279,6 +279,13 @@ LEDGER_INSTALL: true
 # DNS resolvable hostname for Ledger service. This is required for install.
 LEDGER_HOSTNAME: ledger.example.com
 
+# Optional credentials for pulling the ledger image, all fields must be
+# specified.
+#LEDGER_REGISTRY:
+#  BASE: depot.ciq.com
+#  USERNAME: username
+#  PASSWORD: password
+
 # The OCI container image for Ledger
 LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
 
@@ -305,7 +312,4 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
-
-
-
 

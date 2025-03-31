@@ -21,3 +21,10 @@
   loop_control:
     label: "{{ template.name }}"
     loop_var: template
+
+- name: Create Workflow Templates
+  include_tasks: workflow_templates.yml
+  loop: "{{ workflow_templates }}"
+  loop_control:
+    label: "{{ workflow_template.name }}"
+    loop_var: workflow_template

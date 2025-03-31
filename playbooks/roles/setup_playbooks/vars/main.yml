@@ -26,6 +26,12 @@ projects:
     scm_url: https://github.com/ansible-lockdown/RHEL8-STIG.git
     scm_update_on_launch: false
 
+  - name: Fuzzball Orchestrate
+    description: Fuzzball Orchestrate
+    scm_type: git
+    scm_url: https://github.com/ctrliq/fuzzball-ansible.git
+    scm_update_on_launch: false
+
 templates:
   - name: Configure SELinux
     description: ""
@@ -64,6 +70,8 @@ templates:
     playbook: site.yml
     ask_credential_on_launch: true
     diff_mode: true
+    extra_vars:
+      rhel9cis_set_boot_pass: false
 
   - name: CIS Benchmark Hardening for Enterprise Linux 8
     description: CIS Benchmark Hardening for Enterprise Linux 8
@@ -73,6 +81,8 @@ templates:
     playbook: site.yml
     ask_credential_on_launch: true
     diff_mode: true
+    extra_vars:
+      rhel8cis_allow_authselect_updates: false
 
   - name: STIG Hardening for Enterprise Linux 8
     description: STIG Hardening for Enterprise Linux 8
@@ -82,3 +92,84 @@ templates:
     playbook: site.yml
     ask_credential_on_launch: true
     diff_mode: true
+
+  - name: Deploy RKE2 for Fuzzball
+    description: Deploy RKE2 for Fuzzball
+    job_type: run
+    project: Fuzzball Orchestrate
+    playbook: playbooks/deploy_rke2.yaml
+    ask_inventory_on_launch: true
+    limit: controller
+    diff_mode: true
+
+  - name: Deploy Fuzzball CLI
+    description: Deploy Fuzzball CLI
+    job_type: run
+    project: Fuzzball Orchestrate
+    playbook: playbooks/deploy_fuzzball_cli.yaml
+    ask_inventory_on_launch: true
+    limit: controller
+    diff_mode: true
+
+  - name: Deploy Fuzzball NFS Server
+    description: Deploy Fuzzball NFS Server
+    job_type: run
+    project: Fuzzball Orchestrate
+    playbook: playbooks/deploy_nfs_server.yaml
+    ask_inventory_on_launch: true
+    limit: admin
+    diff_mode: true
+
+  - name: Deploy Fuzzball Orchestrate
+    description: Deploy Fuzzball Orchestrate
+    job_type: run
+    project: Fuzzball Orchestrate
+    playbook: playbooks/deploy_fuzzball_orchestrate.yaml
+    ask_inventory_on_launch: true
+    limit: controller
+    diff_mode: true
+
+  - name: Deploy Fuzzball Substrate
+    description: Deploy Fuzzball Substrate
+    job_type: run
+    project: Fuzzball Orchestrate
+    playbook: playbooks/deploy_fuzzball_substrate.yaml
+    ask_inventory_on_launch: true
+    limit: compute
+    diff_mode: true
+
+workflow_templates:
+
+  - name: Deploy Fuzzball Orchestrate On-Premise
+    description: Deploy Fuzzball Orchestrate On-Premise
+    ask_inventory_on_launch: true
+    ask_variables_on_launch: true
+    workflow_nodes:
+      - identifier: Deploy RKE2 for Fuzzball
+        unified_job_template:
+          name: Deploy RKE2 for Fuzzball
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: Deploy Fuzzball Orchestrate
+      - identifier: Deploy Fuzzball CLI
+        unified_job_template:
+          name: Deploy Fuzzball CLI
+          type: job_template
+      - identifier: Deploy Fuzzball NFS Server
+        unified_job_template:
+          name: Deploy Fuzzball NFS Server
+          type: job_template
+        related:
+          success_nodes:
+            - identifier: Deploy Fuzzball Orchestrate
+            - identifier: Deploy Fuzzball Substrate
+      - identifier: Deploy Fuzzball Orchestrate
+        all_parents_must_converge: true
+        unified_job_template:
+          name: Deploy Fuzzball Orchestrate
+          type: job_template
+      - identifier: Deploy Fuzzball Substrate
+        unified_job_template:
+          name: Deploy Fuzzball Substrate
+          type: job_template
