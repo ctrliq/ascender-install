@@ -14,7 +14,9 @@
     survey_spec: "{% if template.survey_file is defined %}{{ lookup('file', template.survey_file) }}{% else %}{{ ''| default(omit, true) }}{% endif %}"
     ask_credential_on_launch: "{{ template.ask_credential_on_launch | default(omit) }}"
     diff_mode: "{{ template.diff_mode | default(omit) }}"
+    extra_vars: "{{ template.extra_vars | default(omit) }}"
     validate_certs: false
+    limit: "{{ template.limit | default(omit) }}"
   register: result
   until: result is succeeded
   retries: 20
