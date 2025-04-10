@@ -123,7 +123,7 @@ Assuming you have an existing `custom.config.yml` file that contains the variabl
 
 - `kube_install`: Set to `false` as you already have a kubernetes cluster on which Ascender is running.
 - `download_kubeconfig`: Set to `false` as you already have a valid KUBECONFIG file to authenticate to your existing cluster
-- `ASCENDER_VERSION`: This needs to be set to the release of Ascender you wish to upgrade to. As an example, a release should be in the format `24.0.0`. The list of all releases can be found here: [Ascender Releases](https://github.com/ctrliq/ascender/releases).
+- `ASCENDER_VERSION`: This needs to be set to the release of Ascender you wish to upgrade to. As an example, a release should be in the format `25.0.0`. The list of all releases can be found here: [Ascender Releases](https://github.com/ctrliq/ascender/releases).
 - `image_pull_policy`: Set to `Always`, as this will force the Ascender web container image to be pulled.
 
 After having changed these four variables, re-run the installer script from the top level directory:
