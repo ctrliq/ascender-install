@@ -113,7 +113,7 @@
 
     - name: Check Ledger Token
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/"
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -128,7 +128,7 @@
 
     - name: Regenerate Token if blank
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/?regenerate_auth_token=1"
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/?regenerate_auth_token=1"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -144,7 +144,7 @@
 
     - name: Get Ledger Token Again (in case of regeneration)
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/"
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -162,7 +162,7 @@
 
     - name: Enable Require Token
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/"
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
