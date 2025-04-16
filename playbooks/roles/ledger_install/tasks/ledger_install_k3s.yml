@@ -108,6 +108,79 @@
 - ansible.builtin.debug:
     msg: "Ascender API is up"
 
+- when: LEDGER_REGISTRY.BASE is defined and LEDGER_REGISTRY.BASE != ""
+  block:
+
+    - name: Check Ledger Token
+      ansible.builtin.uri:
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/"
+        user: admin
+        password: "{{ LEDGER_ADMIN_PASSWORD }}"
+        force_basic_auth: true
+        return_content: yes
+        validate_certs: no
+        status_code:
+          - 200
+      until: uri_output.status == 200
+      retries: 60
+      delay: 10
+      register: ledger_settings
+
+    - name: Regenerate Token if blank
+      ansible.builtin.uri:
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/?regenerate_auth_token=1"
+        user: admin
+        password: "{{ LEDGER_ADMIN_PASSWORD }}"
+        force_basic_auth: true
+        return_content: yes
+        validate_certs: no
+        status_code:
+          - 200
+      until: uri_output.status == 200
+      retries: 60
+      delay: 10
+      register: ledger_settings2
+      when: ledger_settings.json.auth_token is undefined
+
+    - name: Get Ledger Token Again (in case of regeneration)
+      ansible.builtin.uri:
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/"
+        user: admin
+        password: "{{ LEDGER_ADMIN_PASSWORD }}"
+        force_basic_auth: true
+        return_content: yes
+        validate_certs: no
+        status_code:
+          - 200
+      until: uri_output.status == 200
+      retries: 60
+      delay: 10
+      register: ledger_settings
+
+    - debug:
+        var: ledger_settings.json.auth_token
+
+    - name: Enable Require Token
+      ansible.builtin.uri:
+        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ascender_port }}/api/v1/settings/"
+        user: admin
+        password: "{{ LEDGER_ADMIN_PASSWORD }}"
+        force_basic_auth: true
+        method: POST
+        body_format: json
+        body: '{ "require_auth_token": 1 }'
+        return_content: yes
+        validate_certs: no
+        status_code:
+          - 200
+      until: uri_output.status == 200
+      retries: 60
+      delay: 10
+      when:
+        - ledger_settings.json.auth_token is defined
+        - ledger_settings.json.require_auth_token == 0
+      register: test
+
 - name: Set all the logging parameters
   awx.awx.settings:
     controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
@@ -117,7 +190,8 @@
     settings:
       LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
-      LOG_AGGREGATOR_TYPE: other
+      LOG_AGGREGATOR_TYPE: ledger
       LOG_AGGREGATOR_ENABLED: true
       LOG_AGGREGATOR_VERIFY_CERT: false
       LOG_AGGREGATOR_LEVEL: INFO
+      LOG_AGGREGATOR_PASSWORD: "{{ ledger_settings.json.auth_token | default(omit, true) }}"
