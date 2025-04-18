@@ -98,6 +98,12 @@
 
       when: k8s_platform == "k3s"
 
-      
 
-    
+    - name: Verify Collections
+      ansible.builtin.assert:
+        that:
+          - lookup('community.general.collection_version', item.name) is version(item.version, item.compare, version_type=item.version_type)
+        fail_msg: "{{ item.name }} Collection is not installed or the incorrect version.  Please run 'ansible-galaxy install -r collections/requirements.yml'"
+      loop: "{{ required_collections }}"
+      loop_control:
+        label: "{{ item.name }} {{ item.compare }} {{ item.version }}"
