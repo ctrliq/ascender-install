@@ -100,13 +100,11 @@
 
 
     - block:
-        - name: Retrieve the Collection Versions
-          ansible.builtin.set_fact: "collection_{{ item.name | replace('.','_') }}={{ lookup('community.general.collection_version', item.name) }}"
-          loop: "{{ required_collections }}"
-
         - name: Verify Collections
           ansible.builtin.assert:
             that:
-              - hostvars[inventory_hostname]['collection_' + (item.name | replace('.','_'))] is version(item.version, item.compare, version_type=item.version_type)
+              - lookup('community.general.collection_version', item.name) is version(item.version, item.compare, version_type=item.version_type)
             fail_msg: "{{ item.name }} Collection is not installed or the incorrect version.  Please run 'ansible-galaxy install -r collections/requirements.yml'"
           loop: "{{ required_collections }}"
+          loop_control:
+            label: "{{ item.name }} {{ item.compare }} {{ item.version }}"
