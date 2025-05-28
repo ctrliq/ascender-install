@@ -37,6 +37,17 @@ metadata:
 data:
   bundle-ca.crt: {{ lookup('ansible.builtin.file', custom_cacert_bundle) | b64encode }}
 {% endif %}
+{% if custom_ldap_cacert is defined %}
+---
+# Ascender Custom LDAP CA Cert
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-custom-ldap-cacert
+  namespace: {{ ASCENDER_NAMESPACE }}
+data:
+  ldap-ca.crt: {{ lookup('ansible.builtin.file', custom_ldap_cacert) | b64encode }}
+{% endif %}
 {% if k8s_lb_protocol == 'https' %}
 ---
 # Ascender TLS Certificate and Key
@@ -68,6 +79,9 @@ spec:
 {% endif %}
 {% if custom_cacert_bundle is defined %}
   bundle_cacert_secret: ascender-app-custom-cert-bundle
+{% endif %}
+{% if custom_ldap_cacert is defined %}
+  ldap_cacert_secret: ascender-app-custom-ldap-cacert
 {% endif %}
   ingress_type: ingress
   ingress_path: "/"

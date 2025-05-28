@@ -34,6 +34,8 @@ tls_key_path: "/home/rocky/ascender.key"
 # Such as the ones located at /etc/ssl/certs/ca-bundle.crt
 # To create: "cat /etc/ssl/certs/ca-bundle.crt  ~/myca.crt > ~/my-ca-bundle.crt"
 #custom_cacert_bundle: "~/my-ca-bundle.crt"
+# LDAP CA Cert
+#custom_ldap_cacert: "~/my-ldap-ca.crt"
 # A directory in which to place both temporary artifacts
 # and timestamped Kubernetes Manifests to make Ascender/Ledger easy
 # to uninstall

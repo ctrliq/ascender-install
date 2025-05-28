@@ -56,6 +56,9 @@ tls_key_path: "~/ascender.key"
 # To create: "cat /etc/ssl/certs/ca-bundle.crt  ~/myca.crt > ~/my-ca-bundle.crt"
 #custom_cacert_bundle: "~/my-ca-bundle.crt"
 
+# LDAP CA Cert
+#custom_ldap_cacert: "~/my-ldap-ca.crt"
+
 # Set to false if using an external DNS server for resolution
 # Set to true if not
 use_etc_hosts: true
