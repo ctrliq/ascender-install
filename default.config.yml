@@ -158,6 +158,12 @@ tls_crt_path: "~/ascender.crt"
 # TLS Private Key file, required when deploying HTTPS in K3s
 tls_key_path: "~/ascender.key"
 
+# CA Bundle that contains both your CA Cert and other external CA bundles
+# Such as the ones located at /etc/ssl/certs/ca-bundle.crt
+# To create: "cat /etc/ssl/certs/ca-bundle.crt  ~/myca.crt > ~/my-ca-bundle.crt"
+#custom_cacert_bundle: "~/my-ca-bundle.crt"
+
+
 # Set to false if using an external DNS server for resolution
 # Set to true if not
 use_etc_hosts: true
@@ -191,7 +197,7 @@ ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 ASCENDER_VERSION: 25.0.0
 
 # The version of the AWX Operator used to install Ascender and its components
-ANSIBLE_OPERATOR_VERSION: 2.13.1
+ANSIBLE_OPERATOR_VERSION: 2.19.1
 
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
