@@ -100,3 +100,17 @@ spec:
     value:
       - http://{{ ASCENDER_HOSTNAME }}
       - https://{{ ASCENDER_HOSTNAME }}
+---
+apiVersion: awx.ansible.com/v1alpha1
+kind: AWXMeshIngress
+metadata:
+  name: ascender-app-mesh
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+  deployment_name: ascender-app
+  ingress_type: IngressRouteTCP
+  ingress_controller: traefik
+  ingress_class_name: traefik
+  ingress_api_version: traefik.io/v1alpha1
+  external_hostname: {{ ASCENDER_MESH_HOSTNAME }}
+
