@@ -31,8 +31,8 @@
         tag: latest
         type: ascender
       - name: postgres
-        path: docker.io/library/postgres
-        tag: 13
+        path: quay.io/sclorg/postgresql-15-c9s
+        tag: latest
         type: ascender
       - name: redis
         path: docker.io/library/redis

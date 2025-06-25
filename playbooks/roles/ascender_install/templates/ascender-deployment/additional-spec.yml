@@ -13,8 +13,13 @@
   init_container_image: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender-ee" }}
   init_container_image_version: latest
   control_plane_ee_image: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender-ee" }}:latest
-  postgres_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/postgres" }}
-  postgres_image_version: "13"
+  postgres_image: {{ k8s_container_registry | default("quay.io", true)  ~ "/sclorg/postgresql-15-c9s" }}
+  postgres_image_version: "latest"
+  postgres_extra_args:
+     - '-c'
+     - 'shared_buffers=256MB'
+     - '-c'
+     - 'max_connections=1000'
   redis_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/redis" }}
   redis_image_version: "7"
 {% if k8s_image_pull_secret is defined and k8s_image_pull_secret != 'None' %}

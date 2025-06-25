@@ -1,0 +1,168 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  become: true
+  vars_files:
+    - ["../custom.config.yml", "../default.config.yml"]
+  tasks:
+
+    - name: Check for Postgres Pod
+      kubernetes.core.k8s_info:
+        kind: StatefulSet
+        name: ascender-app-postgres-15
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        verify_ssl: false
+      register: postgres_statefulset
+
+    - name: Check for old postgres install
+      ansible.builtin.assert:
+        that:
+          - postgres_statefulset.api_found | bool
+          - postgres_statefulset.resources[0].spec.template.spec.containers[0].image is defined
+          - postgres_statefulset.resources[0].spec.template.spec.containers[0].image == "docker.io/postgres:13" or postgres_statefulset.resources[0].spec.template.spec.containers[0].image == "docker.io/postgres:15"
+        fail_msg: Could not detect old version of postgres running.
+
+    - ansible.builtin.pause: 
+        prompt: Proceeding will attempt to backup the postgres database, and then destroy the PVC volume and rebuilt it.  This could fail spectacularly! Do you wish to proceed (Y/N)?
+        echo: true
+      register: agreed
+
+    - ansible.builtin.fail:
+      when: agreed.user_input|lower != 'y'
+
+    - name: Scale down Ascender task modules
+      kubernetes.core.k8s_scale:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        kind: Deployment
+        name: ascender-app-task
+        replicas: 0
+        wait: true
+        wait_timeout: 180
+
+    - name: Scale down Ascender web modules
+      kubernetes.core.k8s_scale:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        kind: Deployment
+        name: ascender-app-web
+        replicas: 0
+        wait: true
+        wait_timeout: 180
+
+    - name: Backup the database
+      kubernetes.core.k8s_exec:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: ascender-app-postgres-15-0
+        command: pg_dumpall -c -U awx -f /root/backup.sql
+
+    - name: Copy backup locally
+      kubernetes.core.k8s_cp:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: ascender-app-postgres-15-0
+        remote_path: /root/backup.sql
+        local_path: "{{ tmp_dir }}/backup.sql"
+        state: from_pod
+
+    - name: Remove the Operator
+      kubernetes.core.k8s:
+        state: absent
+        kind: Deployment
+        name: awx-operator-controller-manager
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        verify_ssl: false
+        wait: true
+
+    - name: Remove the Postgres Stateful set
+      kubernetes.core.k8s:
+        state: absent
+        kind: StatefulSet
+        name: ascender-app-postgres-15
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        verify_ssl: false
+        wait: true
+
+    - name: Remove the Web Deployment
+      kubernetes.core.k8s:
+        state: absent
+        kind: Deployment
+        name: ascender-app-web
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        verify_ssl: false
+        wait: true
+
+    - name: Remove the Task Deployment
+      kubernetes.core.k8s:
+        state: absent
+        kind: Deployment
+        name: ascender-app-task
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        verify_ssl: false
+        wait: true
+
+    - name: Remove the Postgres PVC
+      kubernetes.core.k8s:
+        state: absent
+        kind: PersistentVolumeClaim
+        name: postgres-15-ascender-app-postgres-15-0
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        verify_ssl: false
+        wait: true
+
+    - name: "Apply AWX ascender-app manifest for {{ k8s_platform }}"
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.template', 'roles/ascender_install/templates/ascender-deployment/ascender-deployment-k3s.yml') }}"
+        verify_ssl: false
+
+    - name: Generate manifest to install AWX Operator
+      ansible.builtin.template:
+        src: roles/ascender_install/templates/awx-operator/kustomization.j2
+        dest: "{{ tmp_dir }}/kustomization.yml"
+
+    - name: Install AWX Operator with Kustomize
+      kubernetes.core.k8s:
+        definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
+        verify_ssl: false
+
+    - name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        wait: yes
+        name: ascender-app-web
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        wait_sleep: 10
+        wait_timeout: 360
+        verify_ssl: false
+      register: ascender_web_deployment
+
+    - name: Copy backup to pod
+      kubernetes.core.k8s_cp:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: ascender-app-postgres-15-0
+        local_path: "{{ tmp_dir }}/backup.sql"
+        remote_path: /tmp/backup.sql
+        no_preserve: True
+        state: to_pod
+
+    - name: Scale down Ascender task modules
+      kubernetes.core.k8s_scale:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        kind: Deployment
+        name: ascender-app-task
+        replicas: 0
+        wait: true
+        wait_timeout: 180
+
+    - name: Scale down Ascender web modules
+      kubernetes.core.k8s_scale:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        kind: Deployment
+        name: ascender-app-web
+        replicas: 0
+        wait: true
+        wait_timeout: 180
+
+    - name: Restore the database
+      kubernetes.core.k8s_exec:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: ascender-app-postgres-15-0
+        command: psql -U awx -f /tmp/backup.sql
