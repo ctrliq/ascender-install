@@ -201,6 +201,9 @@ ASCENDER_VERSION: 25.0.0
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.19.1
 
+# DNS resolvable hostname for Ascender Mesh service.  This is used by Execution Nodes to access Ascender.
+ASCENDER_MESH_HOSTNAME: mesh.ascender.example.com
+
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
 
