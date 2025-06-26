@@ -3,7 +3,7 @@
 k8s_platform: k3s
 
     # This value being set to "true" means that some work needs to be done to set up a
-    # cluster before proceeding. Here is ther behavior for different values of k8s_platforms:
+    # cluster before proceeding. Here is the behavior for different values of k8s_platforms:
     # k3s: A single-node k3s cluster will be set up on the inventory server
     #      named "ascender_host"
 kube_install: true
