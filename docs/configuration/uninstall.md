@@ -26,7 +26,7 @@ file.
 ### Removing Namespaces
 Another way to completely remove Ascender or Ledger is by deleting its namespace.
 
-- ***This will delete all resources in the namespace, including PVCs, without prompting.  So be sure you are deleting the proper namespace and that only Acsender / Ledger lives in that namespace***
+- ***This will delete all resources in the namespace, including PVCs, without prompting.  So be sure you are deleting the proper namespace and that only Ascender / Ledger lives in that namespace***
 
 ```bash
 kubectl delete namespace ascender
