@@ -1,5 +1,5 @@
 ---
-    # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
+    # This variable specifies which Kubernetes platform Ascender and its components will be installed on.
 k8s_platform: k3s
 
     # This value being set to "true" means that some work needs to be done to set up a
