@@ -20,6 +20,14 @@
      - 'shared_buffers=256MB'
      - '-c'
      - 'max_connections=1000'
+{% if POSTGRES_PVC_SIZE_GB is defined %}
+  postgres_storage_requirements:
+    requests:
+      storage: {{ POSTGRES_PVC_SIZE_GB }}Gi
+{% endif %}
+{% if POSTGRES_STORAGE_CLASS is defined %}
+  postgres_storage_class: {{ POSTGRES_STORAGE_CLASS }}
+{% endif %}
   redis_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/redis" }}
   redis_image_version: "7"
 {% if k8s_image_pull_secret is defined and k8s_image_pull_secret != 'None' %}
