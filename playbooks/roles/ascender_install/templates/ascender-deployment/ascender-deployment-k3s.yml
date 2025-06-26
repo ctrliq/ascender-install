@@ -100,6 +100,7 @@ spec:
     value:
       - http://{{ ASCENDER_HOSTNAME }}
       - https://{{ ASCENDER_HOSTNAME }}
+{% if ASCENDER_MESH_HOSTNAME is defined %}
 ---
 apiVersion: awx.ansible.com/v1alpha1
 kind: AWXMeshIngress
@@ -113,4 +114,4 @@ spec:
   ingress_class_name: traefik
   ingress_api_version: traefik.io/v1alpha1
   external_hostname: {{ ASCENDER_MESH_HOSTNAME }}
-
+{% endif %}
