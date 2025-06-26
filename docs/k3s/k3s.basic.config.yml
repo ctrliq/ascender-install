@@ -8,7 +8,7 @@ k8s_platform: k3s
     #      named "ascender_host"
 kube_install: true
 
-    # Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+    # Indicates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
 download_kubeconfig: true
 
     # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
