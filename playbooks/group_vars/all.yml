@@ -172,6 +172,10 @@ ASCENDER_VERSION: 25.0.0
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.19.1
 
+# DNS resolvable hostname for Ascender Mesh service.  This is used by Execution Nodes to access Ascender.
+# Mesh will not be setup unless this is configured
+#ASCENDER_MESH_HOSTNAME: mesh.ascender.example.com
+
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
 
@@ -193,6 +197,15 @@ ascender_setup_playbooks: true
 
 # # External PostgreSQL database name used for Ascender (this DB must exist)
 # ASCENDER_PGSQL_DB: ascenderdb
+
+# # Used to increase the default size of the Postgres Storage PVC.
+# # !!! Do not set or change this for an existing install !!!
+# # The Operator does not currently handle increasing sizes, must be done manually if your StorageClass allows
+# POSTGRES_PVC_SIZE_GB: 8
+
+# # Set the Storage Class for your PVC
+# # !!! Do not set or change this for an existing install !!!
+# POSTGRES_STORAGE_CLASS: local-path
 
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
 ascender_replicas: 1
