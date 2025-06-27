@@ -298,6 +298,10 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
 
+# # Used to increase the default size of the MariaDB Storage PVC.
+# # !!! Do not set or change this for an existing install !!!
+LEDGER_PVC_SIZE_GB: 10
+
 required_collections:
   - name: amazon.aws
     compare: ">="
