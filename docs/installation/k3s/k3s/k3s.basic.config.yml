@@ -1,0 +1,56 @@
+---
+    # This variable specifies which Kubernetes platform Ascender and its components will be installed on.
+k8s_platform: k3s
+
+    # This value being set to "true" means that some work needs to be done to set up a
+    # cluster before proceeding. Here is the behavior for different values of k8s_platforms:
+    # k3s: A single-node k3s cluster will be set up on the inventory server
+    #      named "ascender_host"
+kube_install: true
+
+    # Indicates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+download_kubeconfig: true
+
+    # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+    # If set to https, you MUST provide certificate/key options for the Installer to use.
+    # options include http and https
+k8s_lb_protocol: http 
+
+    # TLS Certificate file, required when deploying HTTPS in K3s
+tls_crt_path: "~/ascender.crt"
+
+    # TLS Private Key file, required when deploying HTTPS in K3s
+tls_key_path: "~/ascender.key"
+
+    # Set to false if using an external DNS server for resolution
+    # Set to true if not
+use_etc_hosts: true
+
+    # DNS resolvable hostname for Ascender service. This is required for install.
+ASCENDER_HOSTNAME: ascender.example.com
+
+    # Administrator password for Ascender
+ASCENDER_ADMIN_PASSWORD: "myadminpassword"
+
+    # Setup extra demo playbooks after installation
+ascender_setup_playbooks: true
+
+    # Determines whether or not Ledger will be installed
+LEDGER_INSTALL: true
+
+    # DNS resolvable hostname for Ledger service. This is required for install.
+LEDGER_HOSTNAME: ledger.example.com
+
+    # Optional credentials for pulling the ledger image, all fields must be
+    # specified.
+#LEDGER_REGISTRY:
+#  BASE: depot.ciq.com
+#  USERNAME: username
+#  PASSWORD: password
+
+# Admin password for Ledger (the username is admin by default)
+LEDGER_ADMIN_PASSWORD: "myadminpassword"
+
+# Password for Ledger database
+LEDGER_DB_PASSWORD: "mydbpassword"
+

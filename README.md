@@ -17,7 +17,7 @@ admins rejoice!
 - [General Prerequisites](#general-prerequisites)
 - [Optional Components](#optional-components)
 - [Configuration File](#configuration-file)
-- [Instructions by Kubernetes Platform](#installation-instructions-by-kubernetes-platform)
+- [Installation Guides](#installation-guides)
 - [Upgrading](#upgrading-ascender)
 - [Uninstall](#uninstall)
 - [Contributing](#contributing)
@@ -97,13 +97,11 @@ two of the variables that need to be set:
 All of the variables and flags in these files have their
 description/proper usage directly present in the comments.
 
-## Installation Instructions by Kubernetes Platform
+## Installation Guides
 
-- [K3s](docs/k3s/README.md)
-- [Elastic Kubernetes Service](docs/eks/README.md)
-- [Azure Kubernetes Service](docs/aks/README.md)
-- [Google Kubernetes Engine](docs/gke/README.md)
-- [RKE Government](docs/rke2/README.md)
+- [Installation Guides by Kubernetes Platform](docs/README.md)
+- [Configuration Guides](docs/README.md)
+- [Troubleshooting Guides](docs/README.md)
 
 ## Adding Components/Configuration Changes
 
@@ -117,43 +115,13 @@ This can be accomplished by either running `config_vars.sh` again, or editing an
 
 ## Upgrading Ascender
 
-Upgrading Ascender is as simple as changing the Ascender container image version/tag that is being used in your deployment, and rerunning the installation script.
-
-Assuming you have an existing `custom.config.yml` file that contains the variables used to perform your initial install of Ascender, open the file and set the values of these four variables:
-
-- `kube_install`: Set to `false` as you already have a kubernetes cluster on which Ascender is running.
-- `download_kubeconfig`: Set to `false` as you already have a valid KUBECONFIG file to authenticate to your existing cluster
-- `ASCENDER_VERSION`: This needs to be set to the release of Ascender you wish to upgrade to. As an example, a release should be in the format `25.0.0`. The list of all releases can be found here: [Ascender Releases](https://github.com/ctrliq/ascender/releases).
-- `image_pull_policy`: Set to `Always`, as this will force the Ascender web container image to be pulled.
-
-After having changed these four variables, re-run the installer script from the top level directory:
-
-```
-sudo < ASCENDER-INSTALL-SOURCE >/setup.sh
-```
-
+Refer to the following [Upgrade Guide](docs/configuration/upgrading.md) to upgrade Ascender or Ledger
 
 
 ## Uninstall
 
-After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
+Refer to the following [Uninstall Guide](docs/configuration/uninstall.md) to uninstall Ascender or Ledger
 
-- `ascender-deployment-{{ k8s_platform }}.yml`
-- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
-- `kustomization.yml`
-
-Remove the timestamp from the filename and then run the following
-commands from within `tmp_dir``:
-
-- `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
-- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
-- `$ kubectl delete -k .`
-
-Running the Ascender deletion will remove all related deployments and
-statefulsets, however, persistent volumes and secrets will remain. To
-enforce secrets also getting removed, you can use
-`ascender_garbage_collect_secrets: true` in the `default.config.yml`
-file.
 
 ## Reporting Issues
 

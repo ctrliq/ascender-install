@@ -54,7 +54,23 @@
     wait_sleep: 10
     wait_timeout: 360
     verify_ssl: false
-  
+
+- name: Check for Postgres Pod
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: ascender-app-postgres-15
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+  register: postgres_statefulset
+
+- name: Check for old postgres install
+  ansible.builtin.fail:
+    msg: Old version of postgres detected. Please run upgrade postgres playbook.  ansible-playbook playbooks/upgrade_postgres.yml
+  when:
+    - postgres_statefulset.api_found | bool
+    - postgres_statefulset.resources[0].spec.template.spec.containers[0].image is defined
+    - postgres_statefulset.resources[0].spec.template.spec.containers[0].image == "docker.io/postgres:13" or postgres_statefulset.resources[0].spec.template.spec.containers[0].image == "docker.io/postgres:15"
+
 - name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: "ascender-deployment/ascender-deployment-eks.yml"
@@ -75,11 +91,6 @@
     wait_sleep: 10
     wait_timeout: 360
     verify_ssl: false
-  register: ascender_web_deployment
-
-# - ansible.builtin.debug:
-#     var: ascender_web_deployment
-
 
 - name: Retrieve the ascender-app-ingress Ingress object
   kubernetes.core.k8s_info:
