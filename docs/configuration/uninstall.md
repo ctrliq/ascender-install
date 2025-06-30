@@ -8,7 +8,8 @@ After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifest
 - `kustomization.yml`
 
 There will be several, so find the latest and remove the timestamp from the filename and then run the following
-commands from within `tmp_dir``:
+commands from within `tmp_dir`:
+
 
 The `ascender-deployment` file will remove Ascender and the `ledger` file will remove the Ledger installation. The last command will remove the awx-operator deployment.
 
@@ -33,4 +34,4 @@ kubectl delete namespace ascender
 kubectl delete namespace ledger
 ```
 
-In Ascender's case, if the namespace deletion hangs and you had previously setup Automation Mesh, you may need take [additional steps](../issues/delete_namespace.md).
+In Ascender's case, if the namespace deletion hangs and you had previously setup Automation Mesh, you may need to take [additional steps](../issues/delete_namespace.md).
