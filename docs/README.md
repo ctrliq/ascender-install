@@ -1,12 +1,12 @@
 # Installation Guides
 
 These guides will walk you through the basics of setting up Ascender for the different Kubernetes flavors.
-- [Azure Kubernetes Service (AKS)](aks/README.md)
-- [D2iQ Kubernetes Management Platform (DKP)](dkp/README.md)
-- [Amazon Elastic Kubernetes Service (EKS)](eks/README.md)
-- [Google Kubernetes Engine (GKE)](gke/README.md)
-- [Lightweight Kubernetes (k3s)](k3s/README.md)
-- [RKE Government (RKE2)](rke2/README.md)
+- [Azure Kubernetes Service (AKS)](installation/aks/README.md)
+- [D2iQ Kubernetes Management Platform (DKP)](installation/dkp/README.md)
+- [Amazon Elastic Kubernetes Service (EKS)](installation/eks/README.md)
+- [Google Kubernetes Engine (GKE)](installation/gke/README.md)
+- [Lightweight Kubernetes (k3s)](installation/k3s/README.md)
+- [RKE Government (RKE2)](installation/rke2/README.md)
 
 # Configuration Guides
 - [Setting up Automation Mesh](configuration/automation_mesh.md)

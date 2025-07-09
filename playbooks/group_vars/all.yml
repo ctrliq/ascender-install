@@ -167,7 +167,7 @@ ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 
 # The image tag indicating the version of Ascender you wish to install
-ASCENDER_VERSION: 25.0.0
+ASCENDER_VERSION: 25.1.0
 
 # The version of the AWX Operator used to install Ascender and its components
 ANSIBLE_OPERATOR_VERSION: 2.19.1
@@ -297,6 +297,10 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
+
+# # Used to increase the default size of the MariaDB Storage PVC.
+# # !!! Do not set or change this for an existing install !!!
+LEDGER_PVC_SIZE_GB: 10
 
 required_collections:
   - name: amazon.aws
