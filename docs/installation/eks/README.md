@@ -1,3 +1,5 @@
+# Ascender EKS Install Intructions
+
 The Ascender installer is a script that makes for relatively easy
 install of Ascender Automation Platform on Kubernetes platforms of
 multiple flavors. The installer is being expanded to new Kubernetes
@@ -20,38 +22,55 @@ README](../../README.md#general-prerequisites)
 ## EKS-specific Prerequisites
 
 ### AWS User, policy and tool requirements
-- Remember that the Enterprise Linux machine used to install Ascender on EKS must be of **major version 9, NOT 8**.
+- Remember that the Enterprise Linux machine used to install Ascender on EKS 
+  must be of **major version 9, NOT 8**.
 - The unzip rpm package must be installed: `$ sudo dnf install unzip -y` 
-- The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) before it is invoked. Instructions for the Linux installer can be found at [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
-  - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender installer will look for it there.
-  - Once the AWS Command Line Interface is installed, run the following command to set the active aws user to one with the appropriate permissions to run the Ascender installer on EKS: `$ aws configure`.
-    - The AWS CLI requires Programmatic access to AWS: Instructions on setting up Programmatic access can be found here: [AWS security credentials: Programmatic Access](https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html#sec-access-keys-and-secret-access-keys)
-    - **Be sure to ensure that the user that will be installing ascender has appropriate access to create an EKS cluster.**
-    - An example of setting up these programmatic credentials can be found here:
-      - ![aws cli signin](./images/aws_login.png)
-- Although not required before install, The Ascender installer for EKS will set up and use the EKS CLI tool, `eksctl`, in order to configure parts of your eks cluster.
+- The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) 
+  before it is invoked. Instructions for the Linux installer can be found at 
+  [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
+- Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender 
+  installer will look for it there.
+- Once the AWS Command Line Interface is installed, run the following command 
+  to set the active aws user to one with the appropriate permissions to run 
+  the Ascender installer on EKS: `$ aws configure`.
+- The AWS CLI requires Programmatic access to AWS: Instructions on setting up 
+  Programmatic access can be found here: [AWS security credentials: Programmatic Access](https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html#sec-access-keys-and-secret-access-keys)
+- **Be sure to ensure that the user that will be installing ascender has 
+  appropriate access to create an EKS cluster.**
+- An example of setting up these programmatic credentials can be found here:
+- ![aws cli signin](./images/aws_login.png)
+- Although not required before install, The Ascender installer for EKS will set
+  up and use the EKS CLI tool, `eksctl`, in order to configure parts of your 
+  eks cluster.
 
 ## Install Instructions
 
-### Obtain the sources
+### Obtain the Sources
 
-You can use the `git` command to clone the ascender-install repository or you can download the zipped archive. 
+You can use the `git` command to clone the ascender-install repository or you 
+can download the zipped archive. 
 
 To use git to clone the repository run:
 
 ```
 git clone https://github.com/ctrliq/ascender-install.git
 ```
-This will create a directory named `ascender-install` in your present working directory (PWD).
 
-We will refer to this directory as the `<repository root>` in the remainder of this instructions.
+This will create a directory named `ascender-install` in your present working 
+directory (PWD).
+
+We will refer to this directory as the `<repository root>` in the remainder of 
+this instructions.
 
 ### Set the configuration variables for an eks Install
 
 #### inventory file
 
-You can copy the contents of [eks.inventory](./eks.inventory) in this directory, to `<repository root>`/inventory.
-  - **Be sure to set the ansible_user variable for both the ansible_host and localhost to match the linux user that will be running the installer.**
+You can copy the contents of [eks.inventory](./eks.inventory) in this directory,
+to `<repository root>`/inventory.
+
+- **Be sure to set the ansible_user variable for both the ansible_host and 
+  localhost to match the linux user that will be running the installer.**
 
 ```
 $ cp <repository root>/docs/eks/eks.inventory <repository root>/inventory 
@@ -59,7 +78,7 @@ $ cp <repository root>/docs/eks/eks.inventory <repository root>/inventory
 
 #### custom.config.yml file
 
-You can run the bash script at 
+You can run the bash script at:
 
 ```
 <repository root>/config_vars.sh
@@ -71,17 +90,32 @@ The script will take you through a series of questions, that will populate the v
 <repository root>/custom.config.yml
 ```
 
-Afterward, you can simply edit this file should you not want to run the script again before installing Ascender.
+Alternatively, you can take the eks.default.config.yml or the 
+eks.basic.config.yml examples from this directory to stage your install.
+
+In those cases, you will copy them to the <repository root> with the name
+custom.config.yml, and then start the install from there.  You will still
+need to modify these files per your installation requirements.
+
+Afterward, you can simply edit this file should you not want to run the 
+script again before installing Ascender.
 
 The following variables will be present after running the script:
 
+#### High Level Settings
+
 - `k8s_platform`: This variable specificies which Kubernetes platform Ascender and its components will be installed on.
 - `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender and Ledger.
-- `USE_ROUTE_53`: Determines whether to use Route53's Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
-- `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
-- `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
-- `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
-  - this is a SINGLE domain for both Ascender AND Ledger.
+- `tls_crt_path`: TLS Certificate file location on the local installing machine
+- `tls_key_path`: TLS Private Key file location on the local installing machine
+- `USE_ROUTE_53`: Determines whether to use Route53's Domain Management, or a 
+                  third-party service such as Cloudflare, or GoDaddy. If this value 
+                  is set to false, you will have to manually set a CNAME record for 
+                  `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS 
+                  Loadbalancers that the installer creates.
+
+#### EKS Settings
+
 - `EKS_CLUSTER_NAME`: The name of the eks cluster on which Ascender will be installed. This can be an existing eks cluster, or the name of the one to create, should the `eksctl` tool not find this name amongst its existing clusters.
 - `EKS_CLUSTER_REGION`: The AWS region hosting the eks cluster
 - `EKS_K8S_VERSION`: The kubernetes version for the eks cluster; available kubernetes versions can be found [here](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html)
@@ -90,8 +124,28 @@ The following variables will be present after running the script:
 - `EKS_MAX_WORKER_NODES`: The maximum number of worker nodes that the cluster will run
 - `EKS_NUM_WORKER_NODES`: The desired number of worker nodes for the eks cluster
 - `EKS_WORKER_VOLUME_SIZE`: The size of the Elastic Block Storage volume for each worker node
-- `tls_crt_path`: TLS Certificate file location on the local installing machine
-- `tls_key_path`: TLS Private Key file location on the local installing machine
+
+#### Ascender Settings
+
+- `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
+- `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
+
+**NOTE** This assumes a SINGLE domain for both Ascender AND Ledger.
+
+#### Ascender Ledger Settings
+
+- `LEDGER_INSTALL- `: true, Set to true if you wish to install Ledger or Ledger Pro
+- `LEDGER_HOSTNAME`: ledger.example.com, The DNS resolvable hostname for Ascender service.
+- `ledger_web_replicas`: 1, The number of ledger web pods - this is good to ensure high availability
+- `LEDGER_VERSION`: latest, The image tag indicating the version of Ledger you wish to install
+- `LEDGER_NAMESPACE`: ledger, The Kubernetes namespace in which Ledger objects will live
+- `LEDGER_REGISTRY`: If you wish to use Ledger Pro, you must include this section
+                     name and then next two including the URI, username and password.
+-  `BASE`: depot.ciq.com, The Depot server location
+-    `USERNAME`: username, The user used to connect to Depot
+-    `PASSWORD`: password, The depot password to connect with.
+- `LEDGER_ADMIN_PASSWORD`: "myadminpassword", Admin password for Ledger (the username is admin by default)
+- `LEDGER_DB_PASSWORD`: "mydbpassword", Password for Ledger database
 
 ### Run the setup script
 
@@ -112,7 +166,6 @@ localhost                  : ok=72   changed=27   unreachable=0    failed=0    s
 ASCENDER SUCCESSFULLY SETUP
 ```
 
-
 ### Connecting to Ascender Web UI
 
 You can connect to the Ascender UI at https://`ASCENDER_HOST`
@@ -132,12 +185,22 @@ Remove the timestamp from the filename and then run the following
 commands from within `tmp_dir``:
 
 - `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
-- `$ kubectl delete pvc -n {{ ASCENDER_NAMESPACE }} postgres-15-ascender-app-postgres-15-0 (If you used the default postgres database)
+- `$ kubectl delete pvc -n {{ ASCENDER_NAMESPACE }} postgres-15-ascender-app-postgres-15-0`
+  (If you used the default postgres database)
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
-**NOTE** A loadbalancer may still be left over, accessible from within the AWS GUI Console, under the EC2 Service page. Its DNS Name will match the CNAME record in either Route53 or whatever DNS resolution service you elected to use. You must manually delete it before destroying the EKS cluster with Terraform.
+Alternatively, you can simply delete the namespaces that you had created.
 
-To delete an EKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`
+- `$ kubectl delete -n ascender`
+- `$ kubectl delete -n ledger`
+
+**NOTE** A loadbalancer may still be left over, accessible from within the AWS 
+GUI Console, under the EC2 Service page. Its DNS Name will match the CNAME 
+record in either Route53 or whatever DNS resolution service you elected to use. 
+You must manually delete it before destroying the EKS cluster with Terraform.
+
+To delete an EKS cluster created with the Ascender installer, run the following 
+command from within the `tmp_dir`
 
 - `$ terraform -chdir=eks_deploy/ destroy --auto-approve`
