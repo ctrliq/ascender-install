@@ -25,7 +25,7 @@ README](../../README.md#general-prerequisites)
 - Remember that the Enterprise Linux machine used to install Ascender on EKS 
   must be of **major version 9, NOT 8**.
 - The unzip rpm package must be installed: `$ sudo dnf install unzip -y` 
-- The Ascender installer for EKS requires installation of the [AWS Commmand Line Interface](https://aws.amazon.com/cli/) 
+- The Ascender installer for EKS requires installation of the [AWS Command Line Interface](https://aws.amazon.com/cli/) 
   before it is invoked. Instructions for the Linux installer can be found at 
   [this link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#cliv2-linux-install).
 - Be certain to place the `aws` binary at `/usr/local/bin/`, as the Ascender 
