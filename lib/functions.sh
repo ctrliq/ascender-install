@@ -23,7 +23,7 @@ prompt_for_input() {
     fi
   done
 
-  echo $selected
+  echo "${selected[@]}"
 }
 
 check_for_errors() {
