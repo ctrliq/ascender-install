@@ -1,4 +1,4 @@
-# Ascender EKS Install Intructions
+# Ascender EKS Install Instructions
 
 The Ascender installer is a script that makes for relatively easy
 install of Ascender Automation Platform on Kubernetes platforms of
