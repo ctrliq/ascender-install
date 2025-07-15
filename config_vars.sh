@@ -705,7 +705,7 @@ echo "ASCENDER_ADMIN_PASSWORD: "\"$ascender_admin_password\" >> custom.config.ym
 # ASCENDER_VERSION
 # -----------------------------------------------------------------------------
 read -p "The image tag indicating the version of Ascender you wish to install [25.1.0]: " a_version
-ascender_version=${a_version:-25.0.0}
+ascender_version=${a_version:-25.1.0}
 
 echo "" >> custom.config.yml
 echo "    # The image tag indicating the version of Ascender you wish to install" >> custom.config.yml
