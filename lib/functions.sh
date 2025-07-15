@@ -17,7 +17,7 @@ prompt_for_input() {
   select name in $@; do
     if [ -n "$REPLY" ] && [[ $REPLY =~ ^[0-9]+$ ]] && [ "$REPLY" -gt 0 ] && [ "$REPLY" -le "$upper" ]; then
       for reply in $REPLY ; do
-        selected+=(${variables[reply - 1]})
+        selected+=("${variables[reply - 1]}")
       done
       [[ $selected ]] && break
     fi
