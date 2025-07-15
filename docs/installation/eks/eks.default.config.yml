@@ -1,7 +1,7 @@
 ---
     # ---Kubernetes-specific variables---
 
-    # This variable specificies which Kubernetes platform Ascender and its 
+    # This variable specifies which Kubernetes platform Ascender and its 
     # components will be installed on.
 k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
 
