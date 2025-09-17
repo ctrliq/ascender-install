@@ -122,8 +122,8 @@
   ansible.builtin.fail:
     msg: "Hosted zone ID not found for domain {{ ASCENDER_DOMAIN }}"
   when: 
-    - hosted_zone_id.stdout == ""
     - USE_ROUTE_53
+    - hosted_zone_id.stdout == ""
 
 - name: Check for existing CNAME record
   ansible.builtin.command: >
@@ -174,7 +174,7 @@
 
 - name: Indicate Instructions for non-AWS DNS Domain Management
   ansible.builtin.debug: 
-    msg: "Please manually create a DNS CNAME record for {{ ASCENDER_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].ip }}"
+    msg: "Please manually create a DNS CNAME record for {{ ASCENDER_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
   when: not USE_ROUTE_53
 
 - name: Set the Ascender URL
