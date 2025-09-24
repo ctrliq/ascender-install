@@ -54,7 +54,7 @@ You can copy the contents of [eks.inventory](./eks.inventory) in this directory,
   - **Be sure to set the ansible_user variable for both the ansible_host and localhost to match the linux user that will be running the installer.**
 
 ```
-$ cp <repository root>/docs/eks/eks.inventory <repository root>/inventory 
+$ cp <repository root>/docs/installation/eks/eks.inventory <repository root>/inventory 
 ```
 
 #### custom.config.yml file
