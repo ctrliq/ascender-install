@@ -146,6 +146,13 @@ LEDGER_INSTALL: true
 # DNS resolvable hostname for Ledger service. This is required for install.
 LEDGER_HOSTNAME: ledger.example.com
 
+    # Optional credentials for pulling the ledger image, all fields must be
+    # specified.
+#LEDGER_REGISTRY:
+#  BASE: depot.ciq.com
+#  USERNAME: username
+#  PASSWORD: password
+
 # The OCI container image for Ledger
 LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
 
