@@ -11,16 +11,16 @@
         tag: "{{ ASCENDER_VERSION }}"
         type: ascender
       - name: ledger-web
-        path: ghcr.io/ctrliq/ascender-ledger/ledger-web
-        tag: latest
+        path: "{{ LEDGER_WEB_IMAGE | default('ghcr.io/ctrliq/ascender-ledger/ledger-web') }}"
+        tag: "{{ LEDGER_VERSION | default('latest') }}"
         type: ledger
       - name: ledger-parser
-        path: ghcr.io/ctrliq/ascender-ledger/ledger-parser
-        tag: latest
+        path: "{{ LEDGER_PARSER_IMAGE | default('ghcr.io/ctrliq/ascender-ledger/ledger-parser') }}"
+        tag: "{{ LEDGER_VERSION | default('latest') }}"
         type: ledger
       - name: ledger-db
-        path: ghcr.io/ctrliq/ascender-ledger/ledger-db
-        tag: latest
+        path: "{{ LEDGER_DB_IMAGE | default('ghcr.io/ctrliq/ascender-ledger/ledger-db') }}"
+        tag: "{{ LEDGER_VERSION | default('latest') }}"
         type: ledger
       - name: awx-operator
         path: quay.io/ansible/awx-operator
@@ -224,6 +224,16 @@
         - name: Pull current offline images
           set_fact:
             images: "{{ lookup('fileglob', '{{ image_dir }}/*.tar', errors='warn') }}"
+
+        - name: Log into CIQ registry
+          community.docker.docker_login:
+            registry_url: "{{ LEDGER_REGISTRY.BASE }}"
+            username: "{{ LEDGER_REGISTRY.USERNAME }}"
+            password: "{{ LEDGER_REGISTRY.PASSWORD }}"
+            reauthorize: true
+          when: 
+            - LEDGER_REGISTRY.BASE is defined
+            - LEDGER_INSTALL == true
 
         - name: Pull images and create archives
           community.docker.docker_image:
