@@ -86,7 +86,7 @@ EKS_CLUSTER_CIDR: "10.10.0.0/16"
 
 # The kubernetes version for the eks cluster; available kubernetes versions can be found here:
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
-EKS_K8S_VERSION: "1.28"
+EKS_K8S_VERSION: "1.33"
 
 # The worker node instance types 
 EKS_INSTANCE_TYPE: t3.large
@@ -113,7 +113,7 @@ EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxx
 # a CSI interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes.
 # This variable specifies the version in use by the cluster; all releases can be found here:
 # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
-EKS_EBS_CSI_DRIVER_VERSION: "v1.24.0"
+EKS_EBS_CSI_DRIVER_VERSION: "v1.48.0"
 
 # ---dkp variables---
 # The name of the dkp cluster you wish to deploy Ascender to and/or create
