@@ -8,7 +8,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 stringData:
   password: {{ ASCENDER_ADMIN_PASSWORD }}
-
 {% if ASCENDER_PGSQL_HOST is defined %}
 ---
 # Ascender postgres host/port and credentials

@@ -124,8 +124,8 @@
     resource_group: "{{ item.id.split('/')[4] }}"
   loop: "{{ all_zones.ansible_info.azure_dnszones }}"
   when: 
-    - item.name == ASCENDER_DOMAIN
     - USE_AZURE_DNS
+    - item.name == ASCENDER_DOMAIN
 
 # - ansible.builtin.debug:
 #     var: resource_group

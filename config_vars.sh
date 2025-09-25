@@ -231,14 +231,27 @@ if [ $k8s_platform == "eks" ]; then
    echo "EKS_CLUSTER_REGION: "$eks_cluster_region >> custom.config.yml
 
    if [ $eks_cluster_status == "provision" ]; then
+      #EKS_CLUSTER_CIDR
+      echo $'\n'
+      read -p "The CIDR block for the EKS cluster [10.10.0.0/16]:" e_cluster_cidr
+      eks_cluster_cidr=${e_cluster_cidr:-10.10.0.0/16}
+      echo "# The CIDR block for the EKS cluster" >> custom.config.yml
+      echo "EKS_CLUSTER_CIDR: "$eks_cluster_cidr >> custom.config.yml
 
       #EKS_K8S_VERSION
       echo $'\n'
-      read -p "The kubernetes version for the eks cluster; available kubernetes versions can be found here: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html [1.28]:" e_k8s_version
-      eks_k8s_version=${e_k8s_version:-1.28}
+      read -p "The kubernetes version for the eks cluster; available kubernetes versions can be found here: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html [1.33]:" e_k8s_version
+      eks_k8s_version=${e_k8s_version:-1.33}
       echo "# The kubernetes version for the eks cluster; available kubernetes versions can be found here:" >> custom.config.yml
       echo "EKS_K8S_VERSION: "\"$eks_k8s_version\" >> custom.config.yml
  
+      #EKS_EBS_CSI_DRIVER_VERSION
+      echo $'\n'
+      read -p "The EBS CSI driver version for the eks cluster [v1.48.0]:" e_ebs_csi_driver_version
+      eks_ebs_csi_driver_version=${e_ebs_csi_driver_version:-v1.48.0}
+      echo "# The EBS CSI driver version for the eks cluster" >> custom.config.yml
+      echo "EKS_EBS_CSI_DRIVER_VERSION: "$eks_ebs_csi_driver_version >> custom.config.yml
+
       #EKS_INSTANCE_TYPE
       echo $'\n'
       read -p "The eks worker node instance types [t3.large]:" e_instance_type
