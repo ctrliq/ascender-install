@@ -1,0 +1,98 @@
+#jinja2: keep_trailing_newline:True
+---
+# Ascender admin password
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-admin-password
+  namespace: {{ ASCENDER_NAMESPACE }}
+stringData:
+  password: {{ ASCENDER_ADMIN_PASSWORD }}
+{% if ASCENDER_PGSQL_HOST is defined %}
+---
+# Ascender postgres host/port and credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-postgres-configuration
+  namespace: {{ ASCENDER_NAMESPACE }}
+stringData:
+  host: {{ ASCENDER_PGSQL_HOST }}
+  port: '{{ ASCENDER_PGSQL_PORT }}'
+  database: {{ ASCENDER_PGSQL_DB }}
+  username: {{ ASCENDER_PGSQL_USER }}
+  password: {{ ASCENDER_PGSQL_PWD }}
+  sslmode: prefer
+  type: unmanaged
+type: Opaque
+{% endif %}
+{% if custom_cacert_bundle is defined %}
+---
+# Ascender Custom CA Bundle
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-custom-cert-bundle
+  namespace: {{ ASCENDER_NAMESPACE }}
+data:
+  bundle-ca.crt: {{ lookup('ansible.builtin.file', custom_cacert_bundle) | b64encode }}
+{% endif %}
+{% if custom_ldap_cacert is defined %}
+---
+# Ascender Custom LDAP CA Cert
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-custom-ldap-cacert
+  namespace: {{ ASCENDER_NAMESPACE }}
+data:
+  ldap-ca.crt: {{ lookup('ansible.builtin.file', custom_ldap_cacert) | b64encode }}
+{% endif %}
+{% if k8s_lb_protocol == 'https' %}
+---
+# Ascender TLS Certificate and Key
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ ASCENDER_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
+---
+# Ascender AWX Object
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: ascender-app
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+{% include 'additional-spec.yml' %}
+  no_log: false
+  ingress_type: Route
+  route_host: {{ ASCENDER_HOSTNAME }}
+  route_tls_termination_mechanism: Edge
+  service_type: ClusterIP
+  hostname: {{ ASCENDER_HOSTNAME }}
+  garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_password_secret: ascender-app-admin-password
+  web_resource_requirements: {}
+  task_resource_requirements: {}
+  ee_resource_requirements: {}
+{% if ASCENDER_PGSQL_HOST is defined %}
+  postgres_configuration_secret: ascender-app-postgres-configuration
+{% endif %}
+{% if custom_cacert_bundle is defined %}
+  bundle_cacert_secret: ascender-app-custom-cert-bundle
+{% endif %}
+{% if custom_ldap_cacert is defined %}
+  ldap_cacert_secret: ascender-app-custom-ldap-cacert
+{% endif %}
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+      - http://{{ ASCENDER_HOSTNAME }}
+      - https://{{ ASCENDER_HOSTNAME }}

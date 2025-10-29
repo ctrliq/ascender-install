@@ -1,0 +1,52 @@
+- name: Wait 600 seconds for target connection to become reachable/usable
+  ansible.builtin.wait_for_connection:
+  delay: 15
+
+- name: Get a list of all nodes
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    validate_certs: false
+  delegate_to: localhost
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+- name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ ASCENDER_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: use_etc_hosts
+
+- name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ LEDGER_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ LEDGER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when:
+    - use_etc_hosts
+    - LEDGER_INSTALL
+
+- name: "Ensure a local DNS entry for {{ REACT_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ REACT_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ REACT_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when:
+    - use_etc_hosts
+    - REACT_INSTALL
