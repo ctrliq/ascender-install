@@ -11,28 +11,6 @@
     verify_ssl: false
     state: present
 
-- name: Set service account variables
-  ansible.builtin.set_fact:
-    service_account_name: "ascender-app"
-
-- name: Grant privileged SCC to a service account
-  kubernetes.core.k8s:
-    api_version: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    name: privileged-scc-{{ service_account_name }}-binding
-    state: present
-    definition:
-      metadata:
-        name: privileged-scc-{{ service_account_name }}-binding
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: system:openshift:scc:privileged
-      subjects:
-        - kind: ServiceAccount
-          name: "{{ service_account_name }}"
-          namespace: "{{ ASCENDER_NAMESPACE }}"
-
 - name: Generate manifest to install AWX Operator
   ansible.builtin.template:
     src: templates/awx-operator/kustomization.j2
@@ -59,6 +37,28 @@
   ansible.builtin.file:
     path: "{{ tmp_dir }}/kustomization.yml"
     state: absent
+
+- name: Set service account variables
+  ansible.builtin.set_fact:
+    service_account_name: "ascender-app"
+
+- name: Grant privileged SCC to a service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: privileged-scc-{{ service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: privileged-scc-{{ service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:privileged
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ service_account_name }}"
+          namespace: "{{ ASCENDER_NAMESPACE }}"
 
 - name: Wait for Operator deployment to be ready
   kubernetes.core.k8s_info:

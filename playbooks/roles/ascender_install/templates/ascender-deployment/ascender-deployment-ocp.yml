@@ -48,19 +48,6 @@ metadata:
 data:
   ldap-ca.crt: {{ lookup('ansible.builtin.file', custom_ldap_cacert) | b64encode }}
 {% endif %}
-{% if k8s_lb_protocol == 'https' %}
----
-# Ascender TLS Certificate and Key
-apiVersion: v1
-data:
-  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
-  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
-kind: Secret
-metadata:
-  name: ascender-tls-secret
-  namespace: {{ ASCENDER_NAMESPACE }}
-type: kubernetes.io/tls
-{% endif %}
 ---
 # Ascender AWX Object
 apiVersion: awx.ansible.com/v1beta1
@@ -84,6 +71,11 @@ spec:
   ee_resource_requirements: {}
 {% if ASCENDER_PGSQL_HOST is defined %}
   postgres_configuration_secret: ascender-app-postgres-configuration
+{% else %}
+  postgres_data_volume_init: true
+  init_postgres_extra_commands: |
+    chown 26:0 /var/lib/pgsql/data
+    chmod 700 /var/lib/pgsql/data
 {% endif %}
 {% if custom_cacert_bundle is defined %}
   bundle_cacert_secret: ascender-app-custom-cert-bundle

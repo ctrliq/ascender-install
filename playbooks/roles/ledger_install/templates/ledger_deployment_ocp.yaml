@@ -8,18 +8,6 @@ metadata:
   name: admin-password
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
-{% if 'https' == k8s_lb_protocol  %}
----
-apiVersion: v1
-data:
-  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
-  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
-kind: Secret
-metadata:
-  name: ascender-tls-secret
-  namespace: {{ LEDGER_NAMESPACE }}
-type: kubernetes.io/tls
-{% endif %}
 ---
 apiVersion: v1
 stringData:
@@ -283,7 +271,7 @@ spec:
 {% endif %}
         name: web
         ports:
-        - containerPort: 80
+        - containerPort: 8080
           protocol: TCP
         resources: {}
         volumeMounts:
