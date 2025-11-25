@@ -57,7 +57,7 @@ $ git clone https://github.com/ctrliq/ascender-install.git
 
 This will create a directory named `ascender-install` in your present working directory (PWD).
 
-We will refer to this directory as the \<ASCENDER-INSTALL-SOURCE\> in the remainder of this
+We will refer to this directory as the \<ASCENDER-INSTALL-SOURCE\> in the remainder of these
 instructions.
 
 ### Set the configuration variables for an OCP Install
