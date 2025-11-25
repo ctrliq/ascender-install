@@ -134,7 +134,7 @@
   ansible.builtin.uri:
     url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}"
     return_content: yes
-    validate_certs: no
+    validate_certs: false
     status_code:
       - 200
   until: uri_output.status == 200
@@ -167,7 +167,7 @@
   ansible.builtin.uri:
     url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
     return_content: yes
-    validate_certs: no
+    validate_certs: false
     status_code:
       - 200
   until: uri_output.status == 200
@@ -188,7 +188,7 @@
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
@@ -203,7 +203,7 @@
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
@@ -219,7 +219,7 @@
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
@@ -240,7 +240,7 @@
         body_format: json
         body: '{ "require_auth_token": 1 }'
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
