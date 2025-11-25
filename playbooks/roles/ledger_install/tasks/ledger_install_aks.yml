@@ -214,7 +214,7 @@
       delay: 10
       register: ledger_settings
 
-    - debug:
+    - ansible.builtin.debug:
         var: ledger_settings.json.auth_token
 
     - name: Enable Require Token
