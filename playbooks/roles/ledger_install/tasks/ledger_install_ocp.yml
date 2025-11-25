@@ -169,7 +169,7 @@
       retries: 60
       delay: 10
       register: ledger_settings2
-      when: ledger_settings.json.auth_token is undefined
+      when: ledger_settings.json.auth_token is undefined or ledger_settings.json.auth_token == ""
 
     - name: Get Ledger Token Again (in case of regeneration)
       ansible.builtin.uri:

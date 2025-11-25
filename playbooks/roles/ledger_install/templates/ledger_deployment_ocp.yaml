@@ -14,6 +14,24 @@ metadata:
   name: admin-password
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
+---
+apiVersion: v1
+stringData:
+  config.json: |
+    {
+      "db_host": "{{ LEDGER_DB_HOST }}",
+      "db_port": "{{ LEDGER_DB_PORT }}",
+      "db_name": "{{ LEDGER_DB_NAME }}",
+      "db_username": "{{ LEDGER_DB_USERNAME }}",
+      "db_password": "{{ LEDGER_DB_PASSWORD }}"
+    }
+kind: Secret
+metadata:
+  labels:
+    io.kompose.service: db-settings
+  name: db-settings
+  namespace: {{ LEDGER_NAMESPACE }}
+type: Opaque
 {% if 'https' == k8s_lb_protocol  %}
 ---
 apiVersion: v1
@@ -37,6 +55,7 @@ metadata:
   name: db-ledger-password
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
+{% if LEDGER_DB_HOST == "db" %}
 ---
 apiVersion: v1
 kind: Service
@@ -52,6 +71,7 @@ spec:
     targetPort: 3306
   selector:
     io.kompose.service: db
+{% endif %}
 ---
 apiVersion: v1
 kind: Service
@@ -129,6 +149,7 @@ spec:
 #     name: parser
 #     weight: 100
 #   wildcardPolicy: None
+{% if LEDGER_DB_HOST == "db" %}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -140,6 +161,7 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
+  storageClassName: {{ LEDGER_PVC_STORAGE_CLASS | default(omit, true) }}
   resources:
     requests:
       storage: {{ LEDGER_PVC_SIZE_GB }}Gi
@@ -189,6 +211,8 @@ spec:
           name: db-ledger-password
         - mountPath: /run/secrets/admin-password
           name: admin-password
+        - mountPath: /run/secrets/db-settings
+          name: db-settings
         - mountPath: /var/lib/mysql
           name: mysql-data
 {% if LEDGER_REGISTRY is defined %}
@@ -209,9 +233,16 @@ spec:
           - key: admin-password
             path: admin-password
           secretName: admin-password
+      - name: db-settings
+        secret:
+          items:
+          - key: config.json
+            path: config.json
+          secretName: db-settings
       - name: mysql-data
         persistentVolumeClaim:
           claimName: mysql-data
+{% endif %}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -251,6 +282,10 @@ spec:
         volumeMounts:
         - mountPath: /run/secrets/db-ledger-password
           name: db-ledger-password
+        - mountPath: /run/secrets/admin-password
+          name: admin-password
+        - mountPath: /run/secrets/db-settings
+          name: db-settings
 {% if LEDGER_REGISTRY is defined %}
       imagePullSecrets:
       - name: ledger-registry-secret
@@ -263,6 +298,18 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
+      - name: admin-password
+        secret:
+          items:
+          - key: admin-password
+            path: admin-password
+          secretName: admin-password
+      - name: db-settings
+        secret:
+          items:
+          - key: config.json
+            path: config.json
+          secretName: db-settings
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -302,6 +349,10 @@ spec:
         volumeMounts:
         - mountPath: /run/secrets/db-ledger-password
           name: db-ledger-password
+        - mountPath: /run/secrets/admin-password
+          name: admin-password
+        - mountPath: /run/secrets/db-settings
+          name: db-settings
 {% if LEDGER_REGISTRY is defined %}
       imagePullSecrets:
       - name: ledger-registry-secret
@@ -314,3 +365,15 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
+      - name: admin-password
+        secret:
+          items:
+          - key: admin-password
+            path: admin-password
+          secretName: admin-password
+      - name: db-settings
+        secret:
+          items:
+          - key: config.json
+            path: config.json
+          secretName: db-settings
