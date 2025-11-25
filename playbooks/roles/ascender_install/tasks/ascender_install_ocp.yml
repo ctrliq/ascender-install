@@ -105,7 +105,7 @@
 - name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: "ascender-deployment/ascender-deployment-ocp.yml"
-    dest: "{{ tmp_dir }}/ascender-deployment-ocp.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+    dest: "{{ tmp_dir }}/ascender-deployment-ocp.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: "Apply AWX ascender-app manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:

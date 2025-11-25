@@ -143,7 +143,6 @@ spec:
   resources:
     requests:
       storage: {{ LEDGER_PVC_SIZE_GB }}Gi
-status: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -179,11 +178,7 @@ spec:
 {% else %}
         image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
-{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
-        imagePullPolicy: Never
-{% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
-{% endif %}
         name: db
         ports:
         - containerPort: 3306
@@ -217,7 +212,6 @@ spec:
       - name: mysql-data
         persistentVolumeClaim:
           claimName: mysql-data
-status: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -248,12 +242,7 @@ spec:
 {% else %}
         image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
-
-{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
-        imagePullPolicy: Never
-{% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
-{% endif %}
         name: parser
         ports:
         - containerPort: 5000
@@ -274,7 +263,6 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
-status: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -305,11 +293,7 @@ spec:
 {% else %}
         image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
-{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
-        imagePullPolicy: Never
-{% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
-{% endif %}
         name: web
         ports:
         - containerPort: 80
@@ -330,4 +314,3 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
-status: {}
