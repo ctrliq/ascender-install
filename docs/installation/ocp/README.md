@@ -32,15 +32,16 @@ If you have not done so already, be sure to follow the general prerequisites fou
   - The installer will not set up OCP for you - you must have an existing, accessible cluster
   - Ensure you have administrative access to the cluster via `oc` or `kubectl` commands
   - The `kube_install` variable should be set to `false` for OCP installations
-- SSL Certificate and Key
-  - To enable HTTPS on your website, you need to provide the Ascender installer with an SSL
-    Certificate file, and a Private Key file. While these can be self-signed certificates, it is
-    a good practice to use a trusted certificate, issued by a Certificate Authority. A good way to
-    generate a trusted Certificate for the purpose of sandboxing, is to use the free Certificate
-    Authority, [Let's Encrypt](https://letsencrypt.org/getting-started/).
+- SSL Certificate and TLS Configuration
+  - OpenShift Container Platform handles SSL/TLS termination through Routes
+  - If you set `k8s_lb_protocol` to `http`, the installer will configure OCP Routes to use edge
+    termination, where OpenShift handles the SSL certificate automatically.  Typically, you will need to specify your ASCENDER_HOSTNAME to something like ascender.apps.mycluster.mydomain.com
+  - If you set `k8s_lb_protocol` to `https` (or another value), you need to provide an SSL
+    Certificate file and a Private Key file. While these can be self-signed certificates, it is
+    a good practice to use a trusted certificate, issued by a Certificate Authority.
   - Once you have a Certificate and Private Key file, make sure they are present on the Ascender
-    installing server, and specify their locations in the default config file, with the variables
-    `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their
+    installing server, and specify their locations in the config file with the variables
+    `tls_crt_path` and `tls_key_path`, respectively. The installer will parse these files for their
     content, and use the content to create a Kubernetes TLS Secret for HTTPS enablement.
 
 ## Install and Upgrade Instructions

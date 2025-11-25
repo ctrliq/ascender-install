@@ -252,3 +252,4 @@
       LOG_AGGREGATOR_VERIFY_CERT: false
       LOG_AGGREGATOR_LEVEL: INFO
       LOG_AGGREGATOR_PASSWORD: "{{ ledger_settings.json.auth_token | default(omit, true) }}"
+      TOWER_URL_BASE: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"

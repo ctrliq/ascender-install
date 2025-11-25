@@ -14,6 +14,18 @@ metadata:
   name: admin-password
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
+{% if 'https' == k8s_lb_protocol  %}
+---
+apiVersion: v1
+data:
+  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
+  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
+kind: Secret
+metadata:
+  name: ascender-tls-secret
+  namespace: {{ LEDGER_NAMESPACE }}
+type: kubernetes.io/tls
+{% endif %}
 ---
 apiVersion: v1
 stringData:
@@ -54,7 +66,6 @@ spec:
   - name: parser-port
     port: 5000
     targetPort: 5000
-    protocol: TCP
   selector:
     io.kompose.service: parser
 ---
@@ -84,31 +95,40 @@ spec:
   port:
     targetPort: web-port
   tls:
+{% if k8s_lb_protocol == 'https' %}
+    termination: passthrough
+{% else %}
     termination: edge
+{% endif %}
     insecureEdgeTerminationPolicy: Redirect
   to:
     kind: Service
     name: web-svc
     weight: 100
   wildcardPolicy: None
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: parser-route
-  namespace: {{ LEDGER_NAMESPACE }}
-spec:
-  host: {{ LEDGER_HOSTNAME }}
-  port:
-    targetPort: parser-port
-  tls:
-    termination: edge
-    insecureEdgeTerminationPolicy: Redirect
-  to:
-    kind: Service
-    name: parser
-    weight: 100
-  wildcardPolicy: None
+# IN OCP, CAN NOT HAVE 2 ROUTES TO DIFFERENT SERVICES WITH SAME HOSTNAME
+# ---
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: parser-route
+#   namespace: {{ LEDGER_NAMESPACE }}
+# spec:
+#   host: {{ LEDGER_HOSTNAME }}
+#   port:
+#     targetPort: parser-port
+#   tls:
+# {% if k8s_lb_protocol == 'https' %}
+#     termination: passthrough
+# {% else %}
+#     termination: edge
+# {% endif %}
+#     insecureEdgeTerminationPolicy: Redirect
+#   to:
+#     kind: Service
+#     name: parser
+#     weight: 100
+#   wildcardPolicy: None
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
