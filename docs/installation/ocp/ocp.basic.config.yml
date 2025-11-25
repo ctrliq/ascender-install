@@ -14,7 +14,7 @@ download_kubeconfig: false
     # Determines whether to use HTTP or HTTPS for Ascender and Ledger.
     # If set to https, you MUST provide certificate/key options for the Installer to use.
     # options include http and https
-k8s_lb_protocol: http 
+k8s_lb_protocol: http
 
     # TLS Certificate file, required when deploying HTTPS
 tls_crt_path: "~/ascender.crt"
