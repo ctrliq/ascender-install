@@ -33,7 +33,7 @@
     definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
     verify_ssl: false
 
-- name: delete Kustomization file
+- name: Delete Kustomization file
   ansible.builtin.file:
     path: "{{ tmp_dir }}/kustomization.yml"
     state: absent
