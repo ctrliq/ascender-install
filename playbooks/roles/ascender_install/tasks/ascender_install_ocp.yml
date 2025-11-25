@@ -130,7 +130,7 @@
 
 - ansible.builtin.debug:
     msg: "The Ascender API endpoint is https://{{ ascender_ip }}/api/v2/ping/"
-    
+
 - name: Wait until Ascender API is Up (This may take between 10-20 mins)
   ansible.builtin.uri:
     url: "https://{{ ascender_ip }}/api/v2/ping/"

@@ -85,7 +85,7 @@
     wait_timeout: 360
     verify_ssl: false
   register: parser_svc
-      
+
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
 
