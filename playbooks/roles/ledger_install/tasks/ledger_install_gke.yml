@@ -238,7 +238,7 @@
         force_basic_auth: true
         method: POST
         body_format: json
-        body: '{ "require_auth_token": 1 }'
+        body: '{ "require_auth_token": 1, "base_url": "{{ k8s_lb_protocol }}://{{ ledger_ip }}" }'
         return_content: yes
         validate_certs: false
         status_code:
