@@ -36,7 +36,7 @@ If you have not done so already, be sure to follow the general prerequisites fou
   - OpenShift Container Platform handles SSL/TLS termination through Routes
   - If you set `k8s_lb_protocol` to `http`, the installer will configure OCP Routes to use edge
     termination, where OpenShift handles the SSL certificate automatically.  Typically, you will need to specify your ASCENDER_HOSTNAME to something like ascender.apps.mycluster.mydomain.com
-  - If you set `k8s_lb_protocol` to `https` (or another value), you need to provide an SSL
+  - If you set `k8s_lb_protocol` to `https`, you need to provide an SSL
     Certificate file and a Private Key file. While these can be self-signed certificates, it is
     a good practice to use a trusted certificate, issued by a Certificate Authority.
   - Once you have a Certificate and Private Key file, make sure they are present on the Ascender
