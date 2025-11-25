@@ -208,7 +208,6 @@
       when:
         - ledger_settings.json.auth_token is defined
         - ledger_settings.json.require_auth_token == 0
-      register: test
 
 - name: Set all the logging parameters
   awx.awx.settings:
