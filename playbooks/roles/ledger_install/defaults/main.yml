@@ -39,7 +39,7 @@ LEDGER_DB_NAME: "ledger"
 
 # Username for Ledger database
 LEDGER_DB_USERNAME: "ledger"
-      
+
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
 
