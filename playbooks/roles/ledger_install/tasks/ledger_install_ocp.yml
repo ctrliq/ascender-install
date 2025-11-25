@@ -94,7 +94,7 @@
       ledger_ip: "{{ LEDGER_HOSTNAME }}"
       ledger_port: "443"
       ledger_parser_ip: "{{ parser_svc.resources[0].spec.clusterIP }}"
-      ledger_parser_port: "{{ '5000' if k3s_service_type == 'NodePort' else parser_svc.resources[0].spec.ports[0].port }}"
+      ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
 
 - ansible.builtin.debug:
     msg: "The Ledger endpoint is https://{{ ledger_ip }}"

@@ -49,19 +49,12 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-{% if k3s_service_type == "NodePort" %}
-  type: NodePort
-{% else %}
   type: ClusterIP
-{% endif %}
   ports:
   - name: parser-port
     port: 5000
     targetPort: 5000
     protocol: TCP
-{% if k3s_service_type == "NodePort" %}
-    nodePort: 30500
-{% endif %}
   selector:
     io.kompose.service: parser
 ---
