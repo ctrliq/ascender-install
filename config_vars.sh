@@ -4,7 +4,7 @@ rm ./custom.config.yml
 
 # k8s_platform
 echo $'\n'
-platforms=(k3s eks aks gke rke2 dkp)
+platforms=(k3s eks aks gke rke2 dkp ocp)
 selected=()
 PS3='Select the number of the Kubernetes platform you are using to install Ascender: '
 select name in "${platforms[@]}" ; do
