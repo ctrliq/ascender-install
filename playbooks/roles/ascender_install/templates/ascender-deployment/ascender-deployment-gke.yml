@@ -69,7 +69,7 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin') }}
   admin_password_secret: ascender-app-admin-password
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
 {% if ASCENDER_PGSQL_HOST is defined %}

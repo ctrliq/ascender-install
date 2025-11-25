@@ -81,7 +81,7 @@ spec:
   service_type: ClusterIP
   hostname: {{ ASCENDER_HOSTNAME }}
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin') }}
   admin_password_secret: ascender-app-admin-password
   web_resource_requirements: {}
   task_resource_requirements: {}

@@ -27,7 +27,7 @@ metadata:
   name: db-settings
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
-{% if 'https' == k8s_lb_protocol  %}
+{% if k8s_lb_protocol == 'https'  %}
 ---
 apiVersion: v1
 data:
@@ -116,7 +116,7 @@ spec:
     - host: {{ LEDGER_HOSTNAME }}
       http:
         paths:
-{% if 'https' == k8s_lb_protocol  %}
+{% if k8s_lb_protocol == 'https'  %}
           # - path: /* # SSL Redirect Setting
           #   backend:
           #     service:

@@ -27,7 +27,7 @@ metadata:
   name: db-settings
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
-{% if 'https' == k8s_lb_protocol  %}
+{% if k8s_lb_protocol == 'https'  %}
 ---
 apiVersion: v1
 data:
@@ -109,7 +109,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-{% if 'https' == k8s_lb_protocol  %}
+{% if k8s_lb_protocol == 'https'  %}
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
