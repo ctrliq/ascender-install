@@ -106,7 +106,7 @@ spec:
     insecureEdgeTerminationPolicy: Redirect
   to:
     kind: Service
-    name: parser-svc
+    name: parser
     weight: 100
   wildcardPolicy: None
 ---
