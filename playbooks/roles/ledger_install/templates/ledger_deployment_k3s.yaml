@@ -191,7 +191,7 @@ spec:
 {% else %}
         image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
-{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
         imagePullPolicy: Never
 {% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
@@ -265,7 +265,7 @@ spec:
         image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
 
-{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
         imagePullPolicy: Never
 {% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
@@ -325,7 +325,7 @@ spec:
 {% else %}
         image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
-{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
         imagePullPolicy: Never
 {% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
