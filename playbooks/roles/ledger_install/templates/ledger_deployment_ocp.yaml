@@ -74,6 +74,7 @@ spec:
   selector:
     io.kompose.service: web
 ---
+apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
   name: web-route
@@ -88,6 +89,24 @@ spec:
   to:
     kind: Service
     name: web-svc
+    weight: 100
+  wildcardPolicy: None
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: parser-route
+  namespace: {{ LEDGER_NAMESPACE }}
+spec:
+  host: {{ LEDGER_HOSTNAME }}
+  port:
+    targetPort: parser-port
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: parser-svc
     weight: 100
   wildcardPolicy: None
 ---
