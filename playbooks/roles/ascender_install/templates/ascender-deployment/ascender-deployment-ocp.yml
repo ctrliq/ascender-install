@@ -57,7 +57,6 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-  no_log: false
   ingress_type: Route
   route_host: {{ ASCENDER_HOSTNAME }}
   route_tls_termination_mechanism: Edge
