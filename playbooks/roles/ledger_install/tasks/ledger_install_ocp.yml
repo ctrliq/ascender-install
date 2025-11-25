@@ -22,6 +22,42 @@
     definition: "{{ lookup('template', 'templates/ledger_deployment_registry_secret.yaml') | from_yaml }}"
     verify_ssl: false
 
+- name: Grant privileged SCC to '{{ ledger_service_account_name }}' service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: privileged-scc-{{ ledger_service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: privileged-scc-{{ ledger_service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:privileged
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ ledger_service_account_name }}"
+          namespace: "{{ LEDGER_NAMESPACE }}"
+
+- name: Grant anyuid SCC to '{{ ledger_service_account_name }}' service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: anyuid-scc-{{ ledger_service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: anyuid-scc-{{ ledger_service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:anyuid
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ ledger_service_account_name }}"
+          namespace: "{{ LEDGER_NAMESPACE }}"
+
 - name: "Apply ledger manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
@@ -181,7 +217,7 @@
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     validate_certs: false
     settings:
-      LOG_AGGREGATOR_HOST: "https://{{ ledger_parser_ip }}"
+      LOG_AGGREGATOR_HOST: "http://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
       LOG_AGGREGATOR_TYPE: ledger
       LOG_AGGREGATOR_ENABLED: true

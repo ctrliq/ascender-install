@@ -1,4 +1,10 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ ledger_service_account_name }}
+  namespace: {{ LEDGER_NAMESPACE }}
+---
+apiVersion: v1
 stringData:
   admin-password: {{ LEDGER_ADMIN_PASSWORD }}
 kind: Secret
@@ -71,7 +77,7 @@ spec:
   ports:
   - name: web-port
     port: 80
-    targetPort: 8080
+    targetPort: 80
   selector:
     io.kompose.service: web
 ---
@@ -127,6 +133,7 @@ spec:
         io.kompose.network/ledger-default: "true"
         io.kompose.service: db
     spec:
+      serviceAccountName: {{ ledger_service_account_name }}
       containers:
       - env:
         - name: ADMIN_USER
@@ -199,6 +206,7 @@ spec:
         io.kompose.network/ledger-default: "true"
         io.kompose.service: parser
     spec:
+      serviceAccountName: {{ ledger_service_account_name }}
       containers:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
@@ -255,6 +263,7 @@ spec:
         io.kompose.network/ledger-default: "true"
         io.kompose.service: web
     spec:
+      serviceAccountName: {{ ledger_service_account_name }}
       containers:
       - env:
         - name: MYSQL_LEDGER_PASSWORD

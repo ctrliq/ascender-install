@@ -42,7 +42,21 @@
   ansible.builtin.set_fact:
     service_account_name: "ascender-app"
 
-- name: Grant privileged SCC to a service account
+# - name: Remove existing privileged SCC binding if it exists
+#   kubernetes.core.k8s:
+#     api_version: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     name: privileged-scc-{{ service_account_name }}-binding
+#     state: absent
+
+# - name: Remove existing anyuid SCC binding if it exists
+#   kubernetes.core.k8s:
+#     api_version: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     name: anyuid-scc-{{ service_account_name }}-binding
+#     state: absent
+
+- name: Grant privileged SCC to '{{ service_account_name }}' service account
   kubernetes.core.k8s:
     api_version: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
@@ -55,6 +69,24 @@
         apiGroup: rbac.authorization.k8s.io
         kind: ClusterRole
         name: system:openshift:scc:privileged
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ service_account_name }}"
+          namespace: "{{ ASCENDER_NAMESPACE }}"
+
+- name: Grant anyuid SCC to '{{ service_account_name }}' service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: anyuid-scc-{{ service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: anyuid-scc-{{ service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:anyuid
       subjects:
         - kind: ServiceAccount
           name: "{{ service_account_name }}"
