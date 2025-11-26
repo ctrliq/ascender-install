@@ -116,7 +116,7 @@
 
 - name: Set the Ascender URL and Credentials for HTTPS
   ansible.builtin.set_fact:
-    ascender_ip: "{{ ledger_ip if k3s_service_type == 'NodePort' else ASCENDER_HOSTNAME }}"
+    ascender_ip: "{{ ASCENDER_HOSTNAME }}"
     ascender_port: "443"
 
 - ansible.builtin.debug:
