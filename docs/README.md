@@ -7,6 +7,8 @@ These guides will walk you through the basics of setting up Ascender for the dif
 - [Google Kubernetes Engine (GKE)](installation/gke/README.md)
 - [Lightweight Kubernetes (k3s)](installation/k3s/README.md)
 - [RKE Government (RKE2)](installation/rke2/README.md)
+- [OpenShift Container Platform (OCP)](installation/ocp/README.md)
+
 
 # Configuration Guides
 - [Setting up Automation Mesh](configuration/automation_mesh.md)

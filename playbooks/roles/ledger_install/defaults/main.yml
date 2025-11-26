@@ -28,7 +28,21 @@ LEDGER_NAMESPACE: ledger
 # Admin password for Ledger (the username is admin by default)
 LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
+# Host for Ledger database
+LEDGER_DB_HOST: db
+
+# Port for Ledger database
+LEDGER_DB_PORT: "3306"
+
+# Name for Ledger database
+LEDGER_DB_NAME: "ledger"
+
+# Username for Ledger database
+LEDGER_DB_USERNAME: "ledger"
+
 # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
 
 k8s_container_registry: ghcr.io/ctrliq/ascender-ledger
+
+ledger_service_account_name: ledger-app

@@ -67,7 +67,7 @@
   ansible.builtin.uri:
     url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
     return_content: yes
-    validate_certs: no
+    validate_certs: false
     status_code:
       - 200
   until: uri_output.status == 200
@@ -100,7 +100,7 @@
   ansible.builtin.uri:
     url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
     return_content: yes
-    validate_certs: no
+    validate_certs: false
     status_code:
       - 200
   until: uri_output.status == 200
@@ -121,7 +121,7 @@
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
@@ -136,14 +136,14 @@
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
       retries: 60
       delay: 10
       register: ledger_settings2
-      when: ledger_settings.json.auth_token is undefined
+      when: ledger_settings.json.auth_token is undefined or ledger_settings.json.auth_token == ""
 
     - name: Get Ledger Token Again (in case of regeneration)
       ansible.builtin.uri:
@@ -152,7 +152,7 @@
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
@@ -160,7 +160,7 @@
       delay: 10
       register: ledger_settings
 
-    - debug:
+    - ansible.builtin.debug:
         var: ledger_settings.json.auth_token
 
     - name: Enable Require Token
@@ -171,9 +171,9 @@
         force_basic_auth: true
         method: POST
         body_format: json
-        body: '{ "require_auth_token": 1 }'
+        body: '{ "require_auth_token": 1, "base_url": "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}" }'
         return_content: yes
-        validate_certs: no
+        validate_certs: false
         status_code:
           - 200
       until: uri_output.status == 200
@@ -181,7 +181,7 @@
       delay: 10
       when:
         - ledger_settings.json.auth_token is defined
-        - ledger_settings.json.require_auth_token == 0
+        - ledger_settings.json.require_auth_token is undefined or ledger_settings.json.require_auth_token == 0
       register: test
 
 - name: Set all the logging parameters
@@ -198,3 +198,4 @@
       LOG_AGGREGATOR_VERIFY_CERT: false
       LOG_AGGREGATOR_LEVEL: INFO
       LOG_AGGREGATOR_PASSWORD: "{{ ledger_settings.json.auth_token | default(omit, true) }}"
+      TOWER_URL_BASE: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"

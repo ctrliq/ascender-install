@@ -3,17 +3,10 @@
     gather_subset:
      - date_time
 
-- name: Import images
-  ansible.builtin.shell:
-    cmd: k3s ctr images import {{ item }}
-  with_fileglob:
-    - "{{ playbook_dir }}/../offline/images/ledger*.tar"
-  when: k8s_offline
-
 - name: Generate manifest to install Ledger k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
-    src: ledger_deployment_k3s.yaml
-    dest: "{{ tmp_dir }}/ledger_deployment_k3s.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+    src: ledger_deployment_ocp.yaml
+    dest: "{{ tmp_dir }}/ledger_deployment_ocp.yaml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: Generate manifest for the Ledger registry secret with timestamp, for purposes of deletion later
   when: LEDGER_REGISTRY.BASE is defined
@@ -29,11 +22,47 @@
     definition: "{{ lookup('template', 'templates/ledger_deployment_registry_secret.yaml') | from_yaml }}"
     verify_ssl: false
 
+- name: Grant privileged SCC to '{{ ledger_service_account_name }}' service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: privileged-scc-{{ ledger_service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: privileged-scc-{{ ledger_service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:privileged
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ ledger_service_account_name }}"
+          namespace: "{{ LEDGER_NAMESPACE }}"
+
+- name: Grant anyuid SCC to '{{ ledger_service_account_name }}' service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: anyuid-scc-{{ ledger_service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: anyuid-scc-{{ ledger_service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:anyuid
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ ledger_service_account_name }}"
+          namespace: "{{ LEDGER_NAMESPACE }}"
+
 - name: "Apply ledger manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
     namespace: "{{ LEDGER_NAMESPACE }}"
-    definition: "{{ lookup('template', 'templates/ledger_deployment_k3s.yaml') | from_yaml_all }}"
+    definition: "{{ lookup('template', 'templates/ledger_deployment_ocp.yaml') | from_yaml_all }}"
     verify_ssl: false
 
 - name: Wait for Ledger web Deployment to complete setting up
@@ -56,23 +85,23 @@
     wait_timeout: 360
     verify_ssl: false
   register: parser_svc
-      
+
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
 
 - name: Set the Ledger URL
   ansible.builtin.set_fact:
       ledger_ip: "{{ LEDGER_HOSTNAME }}"
-      ledger_port: "{{ '30081' if k3s_service_type == 'NodePort' else '443' if k8s_lb_protocol == 'https' else '80' }}"
+      ledger_port: "443"
       ledger_parser_ip: "{{ parser_svc.resources[0].spec.clusterIP }}"
-      ledger_parser_port: "{{ '5000' if k3s_service_type == 'NodePort' else parser_svc.resources[0].spec.ports[0].port }}"
+      ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
 
 - ansible.builtin.debug:
-    msg: "The Ledger endpoint is {{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
+    msg: "The Ledger endpoint is https://{{ ledger_ip }}"
 
 - name: Wait until Ledger endpoint is Up
   ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
+    url: "https://{{ ledger_ip }}"
     return_content: yes
     validate_certs: false
     status_code:
@@ -87,15 +116,15 @@
 
 - name: Set the Ascender URL and Credentials for HTTPS
   ansible.builtin.set_fact:
-    ascender_ip: "{{ ledger_ip if k3s_service_type == 'NodePort' else ASCENDER_HOSTNAME }}"
-    ascender_port: "{{ '30080' if k3s_service_type == 'NodePort' else '443' if k8s_lb_protocol == 'https' else '80' }}"
+    ascender_ip: "{{ ASCENDER_HOSTNAME }}"
+    ascender_port: "443"
 
 - ansible.builtin.debug:
-    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    msg: "The Ascender API endpoint is https://{{ ascender_ip }}/api/v2/ping/"
 
 - name: Wait until Ascender API is Up
   ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    url: "https://{{ ascender_ip }}/api/v2/ping/"
     return_content: yes
     validate_certs: false
     status_code:
@@ -113,7 +142,7 @@
 
     - name: Check Ledger Token
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/"
+        url: "https://{{ ledger_ip }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -128,7 +157,7 @@
 
     - name: Regenerate Token if blank
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/?regenerate_auth_token=1"
+        url: "https://{{ ledger_ip }}/api/v1/settings/?regenerate_auth_token=1"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -144,7 +173,7 @@
 
     - name: Get Ledger Token Again (in case of regeneration)
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/"
+        url: "https://{{ ledger_ip }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -162,13 +191,13 @@
 
     - name: Enable Require Token
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}/api/v1/settings/"
+        url: "https://{{ ledger_ip }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         method: POST
         body_format: json
-        body: '{ "require_auth_token": 1, "base_url": "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}" }'
+        body: '{ "require_auth_token": 1, "base_url": "https://{{ ledger_ip }}" }'
         return_content: yes
         validate_certs: false
         status_code:
@@ -179,20 +208,19 @@
       when:
         - ledger_settings.json.auth_token is defined
         - ledger_settings.json.require_auth_token is undefined or ledger_settings.json.require_auth_token == 0
-      register: test
 
 - name: Set all the logging parameters
   awx.awx.settings:
-    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_host: "https://{{ ascender_ip }}"
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     validate_certs: false
     settings:
-      LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_parser_ip }}"
+      LOG_AGGREGATOR_HOST: "http://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
       LOG_AGGREGATOR_TYPE: ledger
       LOG_AGGREGATOR_ENABLED: true
       LOG_AGGREGATOR_VERIFY_CERT: false
       LOG_AGGREGATOR_LEVEL: INFO
       LOG_AGGREGATOR_PASSWORD: "{{ ledger_settings.json.auth_token | default(omit, true) }}"
-      TOWER_URL_BASE: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+      TOWER_URL_BASE: "https://{{ ascender_ip }}"

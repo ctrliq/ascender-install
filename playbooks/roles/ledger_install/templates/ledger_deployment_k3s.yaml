@@ -9,7 +9,25 @@ metadata:
   name: admin-password
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
-{% if 'https' == k8s_lb_protocol  %}
+---
+apiVersion: v1
+stringData:
+  config.json: |
+    {
+      "db_host": "{{ LEDGER_DB_HOST }}",
+      "db_port": "{{ LEDGER_DB_PORT }}",
+      "db_name": "{{ LEDGER_DB_NAME }}",
+      "db_username": "{{ LEDGER_DB_USERNAME }}",
+      "db_password": "{{ LEDGER_DB_PASSWORD }}"
+    }
+kind: Secret
+metadata:
+  labels:
+    io.kompose.service: db-settings
+  name: db-settings
+  namespace: {{ LEDGER_NAMESPACE }}
+type: Opaque
+{% if k8s_lb_protocol == 'https'  %}
 ---
 apiVersion: v1
 data:
@@ -33,6 +51,7 @@ metadata:
   name: db-ledger-password
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
+{% if LEDGER_DB_HOST == "db" %}
 ---
 apiVersion: v1
 kind: Service
@@ -49,6 +68,7 @@ spec:
     targetPort: 3306
   selector:
     io.kompose.service: db
+{% endif %}
 ---
 apiVersion: v1
 kind: Service
@@ -111,7 +131,7 @@ spec:
     - host: {{ LEDGER_HOSTNAME }}
       http:
         paths:
-{% if 'https' == k8s_lb_protocol  %}
+{% if k8s_lb_protocol == 'https'  %}
           # - path: /* # SSL Redirect Setting
           #   backend:
           #     service:
@@ -139,6 +159,7 @@ spec:
                 number: 80
 {% endif %}
 {% endif %}
+{% if LEDGER_DB_HOST == "db" %}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -154,7 +175,6 @@ spec:
   resources:
     requests:
       storage: {{ LEDGER_PVC_SIZE_GB }}Gi
-status: {}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -191,7 +211,7 @@ spec:
 {% else %}
         image: {{ LEDGER_DB_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
-{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
         imagePullPolicy: Never
 {% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
@@ -206,6 +226,8 @@ spec:
           name: db-ledger-password
         - mountPath: /run/secrets/admin-password
           name: admin-password
+        - mountPath: /run/secrets/db-settings
+          name: db-settings
         - mountPath: /var/lib/mysql
           name: mysql-data
 {% if LEDGER_REGISTRY is defined %}
@@ -226,10 +248,16 @@ spec:
           - key: admin-password
             path: admin-password
           secretName: admin-password
+      - name: db-settings
+        secret:
+          items:
+          - key: config.json
+            path: config.json
+          secretName: db-settings
       - name: mysql-data
         persistentVolumeClaim:
           claimName: mysql-data
-status: {}
+{% endif %}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -265,19 +293,21 @@ spec:
         image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
 
-{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
         imagePullPolicy: Never
 {% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
 {% endif %}
-        name: parser
+        name: web
         ports:
-        - containerPort: 5000
+        - containerPort: 80
           protocol: TCP
         resources: {}
         volumeMounts:
         - mountPath: /run/secrets/db-ledger-password
           name: db-ledger-password
+        - mountPath: /run/secrets/db-settings
+          name: db-settings
 {% if LEDGER_REGISTRY is defined %}
       imagePullSecrets:
       - name: ledger-registry-secret
@@ -290,7 +320,12 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
-status: {}
+      - name: db-settings
+        secret:
+          items:
+          - key: config.json
+            path: config.json
+          secretName: db-settings
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -325,7 +360,7 @@ spec:
 {% else %}
         image: {{ LEDGER_WEB_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
-{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
         imagePullPolicy: Never
 {% else %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
@@ -338,6 +373,8 @@ spec:
         volumeMounts:
         - mountPath: /run/secrets/db-ledger-password
           name: db-ledger-password
+        - mountPath: /run/secrets/db-settings
+          name: db-settings
 {% if LEDGER_REGISTRY is defined %}
       imagePullSecrets:
       - name: ledger-registry-secret
@@ -350,4 +387,9 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
-status: {}
+      - name: db-settings
+        secret:
+          items:
+          - key: config.json
+            path: config.json
+          secretName: db-settings

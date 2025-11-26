@@ -70,24 +70,29 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 spec:
 {% include 'additional-spec.yml' %}
-{% if k3s_service_type == "NodePort" %}
-  service_type: nodeport 
-  nodeport_port: 30080
-{% else %}
-  service_type: ClusterIP
-  ingress_type: ingress
-  ingress_path: "/"
-  ingress_path_type: Prefix
+  ingress_type: Route
+  route_host: {{ ASCENDER_HOSTNAME }}
 {% if k8s_lb_protocol == 'https' %}
-  ingress_tls_secret: ascender-tls-secret
+  route_tls_termination_mechanism: Passthrough
+  route_tls_secret: ascender-tls-secret
+{% else %}
+  route_tls_termination_mechanism: Edge
 {% endif %}
+  service_type: ClusterIP
   hostname: {{ ASCENDER_HOSTNAME }}
-{% endif %}
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin') }}
   admin_password_secret: ascender-app-admin-password
+  web_resource_requirements: {}
+  task_resource_requirements: {}
+  ee_resource_requirements: {}
 {% if ASCENDER_PGSQL_HOST is defined %}
   postgres_configuration_secret: ascender-app-postgres-configuration
+{% else %}
+  postgres_data_volume_init: true
+  # init_postgres_extra_commands: |
+  #   chown 26:0 /var/lib/pgsql/data
+  #   chmod 700 /var/lib/pgsql/data
 {% endif %}
 {% if custom_cacert_bundle is defined %}
   bundle_cacert_secret: ascender-app-custom-cert-bundle
@@ -100,18 +105,3 @@ spec:
     value:
       - http://{{ ASCENDER_HOSTNAME }}
       - https://{{ ASCENDER_HOSTNAME }}
-{% if ASCENDER_MESH_HOSTNAME is defined %}
----
-apiVersion: awx.ansible.com/v1alpha1
-kind: AWXMeshIngress
-metadata:
-  name: ascender-app-mesh
-  namespace: {{ ASCENDER_NAMESPACE }}
-spec:
-  deployment_name: ascender-app
-  ingress_type: IngressRouteTCP
-  ingress_controller: traefik
-  ingress_class_name: traefik
-  ingress_api_version: traefik.io/v1alpha1
-  external_hostname: {{ ASCENDER_MESH_HOSTNAME }}
-{% endif %}

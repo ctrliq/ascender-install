@@ -1,9 +1,14 @@
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ ledger_service_account_name }}
+  namespace: {{ LEDGER_NAMESPACE }}
+---
+apiVersion: v1
 stringData:
   admin-password: {{ LEDGER_ADMIN_PASSWORD }}
 kind: Secret
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: admin-password
   name: admin-password
@@ -45,7 +50,6 @@ stringData:
   db-ledger-password: {{ LEDGER_DB_PASSWORD }}
 kind: Secret
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: db-ledger-password
   name: db-ledger-password
@@ -56,7 +60,6 @@ type: Opaque
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: db
   name: db
@@ -73,7 +76,6 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: parser
   name: parser
@@ -84,14 +86,12 @@ spec:
   - name: parser-port
     port: 5000
     targetPort: 5000
-    protocol: TCP
   selector:
     io.kompose.service: parser
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: web-svc
   name: web-svc
@@ -105,40 +105,55 @@ spec:
   selector:
     io.kompose.service: web
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: route.openshift.io/v1
+kind: Route
 metadata:
-  annotations:
-{% if k8s_lb_protocol == 'https'  %}
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-{% endif %}
-  name: ledger-web-ingress
+  name: web-route
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  ingressClassName: nginx
-  rules:
-  - host: {{ LEDGER_HOSTNAME }}
-    http:
-      paths:
-      - backend:
-          service:
-            name: web-svc
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
+  host: {{ LEDGER_HOSTNAME }}
+  port:
+    targetPort: web-port
   tls:
-  - hosts:
-    - {{ LEDGER_HOSTNAME }}
-    secretName: ascender-tls-secret
+{% if k8s_lb_protocol == 'https' %}
+    termination: passthrough
+{% else %}
+    termination: edge
+{% endif %}
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: web-svc
+    weight: 100
+  wildcardPolicy: None
+# IN OCP, CAN NOT HAVE 2 ROUTES TO DIFFERENT SERVICES WITH SAME HOSTNAME
+# ---
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: parser-route
+#   namespace: {{ LEDGER_NAMESPACE }}
+# spec:
+#   host: {{ LEDGER_HOSTNAME }}
+#   port:
+#     targetPort: parser-port
+#   tls:
+# {% if k8s_lb_protocol == 'https' %}
+#     termination: passthrough
+# {% else %}
+#     termination: edge
+# {% endif %}
+#     insecureEdgeTerminationPolicy: Redirect
+#   to:
+#     kind: Service
+#     name: parser
+#     weight: 100
+#   wildcardPolicy: None
 {% if LEDGER_DB_HOST == "db" %}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: mysql-data
   name: mysql-data
@@ -146,6 +161,7 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
+  storageClassName: {{ LEDGER_PVC_STORAGE_CLASS | default(omit, true) }}
   resources:
     requests:
       storage: {{ LEDGER_PVC_SIZE_GB }}Gi
@@ -153,7 +169,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: db
   name: db
@@ -167,11 +182,11 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         io.kompose.network/ledger-default: "true"
         io.kompose.service: db
     spec:
+      serviceAccountName: {{ ledger_service_account_name }}
       containers:
       - env:
         - name: ADMIN_USER
@@ -232,7 +247,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: parser
   name: parser
@@ -245,14 +259,11 @@ spec:
   strategy: {}
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.28.0 (c4137012e)
-      creationTimestamp: null
       labels:
         io.kompose.network/ledger-default: "true"
         io.kompose.service: parser
     spec:
+      serviceAccountName: {{ ledger_service_account_name }}
       containers:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
@@ -263,14 +274,16 @@ spec:
         image: {{ LEDGER_PARSER_IMAGE }}:{{ LEDGER_VERSION }}
 {% endif %}
         imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
-        name: web
+        name: parser
         ports:
-        - containerPort: 80
+        - containerPort: 5000
           protocol: TCP
         resources: {}
         volumeMounts:
         - mountPath: /run/secrets/db-ledger-password
           name: db-ledger-password
+        - mountPath: /run/secrets/admin-password
+          name: admin-password
         - mountPath: /run/secrets/db-settings
           name: db-settings
 {% if LEDGER_REGISTRY is defined %}
@@ -285,6 +298,12 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
+      - name: admin-password
+        secret:
+          items:
+          - key: admin-password
+            path: admin-password
+          secretName: admin-password
       - name: db-settings
         secret:
           items:
@@ -295,7 +314,6 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   labels:
     io.kompose.service: web
   name: web
@@ -308,14 +326,11 @@ spec:
   strategy: {}
   template:
     metadata:
-      annotations:
-        kompose.cmd: kompose convert
-        kompose.version: 1.28.0 (c4137012e)
-      creationTimestamp: null
       labels:
         io.kompose.network/ledger-default: "true"
         io.kompose.service: web
     spec:
+      serviceAccountName: {{ ledger_service_account_name }}
       containers:
       - env:
         - name: MYSQL_LEDGER_PASSWORD
@@ -334,6 +349,8 @@ spec:
         volumeMounts:
         - mountPath: /run/secrets/db-ledger-password
           name: db-ledger-password
+        - mountPath: /run/secrets/admin-password
+          name: admin-password
         - mountPath: /run/secrets/db-settings
           name: db-settings
 {% if LEDGER_REGISTRY is defined %}
@@ -348,6 +365,12 @@ spec:
           - key: db-ledger-password
             path: db-ledger-password
           secretName: db-ledger-password
+      - name: admin-password
+        secret:
+          items:
+          - key: admin-password
+            path: admin-password
+          secretName: admin-password
       - name: db-settings
         secret:
           items:

@@ -71,7 +71,7 @@ metadata:
 spec:
 {% include 'additional-spec.yml' %}
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
-  admin_user: {{ ASCENDER_ADMIN_USER | default('admin')}}
+  admin_user: {{ ASCENDER_ADMIN_USER | default('admin') }}
   admin_password_secret: ascender-app-admin-password
 {% if ASCENDER_PGSQL_HOST is defined %}
   postgres_configuration_secret: ascender-app-postgres-configuration

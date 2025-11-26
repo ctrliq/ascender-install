@@ -281,5 +281,20 @@ LEDGER_NAMESPACE: ledger
     # Admin password for Ledger (the username is admin by default)
 LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
+    # Uncomment these to use an external database for Ledger
+#LEDGER_DB_HOST: db
+#LEDGER_DB_PORT: "3306"
+#LEDGER_DB_NAME: "ledger"
+#LEDGER_DB_USERNAME: "ledger"
+
+    # Size of the Persistent Volume Claim for Ledger's database in GB
+    # Only uncomment on new installs or with storage classes that support volume expansion
+#LEDGER_PVC_SIZE_GB: 10
+    # Storage Class for the Persistent Volume Claim for Ledger's database
+    # Only uncomment to set a specific storage class on new installs
+    # Leaving blank will use the default storage class of the cluster
+#LEDGER_PVC_STORAGE_CLASS: ""
+
+
     # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"

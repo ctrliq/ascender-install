@@ -10,7 +10,7 @@
     kind: Namespace
     verify_ssl: false
     state: present
-    
+
 - name: Generate manifest to install AWX Operator
   ansible.builtin.template:
     src: templates/awx-operator/kustomization.j2
@@ -26,18 +26,71 @@
     src: "{{ playbook_dir }}/../offline/awx-operator-{{ ANSIBLE_OPERATOR_VERSION }}/config"
     dest: "{{ tmp_dir }}/"
     remote_src: true
-  when:
-    - k8s_offline
+  when: k8s_offline | default(false) | bool
 
 - name: Install AWX Operator with Kustomize
   kubernetes.core.k8s:
     definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
     verify_ssl: false
 
-- name: delete Kustomization file
+- name: Delete Kustomization file
   ansible.builtin.file:
     path: "{{ tmp_dir }}/kustomization.yml"
     state: absent
+
+- name: Set service account variables
+  ansible.builtin.set_fact:
+    service_account_name: "ascender-app"
+
+# - name: Remove existing privileged SCC binding if it exists
+#   kubernetes.core.k8s:
+#     api_version: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     name: privileged-scc-{{ service_account_name }}-binding
+#     state: absent
+
+# - name: Remove existing anyuid SCC binding if it exists
+#   kubernetes.core.k8s:
+#     api_version: rbac.authorization.k8s.io/v1
+#     kind: ClusterRoleBinding
+#     name: anyuid-scc-{{ service_account_name }}-binding
+#     state: absent
+
+- name: Grant privileged SCC to '{{ service_account_name }}' service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: privileged-scc-{{ service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: privileged-scc-{{ service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:privileged
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ service_account_name }}"
+          namespace: "{{ ASCENDER_NAMESPACE }}"
+
+- name: Grant anyuid SCC to '{{ service_account_name }}' service account
+  kubernetes.core.k8s:
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: anyuid-scc-{{ service_account_name }}-binding
+    state: present
+    definition:
+      metadata:
+        name: anyuid-scc-{{ service_account_name }}-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: system:openshift:scc:anyuid
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ service_account_name }}"
+          namespace: "{{ ASCENDER_NAMESPACE }}"
 
 - name: Wait for Operator deployment to be ready
   kubernetes.core.k8s_info:
@@ -49,31 +102,15 @@
     wait_timeout: 360
     verify_ssl: false
 
-- name: Check for Postgres Pod
-  kubernetes.core.k8s_info:
-    kind: StatefulSet
-    name: ascender-app-postgres-15
-    namespace: "{{ ASCENDER_NAMESPACE }}"
-    verify_ssl: false
-  register: postgres_statefulset
-
-- name: Check for old postgres install
-  ansible.builtin.fail:
-    msg: Old version of postgres detected. Please run upgrade postgres playbook.  ansible-playbook playbooks/upgrade_postgres.yml
-  when:
-    - postgres_statefulset.api_found | bool
-    - postgres_statefulset.resources[0].spec.template.spec.containers[0].image is defined
-    - postgres_statefulset.resources[0].spec.template.spec.containers[0].image == "docker.io/postgres:13" or postgres_statefulset.resources[0].spec.template.spec.containers[0].image == "docker.io/postgres:15"
-
 - name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
-    src: "ascender-deployment/ascender-deployment-rke2.yml"
-    dest: "{{ tmp_dir }}/ascender-deployment-rke2.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+    src: "ascender-deployment/ascender-deployment-ocp.yml"
+    dest: "{{ tmp_dir }}/ascender-deployment-ocp.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: "Apply AWX ascender-app manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-rke2.yml') }}"
+    definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-ocp.yml') }}"
     verify_ssl: false
 
 - name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
@@ -89,20 +126,21 @@
 - name: Set the Ascender URL
   ansible.builtin.set_fact:
       ascender_ip: "{{ ASCENDER_HOSTNAME }}"
-      ascender_port: "{{ '443' if k8s_lb_protocol == 'https' else '80' }}"
+      ascender_port: "443"
 
 - ansible.builtin.debug:
-    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
-    
+    msg: "The Ascender API endpoint is https://{{ ascender_ip }}/api/v2/ping/"
+
 - name: Wait until Ascender API is Up (This may take between 10-20 mins)
   ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    url: "https://{{ ascender_ip }}/api/v2/ping/"
     return_content: yes
     validate_certs: false
-    status_code: 200
+    status_code:
+      - 200
   until: 
     - uri_output.status|int == 200
-    - uri_output.url == k8s_lb_protocol + "://" + ascender_ip + ":" + ascender_port + "/api/v2/ping/"
+    - uri_output.url == "https://" + ascender_ip + "/api/v2/ping/"
   retries: 200
   delay: 10
   register: uri_output

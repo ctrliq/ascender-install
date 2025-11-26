@@ -4,7 +4,7 @@
   image: {{ ASCENDER_IMAGE }}
 {% endif %}
   image_version: {{ ASCENDER_VERSION | default("25.2.0") }}
-{% if k8s_platform == "k3s" and k8s_offline | default (false) | bool %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
   image_pull_policy: Never
 {% else %}
   image_pull_policy: {{ ascender_image_pull_policy | default("Always") }}
