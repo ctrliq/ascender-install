@@ -263,7 +263,7 @@
       delay: 10
       when:
         - ledger_settings.json.auth_token is defined
-        - ledger_settings.json.require_auth_token == 0
+        - ledger_settings.json.require_auth_token is undefined or ledger_settings.json.require_auth_token == 0
       register: test
 
 - name: Set all the logging parameters
