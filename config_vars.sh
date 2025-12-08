@@ -574,8 +574,8 @@ echo "ASCENDER_ADMIN_PASSWORD: "\"$ascender_admin_password\" >> custom.config.ym
 # ASCENDER_VERSION
 echo $'\n'
 echo "# The image tag indicating the version of Ascender you wish to install" >> custom.config.yml
-read -p "The image tag indicating the version of Ascender you wish to install [25.2.0]: " a_version
-ascender_version=${a_version:-25.2.0}
+read -p "The image tag indicating the version of Ascender you wish to install [25.3.1]: " a_version
+ascender_version=${a_version:-25.3.1}
 echo "ASCENDER_VERSION: "$ascender_version >> custom.config.yml
 
 # ANSIBLE_OPERATOR_VERSION
