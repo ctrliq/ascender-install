@@ -28,7 +28,7 @@
 {% if POSTGRES_STORAGE_CLASS is defined %}
   postgres_storage_class: {{ POSTGRES_STORAGE_CLASS }}
 {% endif %}
-  redis_image: {{ k8s_container_registry | default("ghcr.io/valkey-io", true)  ~ "/redis" }}
+  redis_image: {{ k8s_container_registry | default("ghcr.io/valkey-io", true)  ~ "/valkey" }}
   redis_image_version: "9-alpine"
 {% if k8s_image_pull_secret is defined and k8s_image_pull_secret != 'None' %}
   image_pull_secret: {{ k8s_image_pull_secret }}
