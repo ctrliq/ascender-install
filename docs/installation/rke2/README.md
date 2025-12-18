@@ -117,7 +117,7 @@ In order to perform an offline installation of Ascender on RKE2, you must comple
       - ascender (Found at [Github Container Registry](https://github.com/ctrliq/ascender/pkgs/container/ascender)) 
       - awx-ee (Found at [Quay](https://quay.io/repository/ansible/awx-ee?tab=tags)) 
       - postgres (Found at [Dockerhub](https://hub.docker.com/_/postgres))
-      - redis (Found at [Dockerhub](https://hub.docker.com/_/redis))
+      - valkey (Found at [Dockerhub](https://ghcr.io/valkey-io/valkey))
     - Ledger
       - ledger-parser (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-parser))
       - ledger-db (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-db))

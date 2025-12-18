@@ -3,7 +3,7 @@
 {% else %}
   image: {{ ASCENDER_IMAGE }}
 {% endif %}
-  image_version: {{ ASCENDER_VERSION | default("25.3.1") }}
+  image_version: {{ ASCENDER_VERSION | default("25.3.2") }}
 {% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
   image_pull_policy: Never
 {% else %}
@@ -28,8 +28,8 @@
 {% if POSTGRES_STORAGE_CLASS is defined %}
   postgres_storage_class: {{ POSTGRES_STORAGE_CLASS }}
 {% endif %}
-  redis_image: {{ k8s_container_registry | default("docker.io", true)  ~ "/redis" }}
-  redis_image_version: "7"
+  redis_image: {{ k8s_container_registry | default("ghcr.io/valkey-io", true)  ~ "/redis" }}
+  redis_image_version: "9-alpine"
 {% if k8s_image_pull_secret is defined and k8s_image_pull_secret != 'None' %}
   image_pull_secret: {{ k8s_image_pull_secret }}
 {% endif %}
