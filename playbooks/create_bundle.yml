@@ -34,9 +34,9 @@
         path: quay.io/sclorg/postgresql-15-c9s
         tag: latest
         type: ascender
-      - name: redis
-        path: docker.io/library/redis
-        tag: 7
+      - name: valkey
+        path: ghcr.io/valkey-io/valkey
+        tag: 9-alpine
         type: ascender
       - name: kube-rbac-proxy
         path: gcr.io/kubebuilder/kube-rbac-proxy

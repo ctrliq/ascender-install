@@ -52,7 +52,7 @@
   with_fileglob:
     - "{{ playbook_dir }}/../offline/images/ascender*.tar"
     - "{{ playbook_dir }}/../offline/images/postgres*.tar"
-    - "{{ playbook_dir }}/../offline/images/redis*.tar"
+    - "{{ playbook_dir }}/../offline/images/valkey*.tar"
   when: k8s_offline | default(false) | bool
 
 - name: Wait for Operator deployment to be ready
