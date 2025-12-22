@@ -115,7 +115,7 @@
 
     - name: Generate manifest to install AWX Operator
       ansible.builtin.template:
-        src: roles/ascender_install/templates/awx-operator/kustomization.j2
+        src: roles/ascender_install/templates/ascender-operator/kustomization.j2
         dest: "{{ tmp_dir }}/kustomization.yml"
 
     - name: Install AWX Operator with Kustomize

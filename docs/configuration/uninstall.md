@@ -11,7 +11,7 @@ There will be several, so find the latest and remove the timestamp from the file
 commands from within `tmp_dir`:
 
 
-The `ascender-deployment` file will remove Ascender and the `ledger` file will remove the Ledger installation. The last command will remove the awx-operator deployment.
+The `ascender-deployment` file will remove Ascender and the `ledger` file will remove the Ledger installation. The last command will remove the ascender-operator deployment.
 
 - `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
 - `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
