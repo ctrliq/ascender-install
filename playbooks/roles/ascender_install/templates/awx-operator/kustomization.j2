@@ -6,13 +6,13 @@ resources:
 {% if k8s_offline | default(false) | bool %}
   - ./config/default
 {% else %}
-  - github.com/ansible/awx-operator/config/default?ref={{ ANSIBLE_OPERATOR_VERSION }}
+  - github.com/ctrliq/ascender-operator/config/default?ref={{ ASCENDER_OPERATOR_VERSION }}
 {% endif %}
 
 # Set the image tags to match the git version from above
 images:
-  - name: {{ k8s_container_registry | default("quay.io/ansible", true)  ~ "/awx-operator" }} 
-    newTag: {{ ANSIBLE_OPERATOR_VERSION }}
+  - name: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender-operator" }}
+    newTag: {{ ASCENDER_OPERATOR_VERSION }}
 
 # Specify a custom namespace in which to install AWX
 namespace: {{ ASCENDER_NAMESPACE }}
