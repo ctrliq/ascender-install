@@ -22,8 +22,8 @@
         path: "{{ LEDGER_DB_IMAGE | default('ghcr.io/ctrliq/ascender-ledger/ledger-db') }}"
         tag: "{{ LEDGER_VERSION | default('latest') }}"
         type: ledger
-      - name: awx-operator
-        path: quay.io/ansible/awx-operator
+      - name: ascender-operator
+        path: ghcr.io/ctrliq/ascender-operator
         tag: "{{ ASCENDER_OPERATOR_VERSION }}"
         type: ascender
       - name: ascender-ee
@@ -139,9 +139,9 @@
 
     - name: Fix the awx-operator image path
       ansible.builtin.lineinfile:
-        path: "{{ offline_dir }}/awx-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
-        search_string: 'quay.io/ansible/awx-operator'
-        line: "  newName: {{ k8s_container_registry | regex_replace('\\/$', '') }}/awx-operator"
+        path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
+        search_string: 'ghcr.io/ansible/ascender-operator'
+        line: "  newName: {{ k8s_container_registry | regex_replace('\\/$', '') }}/ascender-operator"
       when: k8s_platform == 'rke2'
 
     - name: Fix the kube-rbac-proxy image path
