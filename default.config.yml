@@ -201,7 +201,7 @@ ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 ASCENDER_VERSION: 25.3.2
 
     # The version of the AWX Operator used to install Ascender and its components
-ANSIBLE_OPERATOR_VERSION: 2.19.1
+ASCENDER_OPERATOR_VERSION: 2.19.2
 
     # DNS resolvable hostname for Ascender Mesh service.  This is used by Execution Nodes to access Ascender.
     # Mesh will not be setup unless this is configured

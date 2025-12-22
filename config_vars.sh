@@ -578,12 +578,12 @@ read -p "The image tag indicating the version of Ascender you wish to install [2
 ascender_version=${a_version:-25.3.2}
 echo "ASCENDER_VERSION: "$ascender_version >> custom.config.yml
 
-# ANSIBLE_OPERATOR_VERSION
+# ASCENDER_OPERATOR_VERSION
 echo $'\n'
 echo "# The version of the AWX Operator used to install Ascender and its components" >> custom.config.yml
-read -p "The version of the AWX Operator used to install Ascender and its components [2.19.1]: " a_operator_version
-ascender_operator_version=${a_operator_version:-2.19.1}
-echo "ANSIBLE_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
+read -p "The version of the AWX Operator used to install Ascender and its components [2.19.2]: " a_operator_version
+ascender_operator_version=${a_operator_version:-2.19.2}
+echo "ASCENDER_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
 
 # ascender_garbage_collect_secrets
 echo $'\n'

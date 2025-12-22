@@ -49,7 +49,7 @@ ASCENDER_ADMIN_PASSWORD: "myadminpassword"
 # The image tag indicating the version of Ascender you wish to install
 ASCENDER_VERSION: 25.3.2
 # The version of the AWX Operator used to install Ascender and its components
-ANSIBLE_OPERATOR_VERSION: 2.19.1
+ASCENDER_OPERATOR_VERSION: 2.19.2
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: false
 # External PostgreSQL database name used for Ascender (this DB must exist)
