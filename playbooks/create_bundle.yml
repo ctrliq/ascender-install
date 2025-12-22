@@ -99,45 +99,45 @@
 
     - name: Remove Operator if Exists
       ansible.builtin.file:
-        path: "{{ offline_dir }}/awx-operator-{{ ASCENDER_OPERATOR_VERSION }}"
+        path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}"
         state: absent
 
     - name: Download the Ansible Operator tar file
       ansible.builtin.get_url:
-        url: https://api.github.com/repos/ansible/awx-operator/tarball/{{ ASCENDER_OPERATOR_VERSION }}
-        dest: "{{ offline_dir }}/awx-operator.tar"
+        url: https://api.github.com/repos/ctrliq/ascender-operator/tarball/{{ ASCENDER_OPERATOR_VERSION }}
+        dest: "{{ offline_dir }}/ascender-operator.tar"
 
     - name: Extract Ansible Operator tar
       ansible.builtin.unarchive:
-        src: "{{ offline_dir }}/awx-operator.tar"
+        src: "{{ offline_dir }}/ascender-operator.tar"
         dest: "{{ offline_dir }}/"
 
     - name: Find the extracted directory name
       ansible.builtin.find:
         paths: "{{ offline_dir }}"
-        patterns: 'ansible-awx-operator-*'
+        patterns: 'ctrliq-ascender-operator-*'
         file_type: directory
       register: ops
 
     - name: Rename the directory
       ansible.builtin.command:
-        cmd: mv "{{ ops.files[0].path }}" "{{ offline_dir }}/awx-operator-{{ ASCENDER_OPERATOR_VERSION }}"
+        cmd: mv "{{ ops.files[0].path }}" "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}"
       when: ops.matched == 1
 
     - name: Fix the Operator Version
       ansible.builtin.lineinfile:
-        path: "{{ offline_dir }}/awx-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
+        path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
         search_string: 'newTag: latest'
         line: "  newTag: {{ ASCENDER_OPERATOR_VERSION }}"
 
     - name: Fix the Pull Policy
       ansible.builtin.lineinfile:
-        path: "{{ offline_dir }}/awx-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/manager.yaml"
+        path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/manager.yaml"
         search_string: 'imagePullPolicy:'
         line: "        imagePullPolicy: Never"
       when: k8s_platform == 'k3s'
 
-    - name: Fix the awx-operator image path
+    - name: Fix the ascender-operator image path
       ansible.builtin.lineinfile:
         path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
         search_string: 'ghcr.io/ctrliq/ascender-operator'
@@ -146,14 +146,14 @@
 
     - name: Fix the kube-rbac-proxy image path
       ansible.builtin.lineinfile:
-        path: "{{ offline_dir }}/awx-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/default/manager_auth_proxy_patch.yaml"
+        path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/default/manager_auth_proxy_patch.yaml"
         search_string: 'gcr.io/kubebuilder/kube-rbac-proxy'
         line: "        image: {{ k8s_container_registry | regex_replace('\\/$', '') }}/kube-rbac-proxy:v0.15.0"
       when: k8s_platform == 'rke2'
 
     - name: Remove Operator tar
       ansible.builtin.file:
-        path: "{{ offline_dir }}/awx-operator.tar"
+        path: "{{ offline_dir }}/ascender-operator.tar"
         state: absent
 
 ####################### ANSIBLE COLLECTIONS #######################

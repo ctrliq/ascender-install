@@ -19,17 +19,17 @@
     
 - name: Generate manifest to install AWX Operator
   ansible.builtin.template:
-    src: templates/awx-operator/kustomization.j2
+    src: templates/ascender-operator/kustomization.j2
     dest: "{{ tmp_dir }}/kustomization.yml"
 
 - name: Generate manifest to install AWX Operator with timestamp attached, for purposes of operator deletion later
   ansible.builtin.template:
-    src: templates/awx-operator/kustomization.j2
+    src: templates/ascender-operator/kustomization.j2
     dest: "{{ tmp_dir }}/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: Copy Operator Source
   ansible.builtin.copy:
-    src: "{{ playbook_dir }}/../offline/awx-operator-{{ ASCENDER_OPERATOR_VERSION }}/config"
+    src: "{{ playbook_dir }}/../offline/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config"
     dest: "{{ tmp_dir }}/"
     remote_src: true
   when:
