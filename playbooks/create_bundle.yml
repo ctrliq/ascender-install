@@ -140,7 +140,7 @@
     - name: Fix the awx-operator image path
       ansible.builtin.lineinfile:
         path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
-        search_string: 'ghcr.io/ansible/ascender-operator'
+        search_string: 'ghcr.io/ctrliq/ascender-operator'
         line: "  newName: {{ k8s_container_registry | regex_replace('\\/$', '') }}/ascender-operator"
       when: k8s_platform == 'rke2'
 
