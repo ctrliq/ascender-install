@@ -23,7 +23,7 @@
         tag: "{{ LEDGER_VERSION | default('latest') }}"
         type: ledger
       - name: ascender-operator
-        path: quay.io/ansible/ascender-operator
+        path: ghcr.io/ctrliq/ascender-operator
         tag: "{{ ASCENDER_OPERATOR_VERSION }}"
         type: ascender
       - name: ascender-ee
@@ -140,7 +140,7 @@
     - name: Fix the ascender-operator image path
       ansible.builtin.lineinfile:
         path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/manager/kustomization.yaml"
-        search_string: 'quay.io/ansible/ascender-operator'
+        search_string: 'ghcr.io/ctrliq/ascender-operator'
         line: "  newName: {{ k8s_container_registry | regex_replace('\\/$', '') }}/ascender-operator"
       when: k8s_platform == 'rke2'
 
