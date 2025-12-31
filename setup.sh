@@ -46,7 +46,7 @@ if [[ "$k8s_platform" == "eks" || "$k8s_platform" == "gke" || "$k8s_platform" ==
   fi
 
   # Check if the system is RHEL or Rocky Linux version 9 or higher
-  if [[ "$OS_FAMILY" == *"rhel"* || "$OS_FAMILY" == *"fedora"* || "$OS_FAMILY" == *"centos"* ]]; then
+  if [[ "$OS" == "rhel" ]]; then
     if [ "$LINUX_VERSION" -lt 9 ]; then
       echo "Error: This script must be run on RHEL or Rocky Linux version 9 or higher when k8s_platform is $k8s_platform."
       exit 1
