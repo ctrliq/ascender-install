@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
+# Copyright (c) 2025, Ctrl IQ, Inc. All rights reserved.
 
 # Determine the configuration file to use
 config_file=""
