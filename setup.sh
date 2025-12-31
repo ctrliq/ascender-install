@@ -16,6 +16,26 @@ fi
 
 # Read the k8s_platform value from the configuration file
 k8s_platform=$(grep '^k8s_platform:' "$config_file" | awk '{print $2}')
+OS_FAMILY=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release | tr -d '"')
+LINUX_VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"' | cut -d. -f1)
+LINUX_ARCH=$(arch)
+OS=""
+
+if [ "$OS_FAMILY" == "" ] || [ "$LINUX_VERSION" == "" ]; then
+  echo "Error: Unable to determine OS_FAMILY or LINUX_VERSION from /etc/os-release."
+  exit 1
+fi
+
+if [[ "$OS_FAMILY" == *"rhel"* || "$OS_FAMILY" == *"fedora"* || "$OS_FAMILY" == *"centos"* ]]; then
+  OS="rhel"
+else 
+  if [[ "$OS_FAMILY" == *"debian"* ]]; then
+    OS="debian"
+  else
+    echo "Error: Unsupported OS family $OS_FAMILY. This script must be run on RHEL or Rocky Linux."
+    exit 1
+  fi
+fi
 
 # Check if the k8s_platform is either "eks", "gke" or "aks"
 if [[ "$k8s_platform" == "eks" || "$k8s_platform" == "gke" || "$k8s_platform" == "aks" ]]; then
@@ -26,37 +46,36 @@ if [[ "$k8s_platform" == "eks" || "$k8s_platform" == "gke" || "$k8s_platform" ==
   fi
 
   # Check if the system is RHEL or Rocky Linux version 9 or higher
-  os_family=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release | tr -d '"')
-  os_version=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"' | cut -d. -f1)
-
-  if [[ "$os_family" == *"rhel"* || "$os_family" == *"fedora"* || "$os_family" == *"centos"* ]]; then
-    if [ "$os_version" -lt 9 ]; then
+  if [[ "$OS_FAMILY" == *"rhel"* || "$OS_FAMILY" == *"fedora"* || "$OS_FAMILY" == *"centos"* ]]; then
+    if [ "$LINUX_VERSION" -lt 9 ]; then
       echo "Error: This script must be run on RHEL or Rocky Linux version 9 or higher when k8s_platform is $k8s_platform."
       exit 1
     fi
   else
-    echo "Error: Unsupported OS family $os_family. This script must be run on RHEL or Rocky Linux when k8s_platform is $k8s_platform."
+    echo "Error: Unsupported OS family $OS_FAMILY. This script must be run on RHEL or Rocky Linux when k8s_platform is $k8s_platform."
     exit 1
   fi
 fi
 
 # Verify that the CPU architecture of the local machine is x86_64
-LINUX_ARCH=$(arch)
 if [[ $LINUX_ARCH != "x86_64" ]]; then
-  echo "CPU architecture must be x86_64."; exit $ERRCODE;
+  echo "CPU architecture must be x86_64.";
+  exit 1;
 fi 
 
-# Verify that the Operating system of the local machine is in the centos/rocky family
-OS_FAMILY=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release)
-if !([[ "$OS_FAMILY" =~ "rhel" || "$OS_FAMILY" =~ "fedora" || "$OS_FAMILY" =~ "centos" ]]); then
-  echo "The OS family must be rocky, rhel, fedora or centos"; exit $ERRCODE;
+# # Verify that the Operating system of the local machine is in the centos/rocky family
+# if !([[ "$OS_FAMILY" =~ "rhel" || "$OS_FAMILY" =~ "fedora" || "$OS_FAMILY" =~ "centos" ]]); then
+#   echo "The OS family must be rocky, rhel, fedora or centos";
+#   exit 1;
+# fi
+
+if [[ "$OS" == "rhel" ]]; then
+  # Verify that the Operating System major version of the local machine is either 8 or 9
+  if [[ $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
+    echo "Linux major version must be 8 or 9.";
+    exit 1;
+  fi 
 fi
-
-# Verify that the Operating System major version of the local machine is either 8 or 9
-LINUX_VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"' | cut -d. -f1)
-if [[ $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
-  echo "Linux major version must be 8 or 9."; exit $ERRCODE;
-fi 
 
 # COLORIZE THE ANSIBLE SHELL
 if [ -t "0" ]; then
@@ -101,7 +120,12 @@ check_collections() {
 check_ansible
 if [ $? -ne 0 ]; then
   echo "#### INSTALLING ANSIBLE ####"
-  sudo dnf install -y ansible-core
+  if [[ "$OS" == "debian" ]]; then
+    sudo apt-get install -y ansible-core
+  fi
+  if [[ "$OS" == "rhel" ]]; then
+    sudo dnf install -y ansible-core
+  fi
 fi
 
 check_collections
