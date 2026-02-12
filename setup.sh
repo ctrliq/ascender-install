@@ -63,12 +63,6 @@ if [[ $LINUX_ARCH != "x86_64" ]]; then
   exit 1;
 fi 
 
-# # Verify that the Operating system of the local machine is in the centos/rocky family
-# if !([[ "$OS_FAMILY" =~ "rhel" || "$OS_FAMILY" =~ "fedora" || "$OS_FAMILY" =~ "centos" ]]); then
-#   echo "The OS family must be rocky, rhel, fedora or centos";
-#   exit 1;
-# fi
-
 if [[ "$OS" == "rhel" ]]; then
   # Verify that the Operating System major version of the local machine is either 8 or 9
   if [[ $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
@@ -121,7 +115,7 @@ check_ansible
 if [ $? -ne 0 ]; then
   echo "#### INSTALLING ANSIBLE ####"
   if [[ "$OS" == "debian" ]]; then
-    sudo apt-get install -y ansible-core
+    sudo apt-get update -y && sudo apt-get install -y ansible-core
   fi
   if [[ "$OS" == "rhel" ]]; then
     sudo dnf install -y ansible-core

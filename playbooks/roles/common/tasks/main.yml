@@ -69,7 +69,7 @@
       register: k8s_keyring
 
     - name: Get the K8s repo key
-      ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       become: true
       when: not k8s_keyring.stat.exists
 
@@ -84,8 +84,6 @@
       ansible.builtin.apt:
         name: "{{ lookup('ansible.builtin.fileglob', '{{ playbook_dir }}/../offline/packages/*.deb') }}"
         state: present
-        disable_gpg_check: true
-        cacheonly: true
       become: true
       when: k8s_offline
 

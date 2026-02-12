@@ -34,6 +34,8 @@ admins rejoice!
       - ***Installation on AKS, GKE, or EKS not currently supported on this OS***
   - git needs to be installed
     - `$ sudo dnf install git -y`
+    - or
+    - `$ sudo apt-get install git -y`
   - The [ansible inventory file](inventory) file needs to be changed
     to:
     - `ascender_host`
