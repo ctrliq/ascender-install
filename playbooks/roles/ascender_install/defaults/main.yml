@@ -24,6 +24,6 @@ ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 ASCENDER_VERSION: latest
 
 # The version of the AWX Operator used to install Ascender and its components
-ASCENDER_OPERATOR_VERSION: 2.19.2
+ASCENDER_OPERATOR_VERSION: 2.19.3
 
 k8s_container_registry: ghcr.io/ctrliq
