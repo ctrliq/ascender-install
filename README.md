@@ -27,10 +27,15 @@ admins rejoice!
 
 - On the local server (on which the installer script will run), you
   will need the following prerequisites met:
-  - The The OS family must be Rocky, Fedora or CentOS and the major version must be 8 or 9.
-    - ***For the AKS and GKE installers, this must be version 9.**
+  - Operating System
+    - If the OS family is Enterprise Linux (Rocky, Fedora, Alma, RHEL, CentOS, or other EL based OS) then the major version must be 8 or 9.
+      - ***For the AKS and GKE installers, this must be version 9.**
+    - If the OS family is Ubuntu/Debian then the major version must be 24
+      - ***Installation on AKS, GKE, or EKS not currently supported on this OS***
   - git needs to be installed
     - `$ sudo dnf install git -y`
+    - or
+    - `$ sudo apt-get install git -y`
   - The [ansible inventory file](inventory) file needs to be changed
     to:
     - `ascender_host`

@@ -1,4 +1,4 @@
-# Copyright (c) 2023, Ctrl IQ, Inc. All rights reserved.
+# Copyright (c) 2025, Ctrl IQ, Inc. All rights reserved.
 
 - hosts: localhost
   gather_facts: no
@@ -51,17 +51,19 @@
             fail_msg: "K3s server requires at least 2 vCPUs and 8000 MB of memory; target server has {{ ansible_processor_vcpus }} vCPUs and {{ ansible_memtotal_mb }} MBs of memory"
           when: LEDGER_INSTALL
 
-        - name: Verify Enterprise Linux OS Family architecture
-          ansible.builtin.assert:
-            that:
-              - ansible_os_family == "RedHat"
-            fail_msg: "K3s Server OS Family must be of type Rocky/CentOS"
-
         - name: Verify RedHat OS Family architecture
           ansible.builtin.assert:
             that:
               - ansible_distribution_major_version == '8' or ansible_distribution_major_version == '9'
             fail_msg: "K3s Server OS major version must be 8 or 9"
+          when: ansible_os_family == "RedHat"
+
+        - name: Verify Ubuntu OS Family architecture
+          ansible.builtin.assert:
+            that:
+              - ansible_distribution_major_version == '24'
+            fail_msg: "K3s Server OS major version must be 24"
+          when: ansible_os_family == "Debian"
 
         - name: Get mount location of /var directory
           ansible.builtin.command: df -h /var

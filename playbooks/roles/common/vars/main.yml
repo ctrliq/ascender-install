@@ -1,16 +1,24 @@
 common_packages:
-  8:
-    - jq
-    - platform-python-setuptools
-    - python3-pip
-    - kubectl
-    - python3-kubernetes
-  9:
-    - jq
-    - python-setuptools
-    - python3-pip
-    - kubectl
-    - python3-kubernetes
+  RedHat:
+    8:
+      - jq
+      - platform-python-setuptools
+      - python3-pip
+      - kubectl
+      - python3-kubernetes
+    9:
+      - jq
+      - python-setuptools
+      - python3-pip
+      - kubectl
+      - python3-kubernetes
+  Debian:
+    24:
+      - jq
+      - python3-pip
+      - python3-setuptools
+      - kubectl
+      - python3-kubernetes
 
 azure_gpg_keys:
   8:
