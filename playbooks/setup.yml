@@ -9,6 +9,10 @@
 - name: Install Ascender
   ansible.builtin.import_playbook: install_ascender.yml
 
+- name: Install Ascender Galaxy Proxy
+  ansible.builtin.import_playbook: install_galaxy_proxy.yml
+  when: GALAXY_PROXY_INSTALL
+
 - name: Install Ascender React
   ansible.builtin.import_playbook: install_react.yml
   when: REACT_INSTALL

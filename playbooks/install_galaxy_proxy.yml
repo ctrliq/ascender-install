@@ -1,0 +1,23 @@
+# Copyright (c) 2026, Ctrl IQ, Inc. All rights reserved.
+
+- hosts: localhost
+  gather_facts: no
+  become: false
+
+  vars_files:
+    - ["../custom.config.yml", "../default.config.yml"]
+
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+    NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
+    PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
+
+  tasks: 
+
+    - name: "Run ascender_galaxy_proxy role for {{ k8s_platform }}"
+      ansible.builtin.include_role:
+        name: ascender_galaxy_proxy
+        tasks_from: "galaxy_proxy_install_{{ k8s_platform }}"
+
+    - ansible.builtin.debug:
+        msg: "Ascender Galaxy Proxy install complete."

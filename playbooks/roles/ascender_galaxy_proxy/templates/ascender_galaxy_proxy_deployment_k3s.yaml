@@ -1,0 +1,159 @@
+apiVersion: v1
+stringData:
+  license.json: |
+    {{ lookup('ansible.builtin.file', playbook_dir + '/../license.json') | indent(8) }}
+kind: Secret
+metadata:
+  labels:
+    io.kompose.service: license
+  name: license
+  namespace: {{ ASCENDER_NAMESPACE }}
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: proxy-svc
+  name: proxy-svc
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+{% if k3s_service_type == "NodePort" %}
+  type: NodePort
+{% else %}
+  type: ClusterIP
+{% endif %}
+  ports:
+  - name: proxy-port
+    port: 80
+    targetPort: 80
+{% if k3s_service_type == "NodePort" %}
+    nodePort: 30088
+{% endif %}
+  selector:
+    io.kompose.service: proxy-svc
+{% if k3s_service_type != "NodePort" %}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: {{ ASCENDER_NAMESPACE }}
+  name: galaxy-proxy-ingress
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: {{ GALAXY_PROXY_HOSTNAME }}
+      http:
+        paths:
+{% if k8s_lb_protocol == 'https' %}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: proxy-svc
+                port:
+                  number: 80
+      tls:
+        - hosts:
+          - {{ GALAXY_PROXY_HOSTNAME }}
+          secretName: ascender-tls-secret
+{% else %}
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: proxy-svc
+              port:
+                number: 80
+{% endif %}
+{% endif %}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: proxy-cache
+  name: proxy-cache
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    io.kompose.service: proxy-svc
+  name: proxy-svc
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: proxy-svc
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        io.kompose.network/ledger-default: "true"
+        io.kompose.service: proxy-svc
+    spec:
+      containers:
+      - env:
+        - name: DEBUG
+          value: "false"
+        - name: TRUSTED_PROXIES
+          value: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+        - name: PROXY_URL
+          value: "http://{{ GALAXY_PROXY_HOSTNAME }}{% if k3s_service_type == 'NodePort' %}:30088{% endif %}"
+        - name: QUERY_CACHE_EXPIRE
+          value: "1"
+        - name: ARTIFACT_CACHE_EXPIRE
+          value: "30"
+        - name: GALAXY_API_TOKEN
+          value: ""
+        - name: UPSTREAM_BASEURL
+          value: "https://galaxy.ansible.com"
+        - name: CLEAR_CACHE_ON_START
+          value: "0"
+        - name: MEM_CACHE_SIZE
+          value: "2000"
+{% if k8s_container_registry %}
+        image: {{ k8s_container_registry | default("ghcr.io/ctrliq/ascender-galaxy-proxy", true)  ~ "/ascender-galaxy-proxy" }}:{{ GALAXY_PROXY_VERSION }}
+{% else %}
+        image: {{ GALAXY_PROXY_IMAGE }}:{{ GALAXY_PROXY_VERSION }}
+{% endif %}
+{% if k8s_platform == "k3s" and k8s_offline | default(false) | bool %}
+        imagePullPolicy: Never
+{% else %}
+        imagePullPolicy: {{ ascender_image_pull_policy | default("Always") }}
+{% endif %}
+        name: web
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        volumeMounts:
+        - mountPath: /run/secrets/license
+          name: license
+{% if CIQ_REGISTRY is defined %}
+      imagePullSecrets:
+      - name: ciq-registry-secret
+{% endif %}
+      restartPolicy: Always
+      volumes:
+      - name: license
+        secret:
+          items:
+          - key: license.json
+            path: license.json
+          secretName: license
+      - name: proxy-cache
+        persistentVolumeClaim:
+          claimName: proxy-cache

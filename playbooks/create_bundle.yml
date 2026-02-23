@@ -227,12 +227,12 @@
 
         - name: Log into CIQ registry
           community.docker.docker_login:
-            registry_url: "{{ LEDGER_REGISTRY.BASE }}"
-            username: "{{ LEDGER_REGISTRY.USERNAME }}"
-            password: "{{ LEDGER_REGISTRY.PASSWORD }}"
+            registry_url: "{{ CIQ_REGISTRY.BASE }}"
+            username: "{{ CIQ_REGISTRY.USERNAME }}"
+            password: "{{ CIQ_REGISTRY.PASSWORD }}"
             reauthorize: true
           when: 
-            - LEDGER_REGISTRY.BASE is defined
+            - CIQ_REGISTRY.BASE is defined
             - LEDGER_INSTALL == true
 
         - name: Pull images and create archives

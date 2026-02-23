@@ -1,0 +1,152 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: "Ensure a local DNS entry for {{ GALAXY_PROXY_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ GALAXY_PROXY_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ GALAXY_PROXY_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when: use_etc_hosts
+
+- name: Import images
+  ansible.builtin.shell:
+    cmd: k3s ctr images import {{ item }}
+  with_fileglob:
+    - "{{ playbook_dir }}/../offline/images/ascender_galaxy_*.tar"
+  when: k8s_offline
+
+- name: Generate manifest to install Ascender Galaxy Proxy k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: ascender_galaxy_proxy_deployment_k3s.yaml
+    dest: "{{ tmp_dir }}/ascender_galaxy_proxy_deployment_k3s.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Generate manifest for the Ascender Galaxy Proxy registry secret with timestamp, for purposes of deletion later
+  when: CIQ_REGISTRY.BASE is defined
+  ansible.builtin.template:
+    src: ascender_galaxy_proxy_deployment_registry_secret.yaml
+    dest: "{{ tmp_dir }}/ascender_galaxy_proxy_deployment_registry_secret.yaml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Apply Ascender Galaxy Proxy registry secret (if needed) manifest for {{ k8s_platform }}
+  when: CIQ_REGISTRY.BASE is defined
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/ascender_galaxy_proxy_deployment_registry_secret.yaml') | from_yaml }}"
+    verify_ssl: false
+
+- name: "Apply Ascender Galaxy Proxy manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/ascender_galaxy_proxy_deployment_k3s.yaml') | from_yaml_all }}"
+    verify_ssl: false
+
+- name: Wait for Ascender Galaxy Proxy web Deployment to complete setting up
+  kubernetes.core.k8s_info:
+    kind: Service
+    wait: yes
+    name: proxy-svc
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+  register: proxy_svc
+      
+- ansible.builtin.debug:
+    var: proxy_svc.resources[0].spec.ports[0].port
+
+- name: Set the Ascender Galaxy Proxy URL
+  ansible.builtin.set_fact:
+      proxy_ip: "{{ GALAXY_PROXY_HOSTNAME }}"
+      proxy_port: "{{ '30088' if k3s_service_type == 'NodePort' else '443' if k8s_lb_protocol == 'https' else '80' }}"
+      proxy_parser_ip: "{{ proxy_svc.resources[0].spec.clusterIP }}"
+
+- ansible.builtin.debug:
+    msg: "The Ascender Galaxy Proxy endpoint is {{ k8s_lb_protocol }}://{{ proxy_ip }}:{{ proxy_port }}"
+
+- name: Wait until Ascender Galaxy Proxy endpoint is Up
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ proxy_ip }}:{{ proxy_port }}/healthz"
+    return_content: yes
+    validate_certs: false
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 200
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Ascender Galaxy Proxy is up"
+
+- name: Set the Ascender URL and Credentials for HTTPS
+  ansible.builtin.set_fact:
+    ascender_ip: "{{ proxy_ip if k3s_service_type == 'NodePort' else ASCENDER_HOSTNAME }}"
+    ascender_port: "{{ '30088' if k3s_service_type == 'NodePort' else '443' if k8s_lb_protocol == 'https' else '80' }}"
+
+- ansible.builtin.debug:
+    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+
+- name: Wait until Ascender API is Up
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    return_content: yes
+    validate_certs: false
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 60
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Ascender API is up"
+
+- name: Set all the logging parameters
+  awx.awx.settings:
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    validate_certs: false
+    settings:
+      LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ proxy_ip }}"
+      LOG_AGGREGATOR_PORT: "{{ proxy_port }}"
+      LOG_AGGREGATOR_TYPE: ledger
+      LOG_AGGREGATOR_ENABLED: true
+      LOG_AGGREGATOR_VERIFY_CERT: false
+      LOG_AGGREGATOR_LEVEL: INFO
+      LOG_AGGREGATOR_PASSWORD: "{{ ledger_settings.json.auth_token | default(omit, true) }}"
+      TOWER_URL_BASE: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+
+- name: Create a Galaxy Proxy Credential in Ascender
+  awx.awx.credential:
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    validate_certs: false
+    name: Ascender Galaxy Proxy
+    organization: Default
+    state: present
+    credential_type: Ansible Galaxy/Automation Hub API Token
+    inputs:
+      url: "{{ k8s_lb_protocol }}://{{ proxy_ip }}:{{ proxy_port }}"
+      token: ""
+
+- name: Update organization
+  awx.awx.organization:
+    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_username: "{{ ASCENDER_ADMIN_USER }}"
+    controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    validate_certs: false
+    name: Default
+    state: present
+    galaxy_credentials: 
+      - Ascender Galaxy Proxy
+      - Ansible Galaxy

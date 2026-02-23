@@ -230,7 +230,7 @@ spec:
           name: db-settings
         - mountPath: /var/lib/mysql
           name: mysql-data
-{% if LEDGER_REGISTRY is defined %}
+{% if CIQ_REGISTRY is defined %}
       imagePullSecrets:
       - name: ledger-registry-secret
 {% endif %}
@@ -308,7 +308,7 @@ spec:
           name: db-ledger-password
         - mountPath: /run/secrets/db-settings
           name: db-settings
-{% if LEDGER_REGISTRY is defined %}
+{% if CIQ_REGISTRY is defined %}
       imagePullSecrets:
       - name: ledger-registry-secret
 {% endif %}
@@ -375,7 +375,7 @@ spec:
           name: db-ledger-password
         - mountPath: /run/secrets/db-settings
           name: db-settings
-{% if LEDGER_REGISTRY is defined %}
+{% if CIQ_REGISTRY is defined %}
       imagePullSecrets:
       - name: ledger-registry-secret
 {% endif %}

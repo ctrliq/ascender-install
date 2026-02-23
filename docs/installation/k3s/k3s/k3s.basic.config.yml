@@ -43,7 +43,7 @@ LEDGER_HOSTNAME: ledger.example.com
 
     # Optional credentials for pulling the ledger image, all fields must be
     # specified.
-#LEDGER_REGISTRY:
+#CIQ_REGISTRY:
 #  BASE: depot.ciq.com
 #  USERNAME: username
 #  PASSWORD: password

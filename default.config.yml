@@ -242,17 +242,28 @@ ascender_setup_playbooks: true
 ascender_replicas: 1
 ascender_image_pull_policy: Always
 
+
+# GALAXY_PROXY_INSTALL: false
+
+# GALAXY_PROXY_HOSTNAME: galaxy-quick.ciqlab.dev
+
+# GALAXY_PROXY_VERSION: main
+
+# GALAXY_PROXY_IMAGE: ghcr.io/ctrliq/ascender-galaxy-proxy
+
+
+
     # ---Ledger install variables---
 
     # Determines whether or not Ledger will be installed
-LEDGER_INSTALL: true
+LEDGER_INSTALL: false
 
     # DNS resolvable hostname for Ledger service. This is required for install.
 LEDGER_HOSTNAME: ledger.example.com
 
     # Optional credentials for pulling the ledger image, all fields must be
     # specified.
-#LEDGER_REGISTRY:
+#CIQ_REGISTRY:
 #  BASE: depot.ciq.com
 #  USERNAME: username
 #  PASSWORD: password

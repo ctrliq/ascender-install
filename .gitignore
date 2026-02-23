@@ -6,3 +6,4 @@ custom.config.yml
 offline/
 .vscode/*
 ascender_install_artifacts/*
+license.json
