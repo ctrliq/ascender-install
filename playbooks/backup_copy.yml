@@ -1,0 +1,21 @@
+# Copyright (c) 2025, Ctrl IQ, Inc. All rights reserved.
+
+- hosts: localhost
+  gather_facts: no
+  connection: local
+
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
+
+  vars_files:
+    - ["../custom.config.yml", "../default.config.yml"]
+
+  tasks:
+
+    - name: "Run backup_copy role"
+      ansible.builtin.include_role:
+        name: backup_copy
+        tasks_from: "backup_copy"
+
+    - ansible.builtin.debug:
+        msg: "Backup copy complete."

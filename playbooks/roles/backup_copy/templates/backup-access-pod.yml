@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ backup_access_pod_name }}
+  namespace: {{ ASCENDER_NAMESPACE }}
+spec:
+  containers:
+  - name: {{ backup_access_pod_name }}
+    image: busybox
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: backup-vol
+      mountPath: /backups
+      readOnly: true
+  volumes:
+  - name: backup-vol
+    persistentVolumeClaim:
+      claimName: {{ backup_pvc_name }}
+  restartPolicy: Never
