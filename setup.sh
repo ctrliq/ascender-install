@@ -138,7 +138,7 @@ fi
 PASSED_ARG=$@
 if [[ ${#PASSED_ARG} -ne 0 ]]
 then
-  while getopts "pbr" ARG; do
+  while getopts "pbrc" ARG; do
 
     case $ARG in
 
@@ -161,6 +161,12 @@ then
         echo "RESTORE"
 
         ansible-playbook -i "${INVENTORY_FILE}" playbooks/restore.yml
+        ;;
+      c)
+
+        printf "\nBACKUP COPY\n"
+
+        ansible-playbook -i "${INVENTORY_FILE}" playbooks/backup_copy.yml
         ;;
       \?) 
 
