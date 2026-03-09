@@ -60,7 +60,26 @@
 - name: Create temporary pod to mount backup PVC
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('ansible.builtin.template', 'backup-access-pod.yml') }}"
+    definition:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: "{{ backup_access_pod_name }}"
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      spec:
+        containers:
+        - name: "{{ backup_access_pod_name }}"
+          image: busybox
+          command: ["sleep", "3600"]
+          volumeMounts:
+          - name: backup-vol
+            mountPath: /backups
+            readOnly: true
+        volumes:
+        - name: backup-vol
+          persistentVolumeClaim:
+            claimName: "{{ backup_pvc_name }}"
+        restartPolicy: Never
     verify_ssl: false
     wait: true
     wait_timeout: 120
@@ -68,43 +87,32 @@
       type: Ready
       status: "True"
 
+- name: Set backup paths
+  ansible.builtin.set_fact:
+    backup_current_dir: "{{ tmp_dir }}/backups/current"
+    backup_archive_dir: "{{ tmp_dir }}/backups/backup-{{ ansible_date_time.iso8601_basic_short }}"
+
 - name: Copy backup files from PVC
   block:
-    - name: Set local destination path
-      ansible.builtin.set_fact:
-        local_backup_dir: "{{ tmp_dir }}/backup-{{ ansible_date_time.iso8601_basic_short }}"
-
-    - name: Create local backup directory
+    - name: Create current backup directory
       ansible.builtin.file:
-        path: "{{ local_backup_dir }}"
+        path: "{{ backup_current_dir }}"
         state: directory
         mode: "0700"
 
-    - name: Copy tower.db from backup PVC
+    - name: Copy files from backup PVC to current directory
+      loop:
+        - tower.db
+        - secrets.yml
+        - awx_object
+      loop_control:
+        loop_var: file
       kubernetes.core.k8s_cp:
         namespace: "{{ ASCENDER_NAMESPACE }}"
         pod: "{{ backup_access_pod_name }}"
         container: "{{ backup_access_pod_name }}"
-        remote_path: "{{ backup_directory }}/tower.db"
-        local_path: "{{ local_backup_dir }}/tower.db"
-        state: from_pod
-
-    - name: Copy secrets.yml from backup PVC
-      kubernetes.core.k8s_cp:
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-        pod: "{{ backup_access_pod_name }}"
-        container: "{{ backup_access_pod_name }}"
-        remote_path: "{{ backup_directory }}/secrets.yml"
-        local_path: "{{ local_backup_dir }}/secrets.yml"
-        state: from_pod
-
-    - name: Copy awx_object from backup PVC
-      kubernetes.core.k8s_cp:
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-        pod: "{{ backup_access_pod_name }}"
-        container: "{{ backup_access_pod_name }}"
-        remote_path: "{{ backup_directory }}/awx_object"
-        local_path: "{{ local_backup_dir }}/awx_object"
+        remote_path: "{{ backup_directory }}/{{ file }}"
+        local_path: "{{ backup_current_dir }}/{{ file }}"
         state: from_pod
 
   always:
@@ -117,5 +125,11 @@
         wait: true
         verify_ssl: false
 
+- name: Archive backup with timestamp
+  ansible.builtin.copy:
+    src: "{{ backup_current_dir }}/"
+    dest: "{{ backup_archive_dir }}/"
+    mode: "0700"
+
 - ansible.builtin.debug:
-    msg: "Backup files saved to {{ local_backup_dir }}/"
+    msg: "Backup copied to {{ backup_current_dir }}/ and archived to {{ backup_archive_dir }}/"
