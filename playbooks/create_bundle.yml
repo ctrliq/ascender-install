@@ -39,8 +39,8 @@
         tag: 9-alpine
         type: ascender
       - name: kube-rbac-proxy
-        path: gcr.io/kubebuilder/kube-rbac-proxy
-        tag: v0.15.0
+        path: quay.io/brancz/kube-rbac-proxy
+        tag: v0.21.0
         type: ascender
     rpms:
       - kubectl
@@ -147,8 +147,8 @@
     - name: Fix the kube-rbac-proxy image path
       ansible.builtin.lineinfile:
         path: "{{ offline_dir }}/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config/default/manager_auth_proxy_patch.yaml"
-        search_string: 'gcr.io/kubebuilder/kube-rbac-proxy'
-        line: "        image: {{ k8s_container_registry | regex_replace('\\/$', '') }}/kube-rbac-proxy:v0.15.0"
+        search_string: 'quay.io/brancz/kube-rbac-proxy'
+        line: "        image: {{ k8s_container_registry | regex_replace('\\/$', '') }}/kube-rbac-proxy:v0.21.0"
       when: k8s_platform == 'rke2'
 
     - name: Remove Operator tar
