@@ -34,6 +34,11 @@
     msg: "AWXBackup '{{ latest_backup.metadata.name }}' does not have a backupDirectory in its status. Backup may still be in progress or may have failed."
   when: latest_backup.status.backupDirectory is not defined
 
+- name: Fail if backup PVC claim is missing
+  ansible.builtin.fail:
+    msg: "AWXBackup '{{ latest_backup.metadata.name }}' does not have a backupClaim in its status."
+  when: latest_backup.status.backupClaim is not defined
+
 - name: Set backup facts from AWXBackup status
   ansible.builtin.set_fact:
     backup_name: "{{ latest_backup.metadata.name }}"
@@ -63,51 +68,54 @@
       type: Ready
       status: "True"
 
-- name: Set local destination path
-  ansible.builtin.set_fact:
-    local_backup_dir: "{{ tmp_dir }}/backup-{{ ansible_date_time.iso8601_basic_short }}"
+- name: Copy backup files from PVC
+  block:
+    - name: Set local destination path
+      ansible.builtin.set_fact:
+        local_backup_dir: "{{ tmp_dir }}/backup-{{ ansible_date_time.iso8601_basic_short }}"
 
-- name: Create local backup directory
-  ansible.builtin.file:
-    path: "{{ local_backup_dir }}"
-    state: directory
-    mode: "0700"
+    - name: Create local backup directory
+      ansible.builtin.file:
+        path: "{{ local_backup_dir }}"
+        state: directory
+        mode: "0700"
 
-- name: Copy tower.db from backup PVC
-  kubernetes.core.k8s_cp:
-    namespace: "{{ ASCENDER_NAMESPACE }}"
-    pod: "{{ backup_access_pod_name }}"
-    container: "{{ backup_access_pod_name }}"
-    remote_path: "{{ backup_directory }}/tower.db"
-    local_path: "{{ local_backup_dir }}/tower.db"
-    state: from_pod
+    - name: Copy tower.db from backup PVC
+      kubernetes.core.k8s_cp:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: "{{ backup_access_pod_name }}"
+        container: "{{ backup_access_pod_name }}"
+        remote_path: "{{ backup_directory }}/tower.db"
+        local_path: "{{ local_backup_dir }}/tower.db"
+        state: from_pod
 
-- name: Copy secrets.yml from backup PVC
-  kubernetes.core.k8s_cp:
-    namespace: "{{ ASCENDER_NAMESPACE }}"
-    pod: "{{ backup_access_pod_name }}"
-    container: "{{ backup_access_pod_name }}"
-    remote_path: "{{ backup_directory }}/secrets.yml"
-    local_path: "{{ local_backup_dir }}/secrets.yml"
-    state: from_pod
+    - name: Copy secrets.yml from backup PVC
+      kubernetes.core.k8s_cp:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: "{{ backup_access_pod_name }}"
+        container: "{{ backup_access_pod_name }}"
+        remote_path: "{{ backup_directory }}/secrets.yml"
+        local_path: "{{ local_backup_dir }}/secrets.yml"
+        state: from_pod
 
-- name: Copy awx_object from backup PVC
-  kubernetes.core.k8s_cp:
-    namespace: "{{ ASCENDER_NAMESPACE }}"
-    pod: "{{ backup_access_pod_name }}"
-    container: "{{ backup_access_pod_name }}"
-    remote_path: "{{ backup_directory }}/awx_object"
-    local_path: "{{ local_backup_dir }}/awx_object"
-    state: from_pod
+    - name: Copy awx_object from backup PVC
+      kubernetes.core.k8s_cp:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: "{{ backup_access_pod_name }}"
+        container: "{{ backup_access_pod_name }}"
+        remote_path: "{{ backup_directory }}/awx_object"
+        local_path: "{{ local_backup_dir }}/awx_object"
+        state: from_pod
 
-- name: Delete temporary backup access pod
-  kubernetes.core.k8s:
-    state: absent
-    kind: Pod
-    name: "{{ backup_access_pod_name }}"
-    namespace: "{{ ASCENDER_NAMESPACE }}"
-    wait: true
-    verify_ssl: false
+  always:
+    - name: Delete temporary backup access pod
+      kubernetes.core.k8s:
+        state: absent
+        kind: Pod
+        name: "{{ backup_access_pod_name }}"
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        wait: true
+        verify_ssl: false
 
 - ansible.builtin.debug:
     msg: "Backup files saved to {{ local_backup_dir }}/"
