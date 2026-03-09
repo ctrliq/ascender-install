@@ -8,7 +8,7 @@
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:
     gather_subset:
-      - date_time
+     - date_time
 
 - name: Get the most recent AWXBackup resource
   kubernetes.core.k8s_info:
