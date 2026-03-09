@@ -17,5 +17,23 @@
         name: ascender_backup
         tasks_from: "ascender_backup"
 
+    - name: Wait for AWXBackup to complete
+      kubernetes.core.k8s_info:
+        api_version: awx.ansible.com/v1beta1
+        kind: AWXBackup
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      register: awx_backups
+      until:
+        - awx_backups.resources | length > 0
+        - (awx_backups.resources | sort(attribute='metadata.creationTimestamp') | last).status.backupDirectory is defined
+        - (awx_backups.resources | sort(attribute='metadata.creationTimestamp') | last).status.backupClaim is defined
+      delay: 10
+      retries: 60
+
+    - name: "Run backup_copy role"
+      ansible.builtin.include_role:
+        name: backup_copy
+        tasks_from: "backup_copy"
+
     - ansible.builtin.debug:
-        msg: "Ascender backup complete."
+        msg: "Ascender backup complete. Files saved to {{ backup_current_dir }}/."
