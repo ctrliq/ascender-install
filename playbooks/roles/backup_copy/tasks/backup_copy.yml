@@ -1,0 +1,135 @@
+# Copyright (c) 2025, Ctrl IQ, Inc. All rights reserved.
+#
+# Copies the most recent AWXBackup from the backup PVC to the local filesystem.
+# The backup PVC is created by the AWX Operator when an AWXBackup k8s object is applied.
+# This role mounts that PVC via a temporary pod, reads the backup directory path
+# from the AWXBackup k8s object status, and uses k8s_cp to pull the files locally.
+
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Get the most recent AWXBackup resource
+  kubernetes.core.k8s_info:
+    api_version: awx.ansible.com/v1beta1
+    kind: AWXBackup
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+  register: awx_backups
+
+- name: Fail if no backups exist
+  ansible.builtin.fail:
+    msg: "No AWXBackup resources found in namespace {{ ASCENDER_NAMESPACE }}."
+  when: awx_backups.resources | length == 0
+
+- name: Select the most recent backup
+  ansible.builtin.set_fact:
+    latest_backup: >-
+      {{ awx_backups.resources
+         | sort(attribute='metadata.creationTimestamp')
+         | last }}
+
+- name: Fail if backup has not completed
+  ansible.builtin.fail:
+    msg: "AWXBackup '{{ latest_backup.metadata.name }}' does not have a backupDirectory in its status. Backup may still be in progress or may have failed."
+  when: latest_backup.status.backupDirectory is not defined
+
+- name: Fail if backup PVC claim is missing
+  ansible.builtin.fail:
+    msg: "AWXBackup '{{ latest_backup.metadata.name }}' does not have a backupClaim in its status."
+  when: latest_backup.status.backupClaim is not defined
+
+- name: Set backup facts from AWXBackup status
+  ansible.builtin.set_fact:
+    backup_name: "{{ latest_backup.metadata.name }}"
+    backup_directory: "{{ latest_backup.status.backupDirectory }}"
+    backup_pvc_name: "{{ latest_backup.status.backupClaim }}"
+
+- ansible.builtin.debug:
+    msg: "Copying backup '{{ backup_name }}' from PVC '{{ backup_pvc_name }}' directory '{{ backup_directory }}'"
+
+- name: Delete any existing backup access pod
+  kubernetes.core.k8s:
+    state: absent
+    kind: Pod
+    name: "{{ backup_access_pod_name }}"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait: true
+    verify_ssl: false
+
+- name: Create temporary pod to mount backup PVC
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: "{{ backup_access_pod_name }}"
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      spec:
+        containers:
+        - name: "{{ backup_access_pod_name }}"
+          image: busybox
+          command: ["sleep", "3600"]
+          volumeMounts:
+          - name: backup-vol
+            mountPath: /backups
+            readOnly: true
+        volumes:
+        - name: backup-vol
+          persistentVolumeClaim:
+            claimName: "{{ backup_pvc_name }}"
+        restartPolicy: Never
+    verify_ssl: false
+    wait: true
+    wait_timeout: 120
+    wait_condition:
+      type: Ready
+      status: "True"
+
+- name: Set backup paths
+  ansible.builtin.set_fact:
+    backup_current_dir: "{{ tmp_dir }}/backups/current"
+    backup_archive_dir: "{{ tmp_dir }}/backups/backup-{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Copy backup files from PVC
+  block:
+    - name: Create current backup directory
+      ansible.builtin.file:
+        path: "{{ backup_current_dir }}"
+        state: directory
+        mode: "0700"
+
+    - name: Copy files from backup PVC to current directory
+      loop:
+        - tower.db
+        - secrets.yml
+        - awx_object
+      loop_control:
+        loop_var: file
+      kubernetes.core.k8s_cp:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: "{{ backup_access_pod_name }}"
+        container: "{{ backup_access_pod_name }}"
+        remote_path: "{{ backup_directory }}/{{ file }}"
+        local_path: "{{ backup_current_dir }}/{{ file }}"
+        state: from_pod
+
+  always:
+    - name: Delete temporary backup access pod
+      kubernetes.core.k8s:
+        state: absent
+        kind: Pod
+        name: "{{ backup_access_pod_name }}"
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        wait: true
+        verify_ssl: false
+
+- name: Archive backup with timestamp
+  ansible.builtin.copy:
+    src: "{{ backup_current_dir }}/"
+    dest: "{{ backup_archive_dir }}/"
+    mode: "0700"
+
+- ansible.builtin.debug:
+    msg: "Backup copied to {{ backup_current_dir }}/ and archived to {{ backup_archive_dir }}/"
