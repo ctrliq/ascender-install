@@ -104,6 +104,10 @@
         state: present
         definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-controller.yml') }}"
         verify_ssl: false
+      register: result
+      retries: 6
+      delay: 10
+      until: result is not failed
 
     - name: "Apply ALB class params"
       kubernetes.core.k8s:
