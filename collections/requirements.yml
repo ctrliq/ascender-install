@@ -15,3 +15,5 @@ collections:
     version: ">=8.3.0"
   - name: kubernetes.core
     version: ">=2.4.0"
+  - name: community.aws
+    version: ">=11.0.0"
