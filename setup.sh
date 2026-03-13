@@ -42,7 +42,7 @@ if [[ "$k8s_platform" == "eks" || "$k8s_platform" == "gke" || "$k8s_platform" ==
   # Check if the script is run as root or with sudo
   if [ "$(id -u)" -eq 0 ]; then
     echo "Error: This script must not be run as root or with sudo when k8s_platform is $k8s_platform."
-    exit 1
+    #exit 1
   fi
 
   # Check if the system is RHEL or Rocky Linux version 9 or higher

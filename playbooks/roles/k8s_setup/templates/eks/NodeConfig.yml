@@ -1,0 +1,16 @@
+---
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  cluster:
+    apiServerEndpoint: "{{ eks_cluster.endpoint }}"
+    certificateAuthority: "{{ eks_cluster.certificate_authority.data }}"
+    cidr: 172.20.0.0/16
+    name: "{{ EKS_CLUSTER_NAME }}"
+  kubelet:
+    config:
+      maxPods: 35
+      clusterDNS:
+      - 172.20.0.10
+    flags:
+    - "--node-labels=eks.amazonaws.com/nodegroup-image=ami-0eec423b9736d3f70,eks.amazonaws.com/capacityType=ON_DEMAND,eks.amazonaws.com/nodegroup={{ EKS_CLUSTER_NAME }}-nodes"

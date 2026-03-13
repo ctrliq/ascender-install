@@ -109,11 +109,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-{% if k8s_lb_protocol == 'https'  %}
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-{% endif %}
+    alb.ingress.kubernetes.io/load-balancer-name: "{{ EKS_CLUSTER_NAME }}-ledger"
+    alb.ingress.kubernetes.io/scheme: "{{ 'internet-facing' if EKS_PUBLIC else 'internal' }}"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: "{{ certificate.certificate_arn }}"
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
   name: ledger-web-ingress
   namespace: {{ LEDGER_NAMESPACE }}
 spec:

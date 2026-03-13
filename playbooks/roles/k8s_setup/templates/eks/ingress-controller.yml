@@ -599,8 +599,6 @@ metadata:
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/name: aws-load-balancer-controller
-  annotations:
-    {{ alb_sa.resources[0].metadata.annotations }}
   name: aws-load-balancer-controller
   namespace: kube-system
 ---

@@ -1,3 +1,22 @@
+- name: Get Certificates
+  community.aws.acm_certificate_info:
+    domain_name: "{{ LEDGER_HOSTNAME }}"
+    region: "{{ EKS_CLUSTER_REGION }}"
+  register: certificate
+
+# - name: send ACM request if needed
+#   shell: aws acm request-certificate --domain-name "{{ acm_domain_name }}"  --domain-validation-options DomainName="{{ acm_domain_name }}",ValidationDomain="{{ acm_validation_domain }}"
+#   when: not domain_in_certificate_list
+
+- name: Check Certificate
+  ansible.builtin.fail:
+    msg: Certificate for domain "{{ LEDGER_HOSTNAME }}" not found in region "{{ EKS_CLUSTER_REGION }}"
+  when: certificate.certificates[0].certificate_arn is not defined
+
+- name: Set domain fact
+  set_fact:
+    certificate: "{{ certificate.certificates[0] }}"
+
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:
     gather_subset:

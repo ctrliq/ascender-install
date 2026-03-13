@@ -238,13 +238,46 @@ if [ $k8s_platform == "eks" ]; then
       echo "# The CIDR block for the EKS cluster" >> custom.config.yml
       echo "EKS_CLUSTER_CIDR: "$eks_cluster_cidr >> custom.config.yml
 
+      #EKS_PUBLIC
+      echo $'\n'
+      eks_public_opts=(true false)
+      selected=()
+      PS3='Should cluster nodes be assigned public IPs? If true, nodes will be publicly accessible (false is recommended for production): '
+      select name in "${eks_public_opts[@]}" ; do
+          for reply in $REPLY ; do
+              selected+=(${eks_public_opts[reply - 1]})
+          done
+          [[ $selected ]] && break
+      done
+      eks_public=${selected[@]}
+      echo "# Determines whether cluster nodes are assigned public IPs." >> custom.config.yml
+      echo "EKS_PUBLIC: "$eks_public >> custom.config.yml
+
+      #EKS_NUM_SUBNETS
+      echo $'\n'
+      read -p "The number of subnets for the EKS cluster [3]: " e_num_subnets
+      eks_num_subnets=${e_num_subnets:-3}
+      echo "# The number of subnets for the EKS cluster" >> custom.config.yml
+      echo "EKS_NUM_SUBNETS: "$eks_num_subnets >> custom.config.yml
+
+      #EKS_SUBNET_SIZE
+      echo $'\n'
+      read -p "The network prefix size for each subnet (e.g. 26 = /26) [26]: " e_subnet_size
+      eks_subnet_size=${e_subnet_size:-26}
+      echo "# The network prefix size for each of the subnets" >> custom.config.yml
+      echo "EKS_SUBNET_SIZE: "$eks_subnet_size >> custom.config.yml
+
       #EKS_K8S_VERSION
       echo $'\n'
       read -p "The kubernetes version for the eks cluster; available kubernetes versions can be found here: https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html [1.33]:" e_k8s_version
       eks_k8s_version=${e_k8s_version:-1.33}
       echo "# The kubernetes version for the eks cluster; available kubernetes versions can be found here:" >> custom.config.yml
       echo "EKS_K8S_VERSION: "\"$eks_k8s_version\" >> custom.config.yml
- 
+
+
+
+
+
       #EKS_EBS_CSI_DRIVER_VERSION
       echo $'\n'
       read -p "The EBS CSI driver version for the eks cluster [v1.48.0]:" e_ebs_csi_driver_version
@@ -286,7 +319,7 @@ if [ $k8s_platform == "eks" ]; then
       eks_worker_volume_size=${e_worker_volume_size:-100}
       echo "# The volume size of eks worker nodes in GB" >> custom.config.yml
       echo "EKS_WORKER_VOLUME_SIZE: "$eks_worker_volume_size >> custom.config.yml
-   
+
    fi 
 fi
 

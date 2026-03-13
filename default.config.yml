@@ -77,9 +77,19 @@ EKS_CLUSTER_REGION: us-east-1
     # Only required if EKS_CLUSTER_STATUS is set to provision.
 EKS_CLUSTER_CIDR: "10.10.0.0/16"
 
+    # Determines whether cluster nodes are assigned public IPs.
+    # If this value is set to true, cluster nodes will be assigned public IPs.
+EKS_PUBLIC: false
+
+    # The number of subnets for the eks cluster
+EKS_NUM_SUBNETS: 3
+
+    # The network size for each of the subnets
+EKS_SUBNET_SIZE: 26
+
     # The kubernetes version for the eks cluster; available kubernetes versions can be found here:
     # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
-EKS_K8S_VERSION: "1.33"
+EKS_K8S_VERSION: "1.35"
 
     # The worker node instance types 
 EKS_INSTANCE_TYPE: t3.large
