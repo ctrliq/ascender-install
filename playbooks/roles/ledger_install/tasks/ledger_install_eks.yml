@@ -291,11 +291,11 @@
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     validate_certs: false
     settings:
-      LOG_AGGREGATOR_HOST: "https://{{ ledger_parser_ip }}"
+      LOG_AGGREGATOR_HOST: "http://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
       LOG_AGGREGATOR_TYPE: ledger
       LOG_AGGREGATOR_ENABLED: true
       LOG_AGGREGATOR_VERIFY_CERT: false
       LOG_AGGREGATOR_LEVEL: INFO
       LOG_AGGREGATOR_PASSWORD: "{{ ledger_settings.json.auth_token | default(omit, true) }}"
-      TOWER_URL_BASE: "https://{{ ascender_ip }}:{{ ascender_port }}"
+      TOWER_URL_BASE: "https://{{ ascender_ip }}"
