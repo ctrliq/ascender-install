@@ -102,6 +102,7 @@ metadata:
     alb.ingress.kubernetes.io/scheme: "{{ 'internet-facing' if EKS_PUBLIC else 'internal' }}"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/success-codes: "200,302"
     alb.ingress.kubernetes.io/certificate-arn: "{{ certificate.certificate_arn }}"
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/backend-protocol: HTTP
