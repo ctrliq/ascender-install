@@ -130,8 +130,8 @@
           - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
           - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
           - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
-          - "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
-          - "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
+          - arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy
+          - arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly
 
     - name: Get current IAM role managed policies
       amazon.aws.iam_role_info:

@@ -85,6 +85,7 @@ spec:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/backend-protocol: HTTP
     alb.ingress.kubernetes.io/ssl-policy: "{{ EKS_SSL_POLICY }}"
+    alb.ingress.kubernetes.io/security-groups: "{{ EKS_SECURITY_GROUPS }}"
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:

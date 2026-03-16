@@ -17,6 +17,19 @@
   set_fact:
     certificate: "{{ certificate.certificates[0] }}"
 
+- name: Get the Cluster security groups
+  ansible.builtin.shell: >
+    aws eks describe-cluster
+    --name {{ EKS_CLUSTER_NAME }}
+    --region {{ EKS_CLUSTER_REGION }}
+    --query "cluster.resourcesVpcConfig"
+    --output json
+  register: eks_cluster_security_groups
+
+- name: Set fact for Security Group
+  set_fact:
+    EKS_SECURITY_GROUPS: "{{ ((eks_cluster_security_groups.stdout | from_json | json_query('securityGroupIds')) + [eks_cluster_security_groups.stdout | from_json | json_query('clusterSecurityGroupId')]) | join(',') }}"
+
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:
     gather_subset:
