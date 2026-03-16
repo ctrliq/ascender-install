@@ -17,35 +17,10 @@
   set_fact:
     certificate: "{{ certificate.certificates[0] }}"
 
-
-
-
-
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:
     gather_subset:
      - date_time
-
-# - name: Apply aws-load-balancer-controller
-#   kubernetes.core.k8s:
-#     state: present
-#     src: https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v3.1.0/v3_1_0_ingclass.yaml
-#     verify_ssl: false
-
-
-
-
-# - name: Apply NGINX Ingress Controller manifest
-#   kubernetes.core.k8s:
-#     state: present
-#     src: https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
-#     verify_ssl: false
-  
-# - name: "Apply ALB Ingress"
-#   kubernetes.core.k8s:
-#     state: present
-#     definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ingress.yml') }}"
-#     verify_ssl: false
 
 - name: Create Namespace
   kubernetes.core.k8s:
@@ -114,19 +89,12 @@
     wait_timeout: 360
     verify_ssl: false
 
-
-
-
-
-
-
-
 - name: Retrieve the ascender-app-ingress Ingress object
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Ingress
     name: ascender-app-ingress
-    namespace: ascender
+    namespace: "{{ ASCENDER_NAMESPACE }}"
   register: ascender_ingress
   until: 
     - ascender_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
