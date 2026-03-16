@@ -94,6 +94,12 @@ EKS_NUM_SUBNETS: 3
     # The network size for each of the subnets
 EKS_SUBNET_SIZE: 26
 
+    # Set the SSL Policy for the EKS AWS Load Balancer
+EKS_SSL_POLICY: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+
+    # Whether to set up an Internet Gateway for the VPC
+EKS_INTERNET_GATEWAY: true
+
 # The kubernetes version for the eks cluster; available kubernetes versions can be found here:
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
 EKS_K8S_VERSION: "1.33"

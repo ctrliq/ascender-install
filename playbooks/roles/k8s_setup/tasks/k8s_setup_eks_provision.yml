@@ -1,6 +1,7 @@
 - name: Get AWS account ID
   amazon.aws.aws_caller_info:
   register: account_info
+  changed_when: false
 
 - name: Set account ID
   set_fact:
@@ -11,6 +12,7 @@
     region: "{{ EKS_CLUSTER_REGION }}"
     filters:
       state: available
+  changed_when: false
   register: az_info
 
 - name: Set availability zones
@@ -26,6 +28,7 @@
       name: "amazon-eks-node-al2023-x86_64-standard-{{ EKS_K8S_VERSION }}-*"
       state: "available"
   register: ami_info
+  changed_when: false
 
 - name: Set Amazon AMI ID
   set_fact:
@@ -74,7 +77,7 @@
     tags:
       Name: "{{ EKS_CLUSTER_NAME }}-igw"
   register: igw
-  when: internet_gateway | default(true)
+  when: EKS_INTERNET_GATEWAY
 
 - name: Add route to internet gateway
   amazon.aws.ec2_vpc_route_table:
@@ -86,7 +89,7 @@
       - dest: "0.0.0.0/0"
         gateway_id: "{{ igw.gateway_id }}"
     subnets: "{{ subnets.results | map(attribute='subnet.id') | list }}"
-  when: internet_gateway | default(true)
+  when: EKS_INTERNET_GATEWAY
 
 - name: Add route
   amazon.aws.ec2_vpc_route_table:
@@ -95,7 +98,7 @@
     tags:
       Name: "{{ EKS_CLUSTER_NAME }}-route-table"
     subnets: "{{ subnets.results | map(attribute='subnet.id') | list }}"
-  when: not (internet_gateway | default(true))
+  when: not EKS_INTERNET_GATEWAY
 
 - name: Create security group for EKS nodes
   amazon.aws.ec2_security_group:
@@ -159,7 +162,7 @@
     managed_policies:
       - "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
       - "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
-      - "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
+      - "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
 
 - name: Create Public EKS cluster
   community.aws.eks_cluster:
@@ -224,7 +227,7 @@
       - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
       - "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
       - "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
-      - "arn:aws:iam::aws:policy/ElasticLoadBalancingFullAccess"
+      - "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
 
 - name: Create launch template for node group
   amazon.aws.ec2_launch_template:

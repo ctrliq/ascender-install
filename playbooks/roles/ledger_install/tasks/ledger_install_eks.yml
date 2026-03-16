@@ -1,8 +1,15 @@
-- name: Get Certificates
+- name: Get Certificates (Ledger)
   community.aws.acm_certificate_info:
     domain_name: "{{ LEDGER_HOSTNAME }}"
     region: "{{ EKS_CLUSTER_REGION }}"
   register: certificate
+
+- name: Get Certificates (Ascender)
+  community.aws.acm_certificate_info:
+    domain_name: "{{ ASCENDER_HOSTNAME }}"
+    region: "{{ EKS_CLUSTER_REGION }}"
+  register: certificate
+  when: certificate.certificates[0].certificate_arn is not defined
 
 # - name: send ACM request if needed
 #   shell: aws acm request-certificate --domain-name "{{ acm_domain_name }}"  --domain-validation-options DomainName="{{ acm_domain_name }}",ValidationDomain="{{ acm_validation_domain }}"
@@ -162,11 +169,11 @@
       ledger_parser_port: "{{ parser_svc.resources[0].spec.ports[0].port }}"
 
 - ansible.builtin.debug:
-    msg: "The Ledger endpoint is {{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
+    msg: "The Ledger endpoint is https://{{ ledger_ip }}"
 
 - name: Wait until Ledger endpoint is Up
   ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}:{{ ledger_port }}"
+    url: "https://{{ ledger_ip }}"
     return_content: yes
     validate_certs: false
     status_code:
@@ -185,21 +192,13 @@
     ascender_ip: "{{ ASCENDER_HOSTNAME }}"
     ascender_port: 443
     ascender_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
-  when: k8s_lb_protocol == "https"
-
-- name: Set the Ascender URL and Credentials for HTTP
-  ansible.builtin.set_fact:
-      ascender_username: "{{ ASCENDER_ADMIN_USER }}"
-      ascender_ip: "{{ ASCENDER_HOSTNAME }}"
-      ascender_port: 80
-  when: k8s_lb_protocol == "http"
 
 - ansible.builtin.debug:
-    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    msg: "The Ascender API endpoint is https://{{ ascender_ip }}/api/v2/ping/"
 
 - name: Wait until Ascender API is Up
   ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    url: "https://{{ ascender_ip }}/api/v2/ping/"
     return_content: yes
     validate_certs: false
     status_code:
@@ -217,7 +216,7 @@
 
     - name: Check Ledger Token
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}/api/v1/settings/"
+        url: "https://{{ ledger_ip }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -232,7 +231,7 @@
 
     - name: Regenerate Token if blank
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}/api/v1/settings/?regenerate_auth_token=1"
+        url: "https://{{ ledger_ip }}/api/v1/settings/?regenerate_auth_token=1"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -248,7 +247,7 @@
 
     - name: Get Ledger Token Again (in case of regeneration)
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}/api/v1/settings/"
+        url: "https://{{ ledger_ip }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
@@ -266,13 +265,13 @@
 
     - name: Enable Require Token
       ansible.builtin.uri:
-        url: "{{ k8s_lb_protocol }}://{{ ledger_ip }}/api/v1/settings/"
+        url: "https://{{ ledger_ip }}/api/v1/settings/"
         user: admin
         password: "{{ LEDGER_ADMIN_PASSWORD }}"
         force_basic_auth: true
         method: POST
         body_format: json
-        body: '{ "require_auth_token": 1, "base_url": "{{ k8s_lb_protocol }}://{{ ledger_ip }}" }'
+        body: '{ "require_auth_token": 1, "base_url": "https://{{ ledger_ip }}" }'
         return_content: yes
         validate_certs: false
         status_code:
@@ -287,16 +286,16 @@
 
 - name: Set all the logging parameters
   awx.awx.settings:
-    controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+    controller_host: "https://{{ ascender_ip }}:{{ ascender_port }}"
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     validate_certs: false
     settings:
-      LOG_AGGREGATOR_HOST: "{{ k8s_lb_protocol }}://{{ ledger_parser_ip }}"
+      LOG_AGGREGATOR_HOST: "https://{{ ledger_parser_ip }}"
       LOG_AGGREGATOR_PORT: "{{ ledger_parser_port }}"
       LOG_AGGREGATOR_TYPE: ledger
       LOG_AGGREGATOR_ENABLED: true
       LOG_AGGREGATOR_VERIFY_CERT: false
       LOG_AGGREGATOR_LEVEL: INFO
       LOG_AGGREGATOR_PASSWORD: "{{ ledger_settings.json.auth_token | default(omit, true) }}"
-      TOWER_URL_BASE: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
+      TOWER_URL_BASE: "https://{{ ascender_ip }}:{{ ascender_port }}"

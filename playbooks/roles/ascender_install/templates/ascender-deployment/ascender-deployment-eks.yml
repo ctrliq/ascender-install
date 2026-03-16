@@ -48,19 +48,6 @@ metadata:
 data:
   ldap-ca.crt: {{ lookup('ansible.builtin.file', custom_ldap_cacert) | b64encode }}
 {% endif %}
-{% if k8s_lb_protocol == 'https' %}
----
-# Ascender TLS Certificate and Key
-apiVersion: v1
-data:
-  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
-  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
-kind: Secret
-metadata:
-  name: ascender-tls-secret
-  namespace: {{ ASCENDER_NAMESPACE }}
-type: kubernetes.io/tls
-{% endif %}
 ---
 apiVersion: awx.ansible.com/v1beta1
 kind: AWX
@@ -92,13 +79,13 @@ spec:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/load-balancer-name: "{{ EKS_CLUSTER_NAME }}-ascender"
     alb.ingress.kubernetes.io/scheme: "{{ 'internet-facing' if EKS_PUBLIC else 'internal' }}"
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/certificate-arn: "{{ certificate.certificate_arn }}"
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/backend-protocol: HTTP
-    alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+    alb.ingress.kubernetes.io/ssl-policy: "{{ EKS_SSL_POLICY }}"
   extra_settings:
   - setting: CSRF_TRUSTED_ORIGINS
     value:
-      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}
+      - https://{{ ASCENDER_HOSTNAME }}

@@ -35,6 +35,7 @@
   ansible.builtin.shell:
     cmd: "aws eks list-clusters --region={{ EKS_CLUSTER_REGION }} --output=json"
   register: eks_clusters
+  changed_when: false
 
 - name: Set fact for list of clusters
   ansible.builtin.set_fact:
@@ -51,8 +52,7 @@
 # If EKS_CLUSTER_NAME does not exist, set up new eks cluster
 - name: "If target cluster {{ EKS_CLUSTER_NAME }} does not exist, create it"
   when: not cluster_exists and EKS_CLUSTER_STATUS=="provision"
-  block: 
-    - include_tasks: k8s_setup_eks_provision.yml
+  include_tasks: k8s_setup_eks_provision.yml
 
 - name: Ensure kubeconfig exists
   ansible.builtin.file:
@@ -60,8 +60,7 @@
     state: touch
     owner: "{{ ansible_user }}"
     mode: '0644'
-  when: 
-    - download_kubeconfig
+  when: download_kubeconfig
 
 - name: Retrieve kubeconfig for the EKS cluster
   ansible.builtin.shell:
@@ -70,8 +69,7 @@
   environment:
     KUBECONFIG: "{{ '/root/.kube/config' if ansible_user == 'root' else '/home/' + ansible_user + '/.kube/config' }}"
     #KUBECONFIG: "/root/.kube/config"
-  when: 
-    - download_kubeconfig
+  when: download_kubeconfig
 
 - name: Ensure that the KUBECONFIG file can successfully authenticate to the EKS cluster
   kubernetes.core.k8s_info:
@@ -118,10 +116,12 @@
     - name: Get node group name
       ansible.builtin.shell: aws eks list-nodegroups --region {{ EKS_CLUSTER_REGION }} --cluster-name {{ EKS_CLUSTER_NAME }} --query 'nodegroups[0]' --output text
       register: nodegroup_name
+      changed_when: false
 
     - name: Get IAM role of EKS worker nodes
       ansible.builtin.shell: aws eks describe-nodegroup --region {{ EKS_CLUSTER_REGION }} --cluster-name {{ EKS_CLUSTER_NAME }} --nodegroup-name {{ nodegroup_name.stdout }} --query 'nodegroup.nodeRole' --output text
       register: node_role_arn
+      changed_when: false
 
     - name: Define worker node required managed policies
       set_fact:
@@ -130,19 +130,24 @@
           - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
           - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
           - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+          - "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
+          - "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
 
     - name: Get current IAM role managed policies
       amazon.aws.iam_role_info:
         name: "{{ node_role_arn.stdout.split('/')[1] }}"
       register: role_info
+      changed_when: false
 
     - name: Extract managed policy ARNs
       ansible.builtin.set_fact:
         existing_policies: "{{ role_info.iam_roles[0].managed_policies | map(attribute='policy_arn') | list }}"
+      changed_when: false
 
     - name: Combine existing and new managed policies
       ansible.builtin.set_fact:
         combined_policies: "{{ existing_policies | union(new_policies) }}"
+      changed_when: false
 
     - name: Set new policy document
       ansible.builtin.set_fact:
@@ -154,7 +159,8 @@
             },
             "Action": "sts:AssumeRole"
           }
-        
+      changed_when: false
+
     - name: Get current assume role policy document
       ansible.builtin.shell:
         cmd: aws iam get-role --role-name {{ node_role_arn.stdout.split('/')[1] }} --query "Role.AssumeRolePolicyDocument" --output json
@@ -165,10 +171,12 @@
       amazon.aws.iam_role_info:
         name: "{{ node_role_arn.stdout.split('/')[1] }}"
       register: all_roles_info
+      changed_when: false
 
     - name: Load current policy document
       ansible.builtin.set_fact:
         current_policy_document: "{{ current_policy.stdout | from_json }}"
+      changed_when: false
 
     - name: Add new statement to policy document
       ansible.builtin.set_fact:
@@ -188,6 +196,14 @@
         --role-name {{ node_role_arn.stdout.split('/')[1] }}
         --policy-arn {{ item }}
       with_items: "{{ combined_policies }}"
+
+    - name: Create IAM Policy for AWSLoadBalancerControllerIAMPolicy 
+      amazon.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{ node_role_arn.stdout.split('/')[1] }}"
+        policy_name: "AWSLoadBalancerControllerIAMPolicy"
+        policy_json: "{{ lookup('template', 'templates/eks/iam-policy.json') }}"
+        state: present
 
     - name: Determine the OIDC issuer ID for your cluster
       ansible.builtin.shell: >
