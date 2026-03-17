@@ -105,7 +105,7 @@ EKS_INTERNET_GATEWAY: true
 #EKS_ALB_SECURITY_GROUPS: ""
 
     # The inbound CIDR blocks for the AWS Load Balancer security group; this controls who can access the Load Balancer and therefore Ascender.
-EKS_ALB_INBOUND_CIDRS: "0.0.0.0/0"
+EKS_ALB_INBOUND_CIDRS: ["0.0.0.0/0"]
 
 # The kubernetes version for the eks cluster; available kubernetes versions can be found here:
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
