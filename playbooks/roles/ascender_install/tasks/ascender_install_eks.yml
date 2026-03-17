@@ -99,7 +99,7 @@
     name: ascender-app-task
     namespace: "{{ ASCENDER_NAMESPACE }}"
     wait_sleep: 10
-    wait_timeout: 600
+    wait_timeout: 900
     verify_ssl: false
 
 - name: Retrieve the ascender-app-ingress Ingress object
