@@ -68,7 +68,7 @@ spec:
 {% if custom_ldap_cacert is defined %}
   ldap_cacert_secret: ascender-app-custom-ldap-cacert
 {% endif %}
-  no_log: "{{ NO_LOG | default('true') }}"
+  no_log: {{ NO_LOG | default('true') }}
   service_type: ClusterIP
   ingress_type: Ingress
   hostname: "{{ ASCENDER_HOSTNAME }}"
