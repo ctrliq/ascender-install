@@ -30,23 +30,18 @@
     - ansible.builtin.fail:
       when: agreed.user_input|lower != 'y'
 
-    - name: Scale down Ascender task modules
+    - name: Scale down Ascender pods
       kubernetes.core.k8s_scale:
         namespace: "{{ ASCENDER_NAMESPACE }}"
         kind: Deployment
-        name: ascender-app-task
+        name: "{{ item }}"
         replicas: 0
         wait: true
         wait_timeout: 180
-
-    - name: Scale down Ascender web modules
-      kubernetes.core.k8s_scale:
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-        kind: Deployment
-        name: ascender-app-web
-        replicas: 0
-        wait: true
-        wait_timeout: 180
+      loop:
+        - awx-operator-controller-manager
+        - ascender-app-task
+        - ascender-app-web
 
     - name: Backup the database
       kubernetes.core.k8s_exec:
@@ -61,15 +56,6 @@
         remote_path: /root/backup.sql
         local_path: "{{ tmp_dir }}/backup.sql"
         state: from_pod
-
-    - name: Remove the Operator
-      kubernetes.core.k8s:
-        state: absent
-        kind: Deployment
-        name: awx-operator-controller-manager
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-        verify_ssl: false
-        wait: true
 
     - name: Remove the Postgres Stateful set
       kubernetes.core.k8s:

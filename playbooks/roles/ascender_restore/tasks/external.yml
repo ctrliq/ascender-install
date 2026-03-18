@@ -1,0 +1,9 @@
+# Display a message about external database backup not being supported via the Operator
+# Later we can add tasks here to backup secrets and other related files
+
+- ansible.builtin.debug:
+    msg: | 
+      Backup / Restore of External Databases are not supported via the Operator.
+      Please follow your backup strategy for your external database.
+
+- ansible.builtin.meta: end_play
