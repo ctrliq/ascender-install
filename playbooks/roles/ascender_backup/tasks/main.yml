@@ -10,9 +10,6 @@
     gather_subset:
      - date_time
 
-- ansible.builtin.debug:
-    var: ansible_date_time
-
 - name: Generate manifest to install AWXBackup k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: "ascender-backup.yml"
@@ -22,12 +19,14 @@
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'ascender-backup.yml') }}"
+    verify_ssl: false
 
 - name: Wait for AWXBackup to complete
   kubernetes.core.k8s_info:
     api_version: awx.ansible.com/v1beta1
     kind: AWXBackup
     namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
   register: awx_backups
   until:
     - awx_backups.resources | length > 0
@@ -36,16 +35,12 @@
   delay: 10
   retries: 60
 
-- name: Retrieve the current time in order to timestamp files
-  ansible.builtin.setup:
-    gather_subset:
-     - date_time
-
 - name: Get the most recent AWXBackup resource
   kubernetes.core.k8s_info:
     api_version: awx.ansible.com/v1beta1
     kind: AWXBackup
     namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
   register: awx_backups
 
 - name: Fail if no backups exist
@@ -139,6 +134,7 @@
         remote_path: "{{ backup_directory }}/{{ file }}"
         local_path: "{{ backup_archive_dir }}/{{ file }}"
         state: from_pod
+        verify_ssl: false
       loop:
         - tower.db
         - secrets.yml
@@ -169,7 +165,6 @@
     state: link
 
 - ansible.builtin.debug:
-    msg: "Backup copied to {{ backup_current_dir }}/ and archived to {{ backup_archive_dir }}/"
-
-- ansible.builtin.debug:
-    msg: "Ascender backup complete"
+    msg: |
+      Ascender backup complete.
+      Backup copied to {{ backup_current_dir }}/ and archived to {{ backup_archive_dir }}/

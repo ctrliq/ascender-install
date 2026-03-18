@@ -9,8 +9,29 @@
       apiVersion: awx.ansible.com/v1beta1
       kind: AWXRestore
       metadata:
-        name: "{{ backup_access_pod_name }}"
+        name: "ascender-app-restore"
         namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+
+- name: Remove backup if exists
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: awx.ansible.com/v1beta1
+      kind: AWXBackup
+      metadata:
+        name: "ascender-app-backup"
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+
+- name: Remove existing temporary pod if present
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Pod
+    name: temp-copy-pod
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
 
 - name: Take backup of the current database
   kubernetes.core.k8s:
@@ -40,15 +61,17 @@
   delay: 10
 
 - name: Set backup directory fact
-  set_fact:
+  ansible.builtin.set_fact:
     backup_directory: "{{ backup_info.resources[0].status.backupDirectory }}"
     backup_pvc: "{{ backup_info.resources[0].status.backupClaim }}"
 
-- debug:
-    var: backup_directory
+- name: Display backup directory
+  ansible.builtin.debug:
+    msg: "Backup directory: {{ backup_directory }}"
 
-- debug:
-    var: backup_pvc
+- name: Display backup PVC
+  ansible.builtin.debug:
+    msg: "Backup PVC: {{ backup_pvc }}"
 
 
 - name: Create a temporary pod to mount the PVC
@@ -75,6 +98,7 @@
         restartPolicy: Never
     wait: true
     wait_timeout: 180
+    verify_ssl: false
   register: create_pod_result
 
 - name: Wait for the temporary pod to be ready
@@ -88,6 +112,7 @@
       type: Ready
       status: "True"
     wait_timeout: 120
+    verify_ssl: false
 
 - name: Clean up old migration directory in PVC
   kubernetes.core.k8s_exec:
@@ -101,6 +126,7 @@
     pod: temp-copy-pod
     command: mkdir /backups/ascender_restore/
     impersonate_user: 26
+    verify_ssl: false
 
 - name: Copy files to the PVC
   kubernetes.core.k8s_cp:
@@ -109,6 +135,7 @@
     local_path: "{{ backup_current_dir }}/{{ item }}"
     remote_path: "/backups/ascender_restore/"
     state: to_pod
+    verify_ssl: false
   loop:
     - tower.db
     - secrets.yml
@@ -119,6 +146,7 @@
     namespace: "{{ ASCENDER_NAMESPACE }}"
     pod: temp-copy-pod
     command: chmod 777 /backups/ascender_restore/{{ item }}
+    verify_ssl: false
   loop:
     - tower.db
     - secrets.yml
@@ -129,6 +157,7 @@
     namespace: "{{ ASCENDER_NAMESPACE }}"
     pod: temp-copy-pod
     command: chown 26:26 /backups/ascender_restore/{{ item }}
+    verify_ssl: false
   loop:
     - tower.db
     - secrets.yml
@@ -143,6 +172,7 @@
       metadata:
         name: temp-copy-pod
         namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
 
 - name: Scale down Ascender pods
   kubernetes.core.k8s_scale:
@@ -152,6 +182,7 @@
     replicas: 0
     wait: true
     wait_timeout: 180
+    verify_ssl: false
   loop:
     - awx-operator-controller-manager
     - ascender-app-task
@@ -165,6 +196,7 @@
     replicas: 0
     wait: true
     wait_timeout: 180
+    verify_ssl: false
 
 - name: Delete PVC for Postgres
   kubernetes.core.k8s:
@@ -173,6 +205,7 @@
     name: postgres-15-ascender-app-postgres-15-0
     namespace: "{{ ASCENDER_NAMESPACE }}"
     wait: true
+    verify_ssl: false
 
 - name: Scale up Ascender Postgres StatefulSet
   kubernetes.core.k8s_scale:
@@ -182,6 +215,7 @@
     replicas: 1
     wait: true
     wait_timeout: 180
+    verify_ssl: false
 
 - name: Restore the backup
   kubernetes.core.k8s:
@@ -210,6 +244,7 @@
     replicas: 1
     wait: true
     wait_timeout: 180
+    verify_ssl: false
   loop:
     - awx-operator-controller-manager
 
@@ -218,6 +253,7 @@
     namespace: "{{ ASCENDER_NAMESPACE }}"
     kind: Pod
     name: ascender-app-postgres-15-0
+    verify_ssl: false
   register: db_pods
   until: db_pods.resources | length > 0
   retries: 60
@@ -228,6 +264,7 @@
 #     namespace: "{{ ASCENDER_NAMESPACE }}"
 #     pod: ascender-app-postgres-15-0
 #     command: psql -U awx -c "delete from django_migrations where app = 'main' and name like '{{ item }}%';"
+#     verify_ssl: false
 #   retries: 30
 #   delay: 10
 #   loop:
@@ -240,12 +277,13 @@
     kind: Pod
     label_selectors:
       - "app.kubernetes.io/name = ascender-app-web"
+    verify_ssl: false
   register: web_pods
   until: web_pods.resources | length > 0
   retries: 60
   delay: 20
 
-# - set_fact:
+# - ansible.builtin.set_fact:
 #     web_pod: "{{ web_pods.resources[0].metadata.name }}"
 
 # - name: Run migrations
@@ -254,6 +292,7 @@
 #     pod: "{{ web_pod }}"
 #     container: "ascender-app-web"
 #     command: "/usr/bin/awx-manage migrate"
+#     verify_ssl: false
 #   ignore_errors: yes
 
 - name: Remove restore if exists
@@ -265,6 +304,7 @@
       metadata:
         name: ascender-app-restore
         namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
 
 - ansible.builtin.debug:
     msg: "Ascender restore complete. Files restored from {{ backup_current_dir }}/."
