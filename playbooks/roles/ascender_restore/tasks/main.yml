@@ -1,0 +1,7 @@
+- include_tasks: container.yml
+  when: ASCENDER_PGSQL_HOST is not defined
+
+- include_tasks: external.yml
+  when:
+   - ASCENDER_PGSQL_HOST is defined
+   - ASCENDER_PGSQL_HOST != ""

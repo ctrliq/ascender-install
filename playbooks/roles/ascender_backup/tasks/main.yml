@@ -1,9 +1,40 @@
-# Copyright (c) 2025, Ctrl IQ, Inc. All rights reserved.
+# Copyright (c) 2026, Ctrl IQ, Inc. All rights reserved.
 #
 # Copies the most recent AWXBackup from the backup PVC to the local filesystem.
 # The backup PVC is created by the AWX Operator when an AWXBackup k8s object is applied.
 # This role mounts that PVC via a temporary pod, reads the backup directory path
 # from the AWXBackup k8s object status, and uses k8s_cp to pull the files locally.
+
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- ansible.builtin.debug:
+    var: ansible_date_time
+
+- name: Generate manifest to install AWXBackup k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: "ascender-backup.yml"
+    dest: "{{ tmp_dir }}/ascender-backup.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+
+- name: "Apply AWXBackup k8s manifest"
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'ascender-backup.yml') }}"
+
+- name: Wait for AWXBackup to complete
+  kubernetes.core.k8s_info:
+    api_version: awx.ansible.com/v1beta1
+    kind: AWXBackup
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+  register: awx_backups
+  until:
+    - awx_backups.resources | length > 0
+    - (awx_backups.resources | sort(attribute='metadata.creationTimestamp') | last).status.backupDirectory is defined
+    - (awx_backups.resources | sort(attribute='metadata.creationTimestamp') | last).status.backupClaim is defined
+  delay: 10
+  retries: 60
 
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:
@@ -69,7 +100,7 @@
       spec:
         containers:
         - name: "{{ backup_access_pod_name }}"
-          image: busybox
+          image: busybox:stable
           command: ["sleep", "3600"]
           volumeMounts:
           - name: backup-vol
@@ -94,26 +125,26 @@
 
 - name: Copy backup files from PVC
   block:
-    - name: Create current backup directory
+    - name: Create archive backup directory
       ansible.builtin.file:
-        path: "{{ backup_current_dir }}"
+        path: "{{ backup_archive_dir }}"
         state: directory
         mode: "0700"
 
-    - name: Copy files from backup PVC to current directory
+    - name: Copy files from backup PVC to archive directory
+      kubernetes.core.k8s_cp:
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        pod: "{{ backup_access_pod_name }}"
+        container: "{{ backup_access_pod_name }}"
+        remote_path: "{{ backup_directory }}/{{ file }}"
+        local_path: "{{ backup_archive_dir }}/{{ file }}"
+        state: from_pod
       loop:
         - tower.db
         - secrets.yml
         - awx_object
       loop_control:
         loop_var: file
-      kubernetes.core.k8s_cp:
-        namespace: "{{ ASCENDER_NAMESPACE }}"
-        pod: "{{ backup_access_pod_name }}"
-        container: "{{ backup_access_pod_name }}"
-        remote_path: "{{ backup_directory }}/{{ file }}"
-        local_path: "{{ backup_current_dir }}/{{ file }}"
-        state: from_pod
 
   always:
     - name: Delete temporary backup access pod
@@ -125,11 +156,20 @@
         wait: true
         verify_ssl: false
 
-- name: Archive backup with timestamp
-  ansible.builtin.copy:
-    src: "{{ backup_current_dir }}/"
-    dest: "{{ backup_archive_dir }}/"
+- name: Remove existing current backup directory link
+  ansible.builtin.file:
+    path: "{{ backup_current_dir }}"
+    state: absent
+
+- name: Symlink backup to current
+  ansible.builtin.file:
+    src: "{{ backup_archive_dir }}"
+    dest: "{{ backup_current_dir }}"
     mode: "0700"
+    state: link
 
 - ansible.builtin.debug:
     msg: "Backup copied to {{ backup_current_dir }}/ and archived to {{ backup_archive_dir }}/"
+
+- ansible.builtin.debug:
+    msg: "Ascender backup complete"

@@ -332,3 +332,5 @@ required_collections:
     compare: ">="
     version_type: semver
 
+# For development purposes
+SKIP_DISK_CHECK: false

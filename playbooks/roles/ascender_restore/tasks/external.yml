@@ -1,0 +1,9 @@
+# Display a message about external database backup not being supported via the Operator
+# Later we can add tasks here to backup secrets and other related files
+
+- debug:
+    msg: | 
+      Backup of External Databases are not supported via the Operator.
+      Please follow your backup strategy for your external database.
+
+- meta: end_play

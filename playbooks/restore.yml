@@ -1,10 +1,14 @@
-# Copyright (c) 2025, Ctrl IQ, Inc. All rights reserved.
+# Copyright (c) 2026, Ctrl IQ, Inc. All rights reserved.
 
 - hosts: localhost
   gather_facts: no
   connection: local
 
-  tasks:
+  environment:
+    K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
 
-    - ansible.builtin.debug:
-        msg: "This is the RESTORE playbook."
+  vars_files:
+    - ["../custom.config.yml", "../default.config.yml"]
+
+  roles:
+    - ascender_restore

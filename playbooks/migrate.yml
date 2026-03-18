@@ -11,4 +11,4 @@
     - ["../custom.config.yml", "../default.config.yml"]
 
   roles:
-    - ascender_backup
+    - ascender_migrate
