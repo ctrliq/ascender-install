@@ -178,6 +178,7 @@
   ansible.builtin.include_vars:
     file: "{{ backup_current_dir }}/secrets.yml"
     name: backup_secrets
+  no_log: true
 
 - name: Restore postgres configuration secret from backup
   kubernetes.core.k8s:
@@ -191,6 +192,7 @@
       data: "{{ backup_secrets.secrets.postgresConfigurationSecret.data }}"
       type: "{{ backup_secrets.secrets.postgresConfigurationSecret.type | default('Opaque') }}"
     verify_ssl: false
+  no_log: true
 
 - name: Scale down Ascender pods
   kubernetes.core.k8s_scale:
