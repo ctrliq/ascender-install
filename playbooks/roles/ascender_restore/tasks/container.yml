@@ -186,10 +186,10 @@
       apiVersion: v1
       kind: Secret
       metadata:
-        name: "{{ backup_secrets.postgresConfigurationSecret.name }}"
+        name: "{{ backup_secrets.secrets.postgresConfigurationSecret.name }}"
         namespace: "{{ ASCENDER_NAMESPACE }}"
-      data: "{{ backup_secrets.postgresConfigurationSecret.data }}"
-      type: "{{ backup_secrets.postgresConfigurationSecret.type | default('Opaque') }}"
+      data: "{{ backup_secrets.secrets.postgresConfigurationSecret.data }}"
+      type: "{{ backup_secrets.secrets.postgresConfigurationSecret.type | default('Opaque') }}"
     verify_ssl: false
 
 - name: Scale down Ascender pods
