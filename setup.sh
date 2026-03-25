@@ -130,6 +130,7 @@ if [ $? -ne 1 ]; then
     ansible-galaxy collection install $(dirname $0)/offline/collections/awx-awx-22.3.0.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/kubernetes-core-2.4.0.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/amazon-aws-6.5.0.tar.gz
+    ansible-galaxy collection install $(dirname $0)/offline/collections/community-general-8.3.0.tar.gz
   else
     ansible-galaxy install -r collections/requirements.yml
   fi
