@@ -13,6 +13,20 @@
   ansible.builtin.stat:
     path: ~/.kube/config
   register: existing_kubeconfig
+  changed_when: false
+
+- name: Check if existing kubeconfig can authenticate to the EKS cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+  register: existing_kubeconfig_check
+  ignore_errors: true
+  when: existing_kubeconfig.stat.exists and download_kubeconfig
+
+- name: Set fact for kubeconfig validity
+  ansible.builtin.set_fact:
+    kubeconfig_valid: "{{ existing_kubeconfig_check.resources is defined and existing_kubeconfig_check.resources | length > 0 }}"
+  when: existing_kubeconfig.stat.exists and download_kubeconfig
 
 - name: create backup of existing ~/.kube/config
   ansible.builtin.copy:
@@ -21,6 +35,7 @@
   when: 
     - existing_kubeconfig.stat.exists
     - download_kubeconfig
+    - not kubeconfig_valid
 
 - name: Delete existing ~/.kube/config
   ansible.builtin.file:
@@ -29,6 +44,7 @@
   when: 
     - existing_kubeconfig.stat.exists
     - download_kubeconfig
+    - not kubeconfig_valid
 
 # Check for existing eks cluster
 - name: Get list of all EKS clusters
@@ -56,19 +72,19 @@
 
 - name: Ensure kubeconfig exists
   ansible.builtin.file:
-    path: "{{ '/root/.kube/config' if ansible_user == 'root' else '/home/' + ansible_user + '/.kube/config' }}"
+    path: ~/.kube/config
     state: touch
     owner: "{{ ansible_user }}"
     mode: '0644'
   when: download_kubeconfig
+  changed_when: false
 
 - name: Retrieve kubeconfig for the EKS cluster
   ansible.builtin.shell:
     cmd: "aws eks update-kubeconfig --region {{ EKS_CLUSTER_REGION }} --name {{ EKS_CLUSTER_NAME }}"
   register: get_credentials_result
   environment:
-    KUBECONFIG: "{{ '/root/.kube/config' if ansible_user == 'root' else '/home/' + ansible_user + '/.kube/config' }}"
-    #KUBECONFIG: "/root/.kube/config"
+    KUBECONFIG: "~/.kube/config"
   when: download_kubeconfig
 
 - name: Ensure that the KUBECONFIG file can successfully authenticate to the EKS cluster
@@ -161,41 +177,26 @@
           }
       changed_when: false
 
-    - name: Get current assume role policy document
-      ansible.builtin.shell:
-        cmd: aws iam get-role --role-name {{ node_role_arn.stdout.split('/')[1] }} --query "Role.AssumeRolePolicyDocument" --output json
-      register: current_policy
-      changed_when: false
-
-    - name: Find all existing IAM roles
-      amazon.aws.iam_role_info:
-        name: "{{ node_role_arn.stdout.split('/')[1] }}"
-      register: all_roles_info
-      changed_when: false
-
-    - name: Load current policy document
+    - name: Set current assume role policy document
       ansible.builtin.set_fact:
-        current_policy_document: "{{ current_policy.stdout | from_json }}"
+        current_policy_document: "{{ role_info.iam_roles[0].assume_role_policy_document }}"
       changed_when: false
 
     - name: Add new statement to policy document
       ansible.builtin.set_fact:
         updated_policy_document: "{{ current_policy_document | combine({'Statement': current_policy_document.Statement + [ new_statement | from_json ]}, recursive=True) }}"
-      when: new_statement not in current_policy_document.Statement
+      when: (new_statement | from_json) not in current_policy_document.Statement
 
-    - name: Update IAM role with new assume role policy document
+    - name: Set final assume role policy document
+      ansible.builtin.set_fact:
+        final_policy_document: "{{ updated_policy_document | default(current_policy_document) }}"
+
+    - name: Update IAM role with managed policies and assume role policy
       amazon.aws.iam_role:
         name: "{{ node_role_arn.stdout.split('/')[1] }}"
-        assume_role_policy_document: "{{ updated_policy_document | to_nice_json }}"
+        assume_role_policy_document: "{{ final_policy_document | to_nice_json }}"
+        managed_policies: "{{ combined_policies }}"
         state: present
-      when: updated_policy_document is defined
-
-    - name: Attach policies to IAM role
-      ansible.builtin.shell: >
-        aws iam attach-role-policy
-        --role-name {{ node_role_arn.stdout.split('/')[1] }}
-        --policy-arn {{ item }}
-      with_items: "{{ combined_policies }}"
 
     - name: Create IAM Policy for AWSLoadBalancerControllerIAMPolicy 
       amazon.aws.iam_policy:
@@ -210,14 +211,16 @@
         aws eks describe-cluster
         --region {{ EKS_CLUSTER_REGION }}
         --name {{ EKS_CLUSTER_NAME }}
-        --query \"cluster.identity.oidc.issuer\"
+        --query "cluster.identity.oidc.issuer"
         --output text | cut -d '/' -f 5
       register: oidc_query
+      changed_when: false
 
     - name: Determine whether an IAM OIDC provider with your cluster's issuer ID is already in your account
       ansible.builtin.shell:
         cmd: "aws iam list-open-id-connect-providers | grep {{ oidc_query.stdout }} | cut -d \"/\" -f4"
       register: oidc_provider_query
+      changed_when: false
 
     - name: Create an IAM OIDC identity provider for your cluster if one does not exist
       ansible.builtin.command: >
@@ -226,6 +229,15 @@
         --cluster {{ EKS_CLUSTER_NAME }}
         --approve
       when: oidc_provider_query.stdout == ""
+
+    - name: Check if EBS CSI Driver service account exists
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: ServiceAccount
+        name: ebs-csi-controller-sa
+        namespace: kube-system
+      register: ebs_sa_check
+      ignore_errors: true
 
     - name: Create IAM service account for EBS CSI Driver
       ansible.builtin.command: >
@@ -237,6 +249,17 @@
         --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
         --approve
         --override-existing-serviceaccounts
+      when: ebs_sa_check.resources is not defined or ebs_sa_check.resources | length == 0
+
+    - name: Check if EBS CSI Driver is already deployed
+      kubernetes.core.k8s_info:
+        api_version: apps/v1
+        kind: DaemonSet
+        name: ebs-csi-node
+        namespace: kube-system
+      register: ebs_csi_check
+      ignore_errors: true
 
     - name: Deploy Amazon EBS CSI Driver
-      ansible.builtin.command: kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.32"    
+      ansible.builtin.command: kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.32"
+      when: ebs_csi_check.resources is not defined or ebs_csi_check.resources | length == 0    
