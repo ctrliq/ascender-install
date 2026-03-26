@@ -1,4 +1,3 @@
-{% if k8s_lb_protocol == 'https'  %}
 apiVersion: v1
 stringData:
   admin-password: {{ LEDGER_ADMIN_PASSWORD }}
