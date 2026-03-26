@@ -75,11 +75,8 @@ gcloud_pip_packages:
 aws_rpm_packages:
   8:
     - yum-utils
-    - terraform
   9:
     - yum-utils
-    - terraform
-
 aws_pip_packages:
   8:
     - boto3
