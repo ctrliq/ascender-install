@@ -75,6 +75,8 @@ spec:
   admin_password_secret: ascender-app-admin-password
 {% if ASCENDER_PGSQL_HOST is defined %}
   postgres_configuration_secret: ascender-app-postgres-configuration
+{% else %}
+  postgres_data_volume_init: true
 {% endif %}
 {% if custom_cacert_bundle is defined %}
   bundle_cacert_secret: ascender-app-custom-cert-bundle
