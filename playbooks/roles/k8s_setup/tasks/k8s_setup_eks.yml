@@ -263,3 +263,12 @@
     - name: Deploy Amazon EBS CSI Driver
       ansible.builtin.command: kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.32"
       when: ebs_csi_check.resources is not defined or ebs_csi_check.resources | length == 0    
+
+    - name: Include default storage class from EKS_DEFAULT_STORAGE_CLASS
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.template', 'templates/eks/storage/' + EKS_DEFAULT_STORAGE_CLASS + '.yml') }}"
+        verify_ssl: false
+      when:
+        - EKS_DEFAULT_STORAGE_CLASS is defined
+        - EKS_DEFAULT_STORAGE_CLASS in ['gp2', 'gp3', 'io2']

@@ -138,6 +138,13 @@ EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxx
 # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
 EKS_EBS_CSI_DRIVER_VERSION: "v1.48.0"
 
+# The default storage class to use for Ascender PVCs. This will determine the type of EBS volume
+# that Ascender uses for its storage. Valid options are gp2, gp3 and io2, which correspond to the
+# EBS volume types. If this variable is not set, the installer will not create a default storage
+# class and you will have to set the storage class for the Ascender PVCs manually.
+EKS_DEFAULT_STORAGE_CLASS: gp3
+
+
 # ---dkp variables---
 # The name of the dkp cluster you wish to deploy Ascender to and/or create
 # See a list of all dkp clusters with the command 
