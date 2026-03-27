@@ -54,7 +54,7 @@
   set_fact:
     subnet_base_tags: "{{ {'kubernetes.io/cluster/' + EKS_CLUSTER_NAME: 'owned', 'kubernetes.io/role/' + ('elb' if EKS_PUBLIC else 'internal-elb'): '1'} }}"
 
-- name: Create private subnets
+- name: Create cluster subnets
   amazon.aws.ec2_vpc_subnet:
     region: "{{ EKS_CLUSTER_REGION }}"
     vpc_id: "{{ vpc.vpc.id }}"
@@ -110,11 +110,6 @@
       - proto: tcp
         from_port: 0
         to_port: 65535
-        cidr_ip: "0.0.0.0/0"
-        rule_desc: "Allow all traffic from cluster VPC"
-      - proto: tcp
-        from_port: 0
-        to_port: 65535
         cidr_ip: "{{ EKS_CLUSTER_CIDR }}"
         rule_desc: "Allow node-to-node communication"
       - proto: udp
@@ -127,21 +122,6 @@
         cidr_ip: "0.0.0.0/0"
     state: present
   register: security_group
-
-- set_fact:
-    policy_doc: |
-      {
-        "Version": "2012-10-17",
-        "Statement": [
-          {
-            "Effect": "Allow",
-            "Principal": {
-              "Service": "ec2.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-          }
-        ]
-      }
 
 - name: Attach EKS cluster policy
   amazon.aws.iam_role:
@@ -188,8 +168,15 @@
     --vpc-private-subnets={{ subnets.results | map(attribute='subnet.id') | join(',') }}
     --node-private-networking
     --managed
+  register: eks_cluster2
   when: not (EKS_PUBLIC | bool)
 
+- debug:
+    var: eks_cluster
+
+- set_fact:
+    eks_cluster: "{% if EKS_PUBLIC | bool %}{{ eks_cluster }}{% else %}{{ eks_cluster2 }}{% endif %}"
+    
 - name: Create IAM role for EKS node group
   amazon.aws.iam_role:
     name: "{{ EKS_CLUSTER_NAME }}-node-group-role"
@@ -231,7 +218,7 @@
 
 - name: Create launch template for node group
   amazon.aws.ec2_launch_template:
-    name: "eks-node-launch-template"
+    name: "{{ EKS_CLUSTER_NAME }}-nodes"
     image_id: "{{ amazon_ami_id }}"
     instance_type: "{{ EKS_INSTANCE_TYPE }}"
     region: "{{ EKS_CLUSTER_REGION }}"

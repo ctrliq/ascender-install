@@ -11,24 +11,12 @@
 - name: Check Certificate
   ansible.builtin.fail:
     msg: Certificate for domain "{{ ASCENDER_HOSTNAME }}" not found in region "{{ EKS_CLUSTER_REGION }}"
-  when: certificate.certificates[0].certificate_arn is not defined
+  when: 
+    - certificate.certificates[0].certificate_arn is not defined
 
 - name: Set domain fact
   set_fact:
     certificate: "{{ certificate.certificates[0] }}"
-
-# - name: Get the Cluster security groups
-#   ansible.builtin.shell: >
-#     aws eks describe-cluster
-#     --name {{ EKS_CLUSTER_NAME }}
-#     --region {{ EKS_CLUSTER_REGION }}
-#     --query "cluster.resourcesVpcConfig.securityGroupIds"
-#     --output json
-#   register: eks_cluster_security_groups
-
-# - name: Set fact for Security Group
-#   set_fact:
-#     EKS_SECURITY_GROUPS: "{{ eks_cluster_security_groups.stdout | from_json | join(',') }}"
 
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:

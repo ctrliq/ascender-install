@@ -5,13 +5,13 @@
 
 - name: Ensure .kube directory exists
   ansible.builtin.file:
-    path: "~/.kube"
+    path: "{{ ansible_env.HOME }}/.kube"
     state: directory
     mode: '0755'
 
-- name: Determine if ~/.kube/config already exists
+- name: Determine if "{{ ansible_env.HOME }}/.kube/config" already exists
   ansible.builtin.stat:
-    path: ~/.kube/config
+    path: "{{ ansible_env.HOME }}/.kube/config"
   register: existing_kubeconfig
   changed_when: false
 
@@ -28,18 +28,18 @@
     kubeconfig_valid: "{{ existing_kubeconfig_check.resources is defined and existing_kubeconfig_check.resources | length > 0 }}"
   when: existing_kubeconfig.stat.exists and download_kubeconfig
 
-- name: create backup of existing ~/.kube/config
+- name: create backup of existing "{{ ansible_env.HOME }}/.kube/config"
   ansible.builtin.copy:
-    src: ~/.kube/config
-    dest: "~/.kube/config.{{ ansible_date_time.iso8601_basic_short }}"
+    src: "{{ ansible_env.HOME }}/.kube/config"
+    dest: "{{ ansible_env.HOME }}/.kube/config.{{ ansible_date_time.iso8601_basic_short }}"
   when: 
     - existing_kubeconfig.stat.exists
     - download_kubeconfig
     - not kubeconfig_valid
 
-- name: Delete existing ~/.kube/config
+- name: Delete existing "{{ ansible_env.HOME }}/.kube/config"
   ansible.builtin.file:
-    path: ~/.kube/config
+    path: "{{ ansible_env.HOME }}/.kube/config"
     state: absent
   when: 
     - existing_kubeconfig.stat.exists
@@ -72,7 +72,7 @@
 
 - name: Ensure kubeconfig exists
   ansible.builtin.file:
-    path: ~/.kube/config
+    path: "{{ ansible_env.HOME }}/.kube/config"
     state: touch
     owner: "{{ ansible_user }}"
     mode: '0644'
@@ -84,7 +84,7 @@
     cmd: "aws eks update-kubeconfig --region {{ EKS_CLUSTER_REGION }} --name {{ EKS_CLUSTER_NAME }}"
   register: get_credentials_result
   environment:
-    KUBECONFIG: "~/.kube/config"
+    KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config"
   when: download_kubeconfig
 
 - name: Ensure that the KUBECONFIG file can successfully authenticate to the EKS cluster

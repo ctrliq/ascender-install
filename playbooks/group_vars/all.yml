@@ -334,31 +334,42 @@ LEDGER_PVC_SIZE_GB: 10
 
 required_collections:
   - name: amazon.aws
+    version: "6.5.0"
     compare: ">="
-    version: 6.5.0
     version_type: semver
+    platform: ["eks"]
   - name: ansible.posix
-    version: 1.5.4
+    version: "1.5.4"
     compare: ">="
     version_type: semver
-  - name: azure.azcollection
-    compare: ">="
-    version: 2.4.0
-    version_type: semver
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
   - name: awx.awx
-    compare: ">="
-    version: 22.3.0
-    version_type: semver
-  - name: google.cloud
-    compare: ">="
-    version: 1.3.0
-    version_type: semver
-  - name: kubernetes.core
-    version: 2.4.0
+    version: "22.3.0"
     compare: ">="
     version_type: semver
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
+  - name: azure.azcollection
+    version: "2.4.0"
+    compare: ">="
+    version_type: semver
+    platform: ["azure"]
+  - name: community.aws
+    version: "11.0.0"
+    compare: ">="
+    version_type: semver
+    platform: ["eks"]
   - name: community.general
-    version: 8.3.0
+    version: "8.3.0"
     compare: ">="
     version_type: semver
-
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
+  - name: google.cloud
+    version: "1.3.0"
+    compare: ">="
+    version_type: semver
+    platform: ["gcp"]
+  - name: kubernetes.core
+    version: "2.4.0"
+    compare: ">="
+    version_type: semver
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]

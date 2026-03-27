@@ -108,8 +108,8 @@ metadata:
     alb.ingress.kubernetes.io/backend-protocol: HTTP
     alb.ingress.kubernetes.io/ssl-policy: "{{ EKS_SSL_POLICY }}"
     alb.ingress.kubernetes.io/inbound-cidrs: "{{ EKS_ALB_INBOUND_CIDRS | join(',') }}"
-{% if EKS_SECURITY_GROUPS is defined %}
-    alb.ingress.kubernetes.io/security-groups: "{{ EKS_SECURITY_GROUPS }}"
+{% if EKS_ALB_SECURITY_GROUPS is defined %}
+    alb.ingress.kubernetes.io/security-groups: "{{ EKS_ALB_SECURITY_GROUPS }}"
     alb.ingress.kubernetes.io/manage-backend-security-group-rules: "true"
 {% endif %}
   name: ledger-web-ingress

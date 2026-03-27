@@ -40,10 +40,10 @@ fi
 # Check if the k8s_platform is either "eks", "gke" or "aks"
 if [[ "$k8s_platform" == "eks" || "$k8s_platform" == "gke" || "$k8s_platform" == "aks" ]]; then
   # Check if the script is run as root or with sudo
-  if [ "$(id -u)" -eq 0 ]; then
-    echo "Error: This script must not be run as root or with sudo when k8s_platform is $k8s_platform."
-    #exit 1
-  fi
+  # if [ "$(id -u)" -eq 0 ]; then
+  #   echo "Error: This script must not be run as root or with sudo when k8s_platform is $k8s_platform."
+  #   exit 1
+  # fi
 
   # Check if the system is RHEL or Rocky Linux version 9 or higher
   if [[ "$OS" == "rhel" ]]; then
@@ -101,12 +101,7 @@ check_collections() {
   if [ $? -ne 0 ]; then
     return 0
   fi
-  ansible-doc -t module -l | grep amazon.aws.ec2_instance > /dev/null
-  if [ $? -ne 0 ]; then
-    return 0
-  fi
-
-  ansible-doc -t module -l | grep community.aws.acm_certificate_info > /dev/null
+  ansible-doc -t module -l | grep community.general.collection_version > /dev/null
   if [ $? -ne 0 ]; then
     return 0
   fi
@@ -133,8 +128,8 @@ if [ $? -ne 1 ]; then
   if [ -f "$(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz" ]; then
     ansible-galaxy collection install $(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/awx-awx-22.3.0.tar.gz
+    ansible-galaxy collection install $(dirname $0)/offline/collections/community-general-8.3.0.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/kubernetes-core-2.4.0.tar.gz
-    ansible-galaxy collection install $(dirname $0)/offline/collections/amazon-aws-6.5.0.tar.gz
   else
     ansible-galaxy install -r collections/requirements.yml
   fi
