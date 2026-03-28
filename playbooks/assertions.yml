@@ -86,6 +86,7 @@
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
             - k8s_offline
+            - not SKIP_DISK_CHECK
           with_items: "{{ ansible_mounts }}"
 
 
@@ -96,6 +97,7 @@
           when: 
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
+            - not SKIP_DISK_CHECK
           with_items: "{{ ansible_mounts }}"
 
       when: k8s_platform == "k3s"

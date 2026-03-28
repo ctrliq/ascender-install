@@ -1,0 +1,350 @@
+
+- name: Remove restore if exists
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: awx.ansible.com/v1beta1
+      kind: AWXRestore
+      metadata:
+        name: ascender-app-restore
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+
+- name: Take backup of the current database
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: awx.ansible.com/v1beta1
+      kind: AWXBackup
+      metadata:
+        name: ascender-app-backup
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      spec:
+        deployment_name: ascender-app
+    verify_ssl: false
+    wait: true
+
+- name: Get backup information
+  kubernetes.core.k8s_info:
+    api_version: awx.ansible.com/v1beta1
+    kind: AWXBackup
+    name: ascender-app-backup
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+    wait: true
+  register: backup_info
+  until: backup_info.resources[0].status.backupDirectory is defined
+  retries: 30
+  delay: 10
+
+- name: Set backup directory fact
+  ansible.builtin.set_fact:
+    backup_directory: "{{ backup_info.resources[0].status.backupDirectory }}"
+    backup_pvc: "{{ backup_info.resources[0].status.backupClaim }}"
+
+- name: Display backup directory
+  ansible.builtin.debug:
+    msg: "Backup directory: {{ backup_directory }}"
+
+- name: Display backup PVC
+  ansible.builtin.debug:
+    msg: "Backup PVC: {{ backup_pvc }}"
+
+- name: Remove existing temporary pod if present
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Pod
+    name: temp-copy-pod
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+
+- name: Create a temporary pod to mount the PVC
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: temp-copy-pod
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      spec:
+        volumes:
+          - name: pvc-storage
+            persistentVolumeClaim:
+              claimName: "{{ backup_pvc }}"
+        containers:
+          - name: busybox-container
+            image: busybox:stable
+            command: ["sleep", "infinity"]
+            volumeMounts:
+              - name: pvc-storage
+                mountPath: "/backups"
+        restartPolicy: Never
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
+  register: create_pod_result
+
+- name: Wait for the temporary pod to be ready
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    name: temp-copy-pod
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 120
+    verify_ssl: false
+
+- name: Clean up old migration directory in PVC
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    command: rm -fr /backups/awx_migration
+    verify_ssl: false
+
+- name: Create new directory in PVC for migration
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    command: mkdir /backups/awx_migration/
+    impersonate_user: 26
+    verify_ssl: false
+
+- name: Copy the files
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    command: cp -p {{ backup_directory }}/{{ item }} /backups/awx_migration/
+    impersonate_user: 26
+    verify_ssl: false
+  loop:
+    - tower.db
+    - secrets.yml
+    - awx_object
+
+- name: Copy the tower.db to the PVC
+  kubernetes.core.k8s_cp:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    local_path: "{{ local_file_path }}/tower.db"
+    remote_path: "/backups/awx_migration/tower.db"
+    state: to_pod
+    verify_ssl: false
+
+- name: load secrets.yml from backup
+  ansible.builtin.set_fact:
+    old_secrets: "{{ lookup('file', local_file_path + '/secrets.yml') | ansible.builtin.from_yaml }}"
+
+- name: load secrets.yml from backup
+  ansible.builtin.set_fact:
+    old_secret_key: "{{ old_secrets.secrets.secretKeySecret.data.secret_key }}"
+
+- name: Copy secrets from PVC
+  kubernetes.core.k8s_cp:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    local_path: "{{ local_file_path }}/secrets.new.yml"
+    remote_path: "/{{ backup_directory }}/secrets.yml"
+    state: from_pod
+    verify_ssl: false
+
+- name: load secrets.yml from backup
+  ansible.builtin.set_fact:
+    new_secrets: "{{ lookup('file', local_file_path + '/secrets.new.yml') | ansible.builtin.from_yaml }}"
+
+- name: load secrets.yml from backup
+  ansible.builtin.set_fact:
+    new_secret_key: "{{ new_secrets.secrets.secretKeySecret.data.secret_key }}"
+
+- name: Create updated secrets.yml file
+  ansible.builtin.set_fact:
+    updated_secrets: "{{ lookup('file', local_file_path + '/secrets.new.yml') | replace(new_secret_key, old_secret_key) }}"
+
+- name: Copy new secrets to PVC
+  kubernetes.core.k8s_cp:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    remote_path: "/backups/awx_migration/secrets.yml"
+    content: "{{ updated_secrets }}"
+    state: to_pod
+    verify_ssl: false
+
+- name: Fix permissions on copied files
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    command: chmod 777 /backups/awx_migration/{{ item }}
+    verify_ssl: false
+  loop:
+    - tower.db
+    - secrets.yml
+    - awx_object
+
+- name: Fix ownership on copied files
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: temp-copy-pod
+    command: chown 26:26 /backups/awx_migration/{{ item }}
+    verify_ssl: false
+  loop:
+    - tower.db
+    - secrets.yml
+    - awx_object
+
+- name: Clean up and delete the temporary pod
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: temp-copy-pod
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+
+- name: Scale down Ascender pods
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Deployment
+    name: "{{ item }}"
+    replicas: 0
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
+  loop:
+    - awx-operator-controller-manager
+    - ascender-app-task
+    - ascender-app-web
+
+- name: Scale down Ascender Postgres StatefulSet
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: StatefulSet
+    name: ascender-app-postgres-15
+    replicas: 0
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
+
+- name: Delete PVC for Postgres
+  kubernetes.core.k8s:
+    state: absent
+    kind: PersistentVolumeClaim
+    name: postgres-15-ascender-app-postgres-15-0
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait: true
+
+- name: Scale up Ascender Postgres StatefulSet
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: StatefulSet
+    name: ascender-app-postgres-15
+    replicas: 1
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
+
+- name: Restore the backup
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: awx.ansible.com/v1beta1
+      kind: AWXRestore
+      metadata:
+        name: ascender-app-restore
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+      spec:
+        deployment_name: ascender-app
+        backup_pvc_namespace: "{{ ASCENDER_NAMESPACE }}"
+        backup_pvc: "{{ backup_pvc }}"
+        backup_dir: /backups/awx_migration
+        no_log: false
+        #force_drop_db: true
+      wait: true
+    verify_ssl: false
+
+- name: Scale up Ascender Operator
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Deployment
+    name: "{{ item }}"
+    replicas: 1
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
+  loop:
+    - awx-operator-controller-manager
+
+- name: Search for all Pods labelled app=web
+  kubernetes.core.k8s_info:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Pod
+    name: ascender-app-postgres-15-0
+    verify_ssl: false
+  register: db_pods
+  until: db_pods.resources | length > 0
+  retries: 60
+  delay: 20
+
+- name: Remove specific migration entries from django_migrations table
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: ascender-app-postgres-15-0
+    command: psql -U awx -c "delete from django_migrations where app = 'main' and name like '{{ item }}%';"
+  verify_ssl: false
+  retries: 30
+  delay: 10
+  loop:
+    - "018"
+    - "019"
+
+- name: Search for all Pods labelled app=web
+  kubernetes.core.k8s_info:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Pod
+    label_selectors:
+      - "app.kubernetes.io/name = ascender-app-web"
+    verify_ssl: false
+  register: web_pods
+  until: web_pods.resources | length > 0
+  retries: 60
+  delay: 20
+
+- ansible.builtin.set_fact:
+    web_pod: "{{ web_pods.resources[0].metadata.name }}"
+
+- name: Run migrations
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: "{{ web_pod }}"
+    container: "ascender-app-web"
+    command: "/usr/bin/awx-manage migrate"
+    verify_ssl: false
+  ignore_errors: yes
+
+- name: Run fake migrations
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: "{{ web_pod }}"
+    container: "ascender-app-web"
+    command: /bin/bash -c "awx-manage migrate main {{ item }} --fake; awx-manage migrate --noinput;"
+    verify_ssl: false
+  ignore_errors: yes
+  loop:
+    - "0183_pre_django_upgrade"
+    - "0187_hop_nodes"
+
+- name: Remove restore if exists
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: awx.ansible.com/v1beta1
+      kind: AWXRestore
+      metadata:
+        name: ascender-app-restore
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false

@@ -373,3 +373,6 @@ required_collections:
     compare: ">="
     version_type: semver
     platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
+
+# For development purposes
+SKIP_DISK_CHECK: false
