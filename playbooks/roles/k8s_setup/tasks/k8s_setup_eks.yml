@@ -21,6 +21,7 @@
     kind: Node
   register: existing_kubeconfig_check
   ignore_errors: true
+  failed_when: false
   when: existing_kubeconfig.stat.exists and download_kubeconfig
 
 - name: Set fact for kubeconfig validity

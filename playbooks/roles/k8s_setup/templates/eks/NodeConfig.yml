@@ -1,10 +1,11 @@
 ---
+{% set eks_cluster_normalized = eks_cluster.cluster if (eks_cluster is mapping and 'cluster' in eks_cluster) else eks_cluster %}
 apiVersion: node.eks.aws/v1alpha1
 kind: NodeConfig
 spec:
   cluster:
-    apiServerEndpoint: "{{ eks_cluster.endpoint }}"
-    certificateAuthority: "{{ eks_cluster.certificate_authority.data }}"
+    apiServerEndpoint: "{{ eks_cluster_normalized.endpoint }}"
+    certificateAuthority: "{{ eks_cluster_normalized.certificate_authority.data }}"
     cidr: 172.20.0.0/16
     name: "{{ EKS_CLUSTER_NAME }}"
   kubelet:

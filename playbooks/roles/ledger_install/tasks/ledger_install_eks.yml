@@ -4,12 +4,20 @@
     region: "{{ EKS_CLUSTER_REGION }}"
   register: certificate
 
-- name: Get Certificates (Ascender)
-  community.aws.acm_certificate_info:
-    domain_name: "{{ ASCENDER_HOSTNAME }}"
-    region: "{{ EKS_CLUSTER_REGION }}"
-  register: certificate
-  when: certificate.certificates[0].certificate_arn is not defined
+- name: Check for Ascender Certificate if Ledger Certificate is not found
+  when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
+  block:
+    - name: Get Certificates (Ascender)
+      community.aws.acm_certificate_info:
+        domain_name: "{{ ASCENDER_HOSTNAME }}"
+        region: "{{ EKS_CLUSTER_REGION }}"
+      register: certificate2
+      when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
+
+    - name: Set certificate fact to Ascender certificate if Ledger certificate not found
+      ansible.builtin.set_fact:
+        certificate: "{{ certificate2 }}"
+      when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
 
 # - name: send ACM request if needed
 #   shell: aws acm request-certificate --domain-name "{{ acm_domain_name }}"  --domain-validation-options DomainName="{{ acm_domain_name }}",ValidationDomain="{{ acm_validation_domain }}"
@@ -18,10 +26,10 @@
 - name: Check Certificate
   ansible.builtin.fail:
     msg: Certificate for domain "{{ LEDGER_HOSTNAME }}" not found in region "{{ EKS_CLUSTER_REGION }}"
-  when: certificate.certificates[0].certificate_arn is not defined
+  when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
 
 - name: Set domain fact
-  set_fact:
+  ansible.builtin.set_fact:
     certificate: "{{ certificate.certificates[0] }}"
 
 - name: Retrieve the current time in order to timestamp files

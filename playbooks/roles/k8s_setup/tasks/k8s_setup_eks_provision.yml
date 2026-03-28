@@ -45,7 +45,7 @@
   register: vpc
 
 - debug: 
-    msg: "{{ EKS_CLUSTER_CIDR | ansible.utils.ipsubnet(26, count) }}"
+    msg: "{{ EKS_CLUSTER_CIDR | ansible.utils.ipsubnet(EKS_SUBNET_SIZE, count) }}"
   loop: "{{ range(0, EKS_NUM_SUBNETS) | list }}"
   loop_control:
     loop_var: count
