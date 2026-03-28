@@ -171,10 +171,8 @@
   register: eks_cluster2
   when: not (EKS_PUBLIC | bool)
 
-- debug:
-    var: eks_cluster
-
-- set_fact:
+- name: Set EKS cluster fact
+  ansible.builtin.set_fact:
     eks_cluster: "{% if EKS_PUBLIC | bool %}{{ eks_cluster }}{% else %}{{ eks_cluster2 }}{% endif %}"
     
 - name: Create IAM role for EKS node group

@@ -12,10 +12,10 @@
   ansible.builtin.fail:
     msg: Certificate for domain "{{ ASCENDER_HOSTNAME }}" not found in region "{{ EKS_CLUSTER_REGION }}"
   when: 
-    - certificate.certificates[0].certificate_arn is not defined
+    - certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
 
 - name: Set domain fact
-  set_fact:
+  ansible.builtin.set_fact:
     certificate: "{{ certificate.certificates[0] }}"
 
 - name: Retrieve the current time in order to timestamp files

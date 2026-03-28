@@ -101,7 +101,7 @@ check_collections() {
   if [ $? -ne 0 ]; then
     return 0
   fi
-  ansible-doc -t module -l | grep community.general.collection_version > /dev/null
+  ansible-doc -t lookup -l | grep community.general.collection_version > /dev/null
   if [ $? -ne 0 ]; then
     return 0
   fi

@@ -221,6 +221,7 @@
         cmd: "aws iam list-open-id-connect-providers | grep {{ oidc_query.stdout }} | cut -d \"/\" -f4"
       register: oidc_provider_query
       changed_when: false
+      failed_when: false
 
     - name: Create an IAM OIDC identity provider for your cluster if one does not exist
       ansible.builtin.command: >
