@@ -57,6 +57,10 @@ You can copy the contents of [eks.inventory](./eks.inventory) in this directory,
 $ cp <repository root>/docs/installation/eks/eks.inventory <repository root>/inventory 
 ```
 
+#### AWS Certificate Manager
+
+Before configuring the installer, you must create an SSL certificate in [AWS Certificate Manager](https://docs.aws.amazon.com/acm/latest/userguide/acm-overview.html) (ACM) in the same region as your EKS cluster. The certificate should cover the hostnames you plan to use for Ascender and Ledger (e.g., `ascender.example.com` and `ledger.example.com`). If you plan to use the Automation Mesh feature to deploy external execution nodes, the certificate should also include the mesh hostname (e.g., `mesh.ascender.example.com`). Using a wildcard certificate (e.g., `*.example.com`) is recommended to cover all components. The ARN of this certificate will be used for the `EKS_SSL_CERT` variable in the configuration step below.
+
 #### custom.config.yml file
 
 You can run the bash script at 
@@ -76,22 +80,38 @@ Afterward, you can simply edit this file should you not want to run the script a
 The following variables will be present after running the script:
 
 - `k8s_platform`: This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-- `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+- `k8s_lb_protocol`: For EKS is this ignored, it will always use https for Ascender running on EKS.
 - `USE_ROUTE_53`: Determines whether to use Route53's Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
 - `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
-- `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
+- `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ledger service.
 - `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
   - this is a SINGLE domain for both Ascender AND Ledger.
+- `EKS_USER`: If desired, this indicates an AWS IAM user that can be set up in order to have minimum permissions to set up a new EKS cluster and install Ascender and its associated components.
 - `EKS_CLUSTER_NAME`: The name of the eks cluster on which Ascender will be installed. This can be an existing eks cluster, or the name of the one to create, should the `eksctl` tool not find this name amongst its existing clusters.
-- `EKS_CLUSTER_REGION`: The AWS region hosting the eks cluster
-- `EKS_K8S_VERSION`: The kubernetes version for the eks cluster; available kubernetes versions can be found [here](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html)
-- `EKS_INSTANCE_TYPE`: The worker node instance type. 
-- `EKS_MIN_WORKER_NODES`: The minimum number of worker nodes that the cluster will run
-- `EKS_MAX_WORKER_NODES`: The maximum number of worker nodes that the cluster will run
-- `EKS_NUM_WORKER_NODES`: The desired number of worker nodes for the eks cluster
-- `EKS_WORKER_VOLUME_SIZE`: The size of the Elastic Block Storage volume for each worker node
-- `tls_crt_path`: TLS Certificate file location on the local installing machine
-- `tls_key_path`: TLS Private Key file location on the local installing machine
+- `EKS_CLUSTER_STATUS`: Determines what to do with the EKS cluster Ascender will be installed on. Valid options are:
+  - `provision`: Provision a new EKS cluster from scratch.
+  - `configure`: Use the cluster specified by `EKS_CLUSTER_NAME`, and configure it with policies for load balancer creation and Elastic Block Store access.
+  - `no_action`: Use the cluster specified by `EKS_CLUSTER_NAME`, but make no changes to it before installing Ascender.
+- `EKS_CLUSTER_REGION`: The AWS region hosting the eks cluster.
+- `EKS_CLUSTER_CIDR`: The EKS cluster subnet in CIDR notation. Only required if `EKS_CLUSTER_STATUS` is set to `provision`.
+- `EKS_PUBLIC`: Determines whether cluster nodes are assigned public IPs. If set to true, cluster nodes will be assigned public IPs.
+- `EKS_NUM_SUBNETS`: The number of subnets for the EKS cluster. Only required if `EKS_CLUSTER_STATUS` is set to `provision`.
+- `EKS_SUBNET_SIZE`: The network size for each of the subnets. Only required if `EKS_CLUSTER_STATUS` is set to `provision`.
+- `EKS_SSL_POLICY`: The SSL Policy for the EKS AWS Load Balancer.
+- `EKS_INTERNET_GATEWAY`: Whether to set up an Internet Gateway for the VPC. Only required if `EKS_CLUSTER_STATUS` is set to `provision`.
+- `EKS_ALB_SECURITY_GROUPS`: The security groups to use for the AWS Load Balancer; this controls who can access the Load Balancer and therefore Ascender. If left blank, the installer will create a security group that allows access from anywhere.
+- `EKS_ALB_INBOUND_CIDRS`: The inbound CIDR blocks for the AWS Load Balancer security group; this controls who can access the Load Balancer and therefore Ascender.
+- `EKS_K8S_VERSION`: The kubernetes version for the eks cluster; available kubernetes versions can be found [here](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html).
+- `EKS_INSTANCE_TYPE`: The worker node instance type.
+- `EKS_MIN_WORKER_NODES`: The minimum number of worker nodes that the cluster will run.
+- `EKS_MAX_WORKER_NODES`: The maximum number of worker nodes that the cluster will run.
+- `EKS_NUM_WORKER_NODES`: The desired number of worker nodes for the eks cluster.
+- `EKS_WORKER_VOLUME_SIZE`: The size of the Elastic Block Storage volume for each worker node.
+- `EKS_SSL_CERT`: The ARN for the SSL certificate; required when `k8s_lb_protocol` is set to `https`. The same certificate is used for all components (currently Ascender and Ledger); as such, it is recommended that the certificate is set for a wildcard domain (e.g., `*.example.com`).
+- `EKS_EBS_CSI_DRIVER_VERSION`: The version of the Amazon Elastic Block Store Container Storage Interface (CSI) Driver used by the cluster. All releases can be found [here](https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases).
+- `EKS_DEFAULT_STORAGE_CLASS`: The default storage class to use for Ascender PVCs, which determines the type of EBS volume. Valid options are `gp2`, `gp3`, and `io2`. If not set, the installer will not create a default storage class and you will have to set the storage class for the Ascender PVCs manually.
+- `tls_crt_path`: For EKS, this is ignored, you must first create a certificate in Certificate Manager.
+- `tls_key_path`: For EKS, this is ignored, you must first create a certificate in Certificate Manager.
 
 ### Run the setup script
 

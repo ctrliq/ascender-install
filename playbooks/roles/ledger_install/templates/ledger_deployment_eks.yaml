@@ -27,18 +27,6 @@ metadata:
   name: db-settings
   namespace: {{ LEDGER_NAMESPACE }}
 type: Opaque
-{% if k8s_lb_protocol == 'https'  %}
----
-apiVersion: v1
-data:
-  tls.crt: {{ lookup('ansible.builtin.file', tls_crt_path) | b64encode }}
-  tls.key: {{ lookup('ansible.builtin.file', tls_key_path) | b64encode }}
-kind: Secret
-metadata:
-  name: ascender-tls-secret
-  namespace: {{ LEDGER_NAMESPACE }}
-type: kubernetes.io/tls
-{% endif %}
 ---
 apiVersion: v1
 stringData:
@@ -100,7 +88,7 @@ spec:
   type: ClusterIP
   ports:
   - name: web-port
-    port: 80
+    port: 8090
     targetPort: 80
   selector:
     io.kompose.service: web
@@ -109,15 +97,24 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-{% if k8s_lb_protocol == 'https'  %}
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/load-balancer-name: "{{ EKS_CLUSTER_NAME }}-ledger"
+    alb.ingress.kubernetes.io/scheme: "{{ 'internet-facing' if EKS_PUBLIC else 'internal' }}"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/success-codes: "200,302"
+    alb.ingress.kubernetes.io/certificate-arn: "{{ certificate.certificate_arn }}"
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/ssl-policy: "{{ EKS_SSL_POLICY }}"
+    alb.ingress.kubernetes.io/inbound-cidrs: "{{ EKS_ALB_INBOUND_CIDRS | join(',') }}"
+{% if EKS_ALB_SECURITY_GROUPS is defined %}
+    alb.ingress.kubernetes.io/security-groups: "{{ EKS_ALB_SECURITY_GROUPS }}"
+    alb.ingress.kubernetes.io/manage-backend-security-group-rules: "true"
 {% endif %}
   name: ledger-web-ingress
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
-  ingressClassName: nginx
   rules:
   - host: {{ LEDGER_HOSTNAME }}
     http:
@@ -126,13 +123,12 @@ spec:
           service:
             name: web-svc
             port:
-              number: 80
+              number: 8090
         path: /
         pathType: Prefix
   tls:
   - hosts:
     - {{ LEDGER_HOSTNAME }}
-    secretName: ascender-tls-secret
 {% if LEDGER_DB_HOST == "db" %}
 ---
 apiVersion: v1

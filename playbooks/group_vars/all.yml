@@ -84,6 +84,29 @@ EKS_CLUSTER_REGION: us-east-1
 # Only required if EKS_CLUSTER_STATUS is set to provision.
 EKS_CLUSTER_CIDR: "10.10.0.0/16"
 
+    # Determines whether cluster nodes are assigned public IPs.
+    # If this value is set to true, cluster nodes will be assigned public IPs.
+EKS_PUBLIC: false
+
+    # The number of subnets for the eks cluster
+EKS_NUM_SUBNETS: 3
+
+    # The network size for each of the subnets
+EKS_SUBNET_SIZE: 26
+
+    # Set the SSL Policy for the EKS AWS Load Balancer
+EKS_SSL_POLICY: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+
+    # Whether to set up an Internet Gateway for the VPC
+EKS_INTERNET_GATEWAY: true
+
+    # The security groups to use for the AWS Load Balancer; this controls who can access the Load Balancer and therefore Ascender.
+    # If left blank, the installer will create a security group that allows access from anywhere
+#EKS_ALB_SECURITY_GROUPS: ""
+
+    # The inbound CIDR blocks for the AWS Load Balancer security group; this controls who can access the Load Balancer and therefore Ascender.
+EKS_ALB_INBOUND_CIDRS: ["0.0.0.0/0"]
+
 # The kubernetes version for the eks cluster; available kubernetes versions can be found here:
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
 EKS_K8S_VERSION: "1.33"
@@ -114,6 +137,13 @@ EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxx
 # This variable specifies the version in use by the cluster; all releases can be found here:
 # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
 EKS_EBS_CSI_DRIVER_VERSION: "v1.48.0"
+
+# The default storage class to use for Ascender PVCs. This will determine the type of EBS volume
+# that Ascender uses for its storage. Valid options are gp2, gp3 and io2, which correspond to the
+# EBS volume types. If this variable is not set, the installer will not create a default storage
+# class and you will have to set the storage class for the Ascender PVCs manually.
+EKS_DEFAULT_STORAGE_CLASS: gp3
+
 
 # ---dkp variables---
 # The name of the dkp cluster you wish to deploy Ascender to and/or create
@@ -304,33 +334,45 @@ LEDGER_PVC_SIZE_GB: 10
 
 required_collections:
   - name: amazon.aws
+    version: "6.5.0"
     compare: ">="
-    version: 6.5.0
     version_type: semver
+    platform: ["eks"]
   - name: ansible.posix
-    version: 1.5.4
+    version: "1.5.4"
     compare: ">="
     version_type: semver
-  - name: azure.azcollection
-    compare: ">="
-    version: 2.4.0
-    version_type: semver
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
   - name: awx.awx
-    compare: ">="
-    version: 22.3.0
-    version_type: semver
-  - name: google.cloud
-    compare: ">="
-    version: 1.3.0
-    version_type: semver
-  - name: kubernetes.core
-    version: 2.4.0
+    version: "22.3.0"
     compare: ">="
     version_type: semver
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
+  - name: azure.azcollection
+    version: "2.4.0"
+    compare: ">="
+    version_type: semver
+    platform: ["azure"]
+  - name: community.aws
+    version: "11.0.0"
+    compare: ">="
+    version_type: semver
+    platform: ["eks"]
   - name: community.general
-    version: 8.3.0
+    version: "8.3.0"
     compare: ">="
     version_type: semver
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
+  - name: google.cloud
+    version: "1.3.0"
+    compare: ">="
+    version_type: semver
+    platform: ["gcp"]
+  - name: kubernetes.core
+    version: "2.4.0"
+    compare: ">="
+    version_type: semver
+    platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
 
 # For development purposes
 SKIP_DISK_CHECK: false
