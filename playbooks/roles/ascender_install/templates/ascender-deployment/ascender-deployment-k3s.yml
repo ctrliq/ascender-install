@@ -90,6 +90,9 @@ spec:
   postgres_configuration_secret: ascender-app-postgres-configuration
 {% else %}
   postgres_data_volume_init: true
+  init_postgres_extra_commands: |
+    chown 26:0 /var/lib/pgsql/data
+    chmod 700 /var/lib/pgsql/data
 {% endif %}
 {% if custom_cacert_bundle is defined %}
   bundle_cacert_secret: ascender-app-custom-cert-bundle
