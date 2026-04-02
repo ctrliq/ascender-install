@@ -135,13 +135,19 @@
             "Principal": {
               "Service": "eks.amazonaws.com"
             },
-            "Action": "sts:AssumeRole"
+            "Action": [
+                "sts:AssumeRole",
+                "sts:TagSession"
+            ]
           }
         ]
       }
     managed_policies:
       - "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
       - "arn:aws:iam::aws:policy/AmazonEKSLoadBalancingPolicy"
+      - "arn:aws:iam::aws:policy/AmazonEKSBlockStoragePolicy"
+      - "arn:aws:iam::aws:policy/AmazonEKSComputePolicy"
+      - "arn:aws:iam::aws:policy/AmazonEKSNetworkingPolicy"
       - "arn:aws:iam::aws:policy/ElasticLoadBalancingReadOnly"
 
 - name: Create Public EKS cluster
