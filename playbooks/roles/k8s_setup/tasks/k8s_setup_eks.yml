@@ -114,13 +114,13 @@
         definition: "{{ lookup('ansible.builtin.template', 'templates/eks/cert-manager.yml') }}"
         verify_ssl: false
 
-    - name: "Apply ALB spec"
+    - name: "Apply ALB spec (retry until Cert Manager CRDs are available)"
       kubernetes.core.k8s:
         state: present
         definition: "{{ lookup('ansible.builtin.template', 'templates/eks/ingress-controller.yml') }}"
         verify_ssl: false
       register: result
-      retries: 6
+      retries: 60
       delay: 10
       until: result is not failed
 
