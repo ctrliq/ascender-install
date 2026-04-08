@@ -1,0 +1,84 @@
+---
+# Reset postgres tuning and remove restore PVC from StatefulSet.
+# Safe to run independently after a successful pg_restore.
+
+- name: Get PostgreSQL StatefulSet
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/component=database"
+      - "app.kubernetes.io/managed-by=awx-operator"
+  register: pg_statefulset
+
+- name: Wait for PostgreSQL pod to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    name: "{{ ascender.instance }}-postgres-15-0"
+    namespace: "{{ ascender.namespace }}"
+  register: pg_pod
+  until:
+    - pg_pod.resources | length > 0
+    - pg_pod.resources[0].status.phase == 'Running'
+    - pg_pod.resources[0].status.containerStatuses[0].ready == true
+  retries: 30
+  delay: 10
+
+- name: Reset postgres tuning after restore
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    container: "{{ pg_pod.resources[0].spec.containers[0].name }}"
+    command: bash -c 'psql -c "ALTER SYSTEM RESET ALL;" && psql -c "SELECT pg_reload_conf();"'
+  retries: 10
+  delay: 10
+
+# --- Remove restore PVC from StatefulSet ---
+
+- name: Scale down PostgreSQL to remove restore PVC
+  kubernetes.core.k8s_scale:
+    kind: StatefulSet
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+    replicas: 0
+    wait: false
+
+- name: Wait for PostgreSQL to scale down
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+  register: pg_ss_cleanup
+  until: pg_ss_cleanup.resources[0].status.replicas | default(0) == 0
+  retries: 20
+  delay: 15
+
+- name: Remove restore PVC from PostgreSQL StatefulSet
+  kubernetes.core.k8s:
+    kind: StatefulSet
+    state: patched
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+    merge_type: strategic-merge
+    definition:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: postgres
+              volumeMounts:
+              - name: ascender-restore
+                mountPath: /restore
+                $patch: delete
+            volumes:
+            - name: ascender-restore
+              $patch: delete
+
+- name: Scale up PostgreSQL clean
+  kubernetes.core.k8s_scale:
+    kind: StatefulSet
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+    replicas: 1
+    wait: true
+    wait_timeout: 180

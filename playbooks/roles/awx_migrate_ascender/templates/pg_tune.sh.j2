@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+
+psql -c "ALTER SYSTEM SET maintenance_work_mem = '2GB';"
+psql -c "ALTER SYSTEM SET max_wal_size = '4GB';"
+psql -c "ALTER SYSTEM SET full_page_writes = off;"
+psql -c "ALTER SYSTEM SET max_parallel_maintenance_workers = 8;"
+psql -c "ALTER SYSTEM SET max_worker_processes = 16;"
+psql -c "ALTER SYSTEM SET max_parallel_workers = 16;"
+psql -c "SELECT pg_reload_conf();"

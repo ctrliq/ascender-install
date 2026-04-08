@@ -1,0 +1,30 @@
+#!/bin/bash
+# Check pg_restore progress. Called by Ansible until loop.
+# Exit 1 = still running (Ansible retries). Exit 0 = done.
+
+pid=$(cat /tmp/pg_restore.pid 2>/dev/null)
+if [ -z "$pid" ]; then
+  echo "ERROR: /tmp/pg_restore.pid not found"
+  exit 0
+fi
+
+if kill -0 "$pid" 2>/dev/null; then
+  db_info=$(psql -U awx -d awx -tAc "
+    SELECT 'db_size=' || pg_size_pretty(pg_database_size(current_database()))
+         || ' | active_queries=' || (SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND pid != pg_backend_pid() AND state != 'idle');
+  " 2>/dev/null)
+  last_op=$(tail -1 /tmp/pg_restore.log 2>/dev/null | head -c 120)
+  echo "STATUS=running | ${db_info} | last=${last_op}"
+  exit 0
+fi
+
+# pg_restore finished
+rc=$(cat /tmp/pg_restore.exit 2>/dev/null)
+db_size=$(psql -U awx -d awx -tAc "SELECT pg_size_pretty(pg_database_size(current_database()));" 2>/dev/null)
+if [ "${rc:-1}" -eq 0 ]; then
+  echo "STATUS=done | pg_restore completed at $(date) | final_size=${db_size}"
+else
+  echo "STATUS=failed | pg_restore failed at $(date) (exit code: ${rc:-unknown})"
+fi
+echo "--- last 30 lines of pg_restore.log ---"
+tail -30 /tmp/pg_restore.log 2>/dev/null

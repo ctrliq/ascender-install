@@ -1,0 +1,119 @@
+---
+# Mount restore PVC on postgres, run pg_restore, fix migrations.
+# Postgres must already be scaled down (prep.yml).
+# Worker pod must be deleted first (ReadWriteOnce PVC).
+
+- name: Get PostgreSQL StatefulSet
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/component=database"
+      - "app.kubernetes.io/managed-by=awx-operator"
+  register: pg_statefulset
+
+- name: Patch PostgreSQL StatefulSet with restore PVC
+  kubernetes.core.k8s:
+    kind: StatefulSet
+    state: patched
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+    merge_type: strategic-merge
+    definition:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: postgres
+              volumeMounts:
+              - name: ascender-restore
+                mountPath: /restore
+            volumes:
+            - name: ascender-restore
+              persistentVolumeClaim:
+                claimName: "{{ restore_pvc.name }}"
+
+- name: Scale up PostgreSQL StatefulSet
+  kubernetes.core.k8s_scale:
+    kind: StatefulSet
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+    replicas: 1
+
+- name: Wait for PostgreSQL pod to be ready
+  kubernetes.core.k8s_info:
+    kind: Pod
+    name: "{{ ascender.instance }}-postgres-15-0"
+    namespace: "{{ ascender.namespace }}"
+  register: pg_pod
+  until:
+    - pg_pod.resources | length > 0
+    - pg_pod.resources[0].status.phase == 'Running'
+    - pg_pod.resources[0].status.containerStatuses[0].ready == true
+  retries: 30
+  delay: 10
+
+- name: Wait for PostgreSQL to accept connections
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    container: "{{ pg_pod.resources[0].spec.containers[0].name }}"
+    command: bash -c 'pg_isready -q'
+  register: pg_ready
+  until: pg_ready.rc == 0
+  retries: 30
+  delay: 10
+
+- name: Drop AWX database
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    command: bash -c 'psql -c "DROP DATABASE awx WITH (FORCE);"'
+
+- name: Create empty AWX database
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    command: bash -c 'psql -c "CREATE DATABASE awx WITH OWNER = awx;"'
+
+- name: Tune postgres for fast restore
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    container: "{{ pg_pod.resources[0].spec.containers[0].name }}"
+    command: "bash -c {{ lookup('template', 'pg_tune.sh.j2') | quote }}"
+  retries: 5
+  delay: 5
+
+- name: Start pg_restore in background
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    container: "{{ pg_pod.resources[0].spec.containers[0].name }}"
+    command: "bash -c {{ lookup('template', 'pg_restore.sh.j2') | quote }}"
+
+- name: Monitor pg_restore progress
+  ansible.builtin.include_tasks: pg_restore_poll.yml
+
+- name: Fail if pg_restore errored
+  ansible.builtin.fail:
+    msg: "pg_restore failed. Check output above."
+  when: pg_restore_poll.stdout is defined and pg_restore_poll.stdout is search('STATUS=failed')
+
+- name: Wait for PostgreSQL to accept connections after restore
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    container: "{{ pg_pod.resources[0].spec.containers[0].name }}"
+    command: bash -c 'psql -U awx -d awx -c "SELECT 1;"'
+  register: pg_ready
+  until: pg_ready.rc == 0
+  retries: 30
+  delay: 10
+
+- name: Delete AWX-only migrations and fake conflicts
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    container: "{{ pg_pod.resources[0].spec.containers[0].name }}"
+    command: "bash -c {{ lookup('template', 'migration_fix.sh.j2') | quote }}"

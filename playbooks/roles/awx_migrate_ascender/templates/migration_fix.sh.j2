@@ -1,0 +1,54 @@
+#!/bin/sh
+set -eu
+
+# -----------------------------------------------------------------------
+# Clean up django_migrations after restoring AWX 24.6.1 into Ascender.
+# This runs in the postgres pod BEFORE awx-manage migrate.
+# Only deletes records -- no business logic SQL, no INSERTs.
+#
+# We delete ALL main app records from 0183 onward. Partial deletion
+# causes InconsistentMigrationHistory because Django checks the full
+# dependency chain before running any command (even --fake). For example,
+# deleting 0184_django_indexes while 0185 still has a record fails
+# because 0185 depends on 0184_django_indexes.
+#
+# awx-manage migrate will re-fake or re-apply everything from 0183.
+# -----------------------------------------------------------------------
+
+psql -U awx -d awx -c "
+DELETE FROM django_migrations
+WHERE app = 'main'
+  AND name >= '0183';
+"
+
+# -----------------------------------------------------------------------
+# Clear DAB RBAC shadow data so dab_rbac migrations 0004-0008 succeed.
+#
+# AWX 24.6.1 has ansible_base.rbac in INSTALLED_APPS and registers 10
+# models (Credential, Project, Team, etc.) in the permission registry.
+# This populates dab_rbac tables with permissions, role definitions, and
+# user/team assignments. These are a shadow copy of the old RBAC system
+# (main_rbac_*) which is what Ascender actually reads at runtime.
+#
+# Ascender registers zero models in the permission registry. DAB migration
+# 0005 (migrate_content_type) tries to map every DABPermission to a new
+# DABContentType, but the DABContentType table is empty because nothing
+# is registered. The migration crashes on the first permission it finds.
+#
+# Clearing the data lets migration 0005 find zero rows and succeed.
+# The old RBAC tables (main_rbac_*) are completely separate and untouched.
+# See README: "DAB RBAC: the shadow permission system"
+# -----------------------------------------------------------------------
+
+psql -U awx -d awx -c "
+TRUNCATE dab_rbac_roleuserassignment,
+         dab_rbac_roleteamassignment,
+         dab_rbac_roleevaluation,
+         dab_rbac_roleevaluationuuid,
+         dab_rbac_objectrole_provides_teams,
+         dab_rbac_objectrole,
+         dab_rbac_roledefinition_permissions,
+         dab_rbac_roledefinition,
+         dab_rbac_dabpermission
+         CASCADE;
+"

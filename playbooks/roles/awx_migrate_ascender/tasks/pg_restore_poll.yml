@@ -1,0 +1,28 @@
+---
+# Recursive pg_restore progress poll.
+# Called from pg_restore.yml. Calls itself until STATUS=done or STATUS=failed.
+
+- name: "pg_restore: check progress"
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ ascender.instance }}-postgres-15-0"
+    container: "{{ pg_pod.resources[0].spec.containers[0].name }}"
+    command: "bash -c {{ lookup('template', 'pg_restore_poll.sh.j2') | quote }}"
+  register: pg_restore_poll
+
+- name: pg_restore progress
+  ansible.builtin.debug:
+    msg: "{{ pg_restore_poll.stdout_lines | default([]) }}"
+
+- name: Set pg_restore done flag
+  ansible.builtin.set_fact:
+    _pg_restore_done: "{{ pg_restore_poll.stdout is search('STATUS=done') or pg_restore_poll.stdout is search('STATUS=failed') }}"
+
+- name: Wait for next poll
+  ansible.builtin.pause:
+    seconds: "{{ restore_poll_interval | default(30) }}"
+  when: not (_pg_restore_done | bool)
+
+- name: Continue polling
+  ansible.builtin.include_tasks: pg_restore_poll.yml
+  when: not (_pg_restore_done | bool)
