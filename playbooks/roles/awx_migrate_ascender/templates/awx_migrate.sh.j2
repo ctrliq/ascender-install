@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+
+# Apply Ascender migrations after restoring an AWX database.
+# Steps are defined in vars/main.yml as migration_steps.
+# fake = AWX already applied identical schema, just record it.
+# apply = Ascender-only migration, run the actual Python/SQL.
+
+{% for step in migration_steps %}
+{% if step.target is defined and step.target %}
+awx-manage migrate main {{ step.target }} {% if step.action == 'fake' %}--fake {% endif %}--noinput
+{% else %}
+awx-manage migrate main {% if step.action == 'fake' %}--fake {% endif %}--noinput
+{% endif %}
+{% endfor %}
+
+# dab_resource_registry: applies 0005-0007 (AWX 24.6.1 stops at 0004)
+awx-manage migrate dab_resource_registry --noinput
+
+# dab_rbac: applies 0004-0008 (AWX 24.6.1 stops at 0003)
+# Tables were cleared by migration_fix.sh.j2 so data migrations find zero rows.
+awx-manage migrate dab_rbac --noinput
+
+echo "All Ascender migrations applied successfully."

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Start pg_restore in the background and exit immediately.
+# Progress is monitored by a separate Ansible polling task.
+# Exit code is written to /tmp/pg_restore.exit when done.
+
+rm -f /tmp/pg_restore.exit /tmp/pg_restore.log /tmp/pg_restore.pid
+
+nohup bash -c '
+pg_restore --verbose -j {{ pg_restore_jobs | default(16) }} --clean --if-exists -U awx -d awx /restore/awx-prod/tower.db > /tmp/pg_restore.log 2>&1
+echo $? > /tmp/pg_restore.exit
+' > /dev/null 2>&1 &
+
+echo $! > /tmp/pg_restore.pid
+echo "pg_restore started in background (PID: $!) at $(date)"

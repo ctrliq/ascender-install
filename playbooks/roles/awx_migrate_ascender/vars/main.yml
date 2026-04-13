@@ -1,0 +1,77 @@
+---
+# vars file for awx_migrate_ascender
+# LDAP server URIs per environment (customize for your domain controllers)
+ascender_ldap_server_map:
+  dr:
+    - ldaps://dc01.example.com:636
+    - ldaps://dc02.example.com:636
+  prod:
+    - ldaps://dc01.example.com:636
+    - ldaps://dc02.example.com:636
+
+ascender:
+  namespace: "{{ ascender_namespace | default('ascender') }}"
+  instance: "{{ ascender_instance | default('ascender') }}"
+  environment: "{{ ascender_environment | default('dr') }}"
+  ldap_servers: "{{ ascender_ldap_server_map[ascender_environment | default('dr')] }}"
+
+source_instance: "{{ source_awx_instance | default('awx') }}"
+
+
+# Kubernetes API connection
+k8s:
+  url: "{{ k8s_url }}"
+  token: "{{ k8s_token }}"
+
+# S3 backup storage (any S3-compatible endpoint via mc client)
+s3:
+  secret:
+    endpoint: "{{ s3_endpoint }}"
+    accesskey: "{{ s3_accesskey }}"
+    secretkey: "{{ s3_secretkey }}"
+    bucket: "{{ s3_bucket }}"
+  mc_image: "{{ s3_mc_image | default('minio/mc') }}"
+  mc_image_tag: "{{ s3_mc_image_tag | default('latest') }}"
+
+# Restore PVC
+restore_pvc:
+  name: awx-migrate-ascender
+  size: "{{ restore_pvc_size | default('100Gi') }}"
+  sc: "{{ restore_pvc_storage_class | default('thin-csi') }}"
+
+# Ordered migration plan for AWX 24.6.1 -> Ascender 25.3.5.
+# Each step runs: awx-manage migrate main <target> [--fake] --noinput
+# Django processes all migrations between the last applied and the target.
+# fake = schema already exists from AWX, just record it
+# apply = Ascender-only, Django runs the actual Python/SQL
+# Update this list when changing AWX source or Ascender target version.
+migration_steps:
+  - { target: "0183_pre_django_upgrade",                    action: fake  }  # AWX applied identical schema
+  - { target: "0184_alter_credentialtype_kind",             action: apply }  # Ascender-only: 0183_auto + 0184_alter (DELETE Red Hat cred types)
+  - { target: "0186_drop_django_taggit",                    action: fake  }  # AWX applied: 0184_django_indexes, 0185, 0186
+  - { target: "0186a_disable_NEXT_UI",                      action: apply }  # Ascender-only: RunSQL disable UI_NEXT
+  - { target: "0187_hop_nodes",                             action: fake  }  # AWX applied identical schema
+  - { target: "0187a_mountain_credential",                  action: apply }  # Ascender-only: register Mountain credential
+  - { target: "0190_alter_inventorysource_source_and_more", action: fake  }  # AWX applied: 0188, 0189, 0190
+  - { target: ~,                                             action: apply }  # no target = apply all remaining (0191 through 0194)
+
+# Secrets to patch from the AWX backup into Ascender K8s secrets.
+# src_key = key in the backup's secrets.yml dict
+# dest_name = K8s secret name to patch
+# optional = skip if src_key not found in backup (default false)
+secret_patches:
+  - { src_key: "secretKeySecret",                                    dest_name: "{{ ascender.instance }}-secret-key" }
+  - { src_key: "adminPasswordSecret",                                dest_name: "{{ ascender.instance }}-admin-password" }
+  - { src_key: "{{ source_instance }}-receptor-ca",                  dest_name: "{{ ascender.instance }}-receptor-ca" }
+  - { src_key: "{{ source_instance }}-receptor-work-signing",        dest_name: "{{ ascender.instance }}-receptor-work-signing" }
+  - { src_key: "ldap_cacert_secret",                                    dest_name: "ldap-ca-crt",                          optional: true }
+
+# CR spec fields to patch on the Ascender instance before operator startup.
+# field = AWX CR spec key to set
+# value = explicit value (if omitted, copied from AWX backup's CR spec)
+cr_patch:
+  - { field: ee_images }
+  - { field: image_pull_secrets }
+  - { field: postgres_storage_requirements }
+  - { field: ldap_cacert_secret,   value: "ldap-ca-crt" }
+  - { field: postgres_extra_args,  value: [-c, shared_buffers=256MB, -c, max_connections=1000, -c, max_wal_size=4GB] }

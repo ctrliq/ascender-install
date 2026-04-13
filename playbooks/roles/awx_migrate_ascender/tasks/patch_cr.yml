@@ -1,0 +1,26 @@
+---
+# Patch the Ascender AWX CR with fields from the AWX backup and explicit overrides.
+# Must run BEFORE operator startup so it reconciles with the updated spec.
+# Driven by cr_patch list in vars/main.yml.
+
+- name: Build CR patch
+  ansible.builtin.set_fact:
+    _cr_patch: "{{ _cr_patch | default({}) | combine({item.field: item.value | default(awx_object_spec[item.field])}) }}"
+  loop: "{{ cr_patch }}"
+  when: item.value is defined or (awx_object_spec is defined and awx_object_spec[item.field] is defined)
+
+- name: Show CR patch
+  ansible.builtin.debug:
+    var: _cr_patch
+
+- name: Patch Ascender AWX CR
+  kubernetes.core.k8s:
+    api_version: awx.ansible.com/v1beta1
+    kind: AWX
+    name: "{{ ascender.instance }}"
+    namespace: "{{ ascender.namespace }}"
+    state: patched
+    merge_type: merge
+    definition:
+      spec: "{{ _cr_patch }}"
+  when: _cr_patch | default({}) | length > 0
