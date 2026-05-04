@@ -120,14 +120,13 @@ Afterward, you can simply edit this file should you not want to run the script a
 The following variables will be present after running the script:
 
 - `k8s_platform`: This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-- `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+- `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender.
 - AKS_K8S_VERSION: The kubernetes version for the aks cluster; available kubernetes versions can be found here: [Supported Kubernetes versions in AKS](https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions?tabs=azure-cli)
-- `USE_AZURE_DNS`: Determines whether to use Route53's Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
+- `USE_AZURE_DNS`: Determines whether to use Route53's Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
 - `ASCENDER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
-- `LEDGER_HOSTNAME`: The DNS resolvable hostname for Ascender service.
 - `ASCENDER_DOMAIN`: The Hosted Zone/Domain for all Ascender components. 
-  - this is a SINGLE domain for both Ascender AND Ledger.
-- `USE_AZURE_DNS`: Determines whether to use Azure DNS Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
+  - this is a domain for Ascender.
+- `USE_AZURE_DNS`: Determines whether to use Azure DNS Domain Management, or a third-party service such as Cloudflare, or GoDaddy. If this value is set to false, you will have to manually set a CNAME record for `ASCENDER_HOSTNAME` to point to the AWS Loadbalancers that the installer creates.
 - `AKS_CLUSTER_NAME`: The name of the aks cluster on which Ascender will be installed. This can be an existing aks cluster, or the name of the one to create.
 - `AKS_CLUSTER_STATUS`: Determines whether to create a new cluster (`provision`) or use an existing cluster (`no_action`)
 - `AKS_CLUSTER_REGION`: The Azure region in which a cluster that the installer creates should reside. 
@@ -169,7 +168,6 @@ The username is and the corresponding password is stored in `<repository root>`/
 After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
 
 - `ascender-deployment-{{ k8s_platform }}.yml`
-- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
 
 It will also contain a directory called `aks-deploy`, if you provisioned a new AKS cluster with the Ascender installer. This directory will contain the terraform state files and artifacts for your AKS cluster.
@@ -179,7 +177,6 @@ commands from within `tmp_dir``:
 
 - `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
 - `$ kubectl delete pvc -n {{ ASCENDER_NAMESPACE }} postgres-15-ascender-app-postgres-15-0 (If you used the default postgres database)
-- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
 To delete an AKS cluster created with the Ascender installer, run the following command from within the `tmp_dir`

@@ -100,7 +100,7 @@ Afterward, you can simply edit this file should you not want to run the script a
 The following variables will be present after running the script:
 
 - `k8s_platform`: This variable specificies which Kubernetes platform Ascender and its components will be installed on.
-- `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+- `k8s_protocol`: Determines whether to use HTTP or HTTPS for Ascender.
 - `USE_GOOGLE_DNS`: Determines whether to use Google Cloud DNS Domain Management (which is automated), Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
 - `GKE_CLUSTER_NAME`: The name of the gke cluster to install Ascender on - if it does not already exist, the installer can set it up
 - `GKE_CLUSTER_STATUS`: Specifies whether the GKE cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)
@@ -145,7 +145,6 @@ The username is and the corresponding password is stored in `<repository root>`/
 After running `setup.sh`, `tmp_dir` will contain timestamped kubernetes manifests for:
 
 - `ascender-deployment-{{ k8s_platform }}.yml`
-- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
 
 It will also contain a directory called `gke-deploy`, if you provisioned a new GKE cluster with the Ascender installer. This directory will contain the terraform state files and artifacts for your GKE cluster.
@@ -155,7 +154,6 @@ commands from within `tmp_dir``:
 
 - `$ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml`
 - `$ kubectl delete pvc -n {{ ASCENDER_NAMESPACE }} postgres-15-ascender-app-postgres-15-0 (If you used the default postgres database)
-- `$ kubectl delete -f ledger-{{ k8s_platform }}.yml`
 - `$ kubectl delete -k .`
 
 To delete an GKE cluster created with the Ascender installer, run the following command from within the `tmp_dir`

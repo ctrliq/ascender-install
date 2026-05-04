@@ -6,11 +6,12 @@ for a platform not yet supported, please submit an issue to this
 Github repository.
 
 While Ascender installs on Kubernetes, you don't need to be a guru in
-Kubernetes, or even have a Kubernetes cluster up and working!  For
-each specified Kubernetes platform, the installer will set up a
-Kubernetes cluster on your behalf, and set up the cluster access file
-at its default location of `~/.kube/config`.  Windows and Network
-admins rejoice!
+Kubernetes, or even have a Kubernetes cluster up and working!  The
+Ascender installer focuses on deploying the Ascender Automation
+Platform onto an existing Kubernetes cluster.  If you need to set up
+a Kubernetes cluster, please refer to the [Ascender Kubernetes
+Cluster Installer](https://github.com/ctrliq/ascender-k8s-install).
+
 
 ## Table of Contents
 
@@ -71,7 +72,7 @@ admins rejoice!
 
 For certain Kubernetes platforms (such as k3s, kubeadm, rke2), the Ascender installer supports installation for clusters that do not have outside internet access. In these cases, you can either use:
   - An included bundle of container images (this is the case for k3s)
-  - Move the Ascender and Ledger container images into an internal container registry for the installer to consume (this is the case for rke2 and kubeadm)
+  - Move the Ascender container images into an internal container registry for the installer to consume (this is the case for rke2 and kubeadm)
 
 A bundled AWX operator is also included for the purposes of offline install.
 
@@ -113,19 +114,18 @@ description/proper usage directly present in the comments.
 Consider a situation where you have already installed Ascender, and wish to change one or more of the attributes of how it is deployed. Some of these changes may include:
 
 - Moving from non-SSL to an SSL connection 
-- Installing Ledger when you may have only installed Ascender first
-- Changing the version of Ascender and or Ledger that is installed
+- Changing the version of Ascender that is installed
 
 This can be accomplished by either running `config_vars.sh` again, or editing an existing `custom.config.yml`, in each case, changing the desired install variables. You can then rerun `setup.sh`.`
 
 ## Upgrading Ascender
 
-Refer to the following [Upgrade Guide](docs/configuration/upgrading.md) to upgrade Ascender or Ledger
+Refer to the following [Upgrade Guide](docs/configuration/upgrading.md) to upgrade Ascender
 
 
 ## Uninstall
 
-Refer to the following [Uninstall Guide](docs/configuration/uninstall.md) to uninstall Ascender or Ledger
+Refer to the following [Uninstall Guide](docs/configuration/uninstall.md) to uninstall Ascender
 
 
 ## Reporting Issues

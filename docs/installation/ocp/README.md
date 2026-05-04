@@ -25,12 +25,11 @@ If you have not done so already, be sure to follow the general prerequisites fou
     - If the OS family is Ubuntu/Debian then the major version must be 24
 - Minimal System Requirements for the OCP cluster:
   - CPUs: 2
-  - Memory: 8GB (if installing both Ascender and Ledger)
-  - 20GB of free disk (for Ascender and Ledger Volumes)
+  - Memory: 8GB (if installing both Ascender)
+  - 20GB of free disk (for Ascender Volumes)
 - These instructions require an existing OCP cluster with proper authentication configured
   - The installer will not set up OCP for you - you must have an existing, accessible cluster
   - Ensure you have administrative access to the cluster via `oc` or `kubectl` commands
-  - The `kube_install` variable should be set to `false` for OCP installations
 - SSL Certificate and TLS Configuration
   - OpenShift Container Platform handles SSL/TLS termination through Routes
   - If you set `k8s_lb_protocol` to `http`, the installer will configure OCP Routes to use edge
@@ -76,7 +75,6 @@ You can edit this file manually if you want to change variables before (re)insta
 
 **Important:** When configuring for OCP:
 - Set `k8s_platform` to `ocp`
-- Set `kube_install` to `false` (the installer will not install OCP for you)
 - Ensure your `kubeconfig` file is properly configured to access your OCP cluster
 
 ### Run the setup script
@@ -109,8 +107,6 @@ configured in your `custom.config.yml` file. For example, if you set `ASCENDER_H
 
 [https://ascender.example.com](https://ascender.example.com)
 
-If you also installed Ledger, access it using the `LEDGER_HOSTNAME` value from your configuration.
-
 The default username is "admin" and the corresponding password is stored in
 `<ASCENDER-INSTALL-SOURCE>/default.config.yml` under the `ASCENDER_ADMIN_PASSWORD` variable.
 
@@ -120,7 +116,6 @@ After running `setup.sh`, `tmp_dir` (by default `{{ playbook_dir}}/../ascender_i
 will contain timestamped kubernetes manifests for:
 
 - `ascender-deployment-{{ k8s_platform }}.yml`
-- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
 
 Remove the timestamp from the filename and then run the following
@@ -128,8 +123,6 @@ commands from within `tmp_dir`:
 
 ```text
 $ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml
-
-$ kubectl delete -f ledger-{{ k8s_platform }}.yml # optional if you have installed ledger
 
 $ kubectl delete -k .
 ```
@@ -144,10 +137,8 @@ configuration:
 ```text
 $ kubectl delete namespace <ASCENDER_NAMESPACE>
 
-$ kubectl delete namespace <LEDGER_NAMESPACE>  # optional if you have installed ledger
 ```
 
-Replace `<ASCENDER_NAMESPACE>` and `<LEDGER_NAMESPACE>` with the values you configured (default is
-typically `ascender` and `ledger`).
+Replace `<ASCENDER_NAMESPACE>` with the values you configured (default is typically `ascender`).
 
 

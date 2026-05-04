@@ -10,18 +10,6 @@
         path: ghcr.io/ctrliq/ascender
         tag: "{{ ASCENDER_VERSION }}"
         type: ascender
-      - name: ledger-web
-        path: "{{ LEDGER_WEB_IMAGE | default('ghcr.io/ctrliq/ascender-ledger/ledger-web') }}"
-        tag: "{{ LEDGER_VERSION | default('latest') }}"
-        type: ledger
-      - name: ledger-parser
-        path: "{{ LEDGER_PARSER_IMAGE | default('ghcr.io/ctrliq/ascender-ledger/ledger-parser') }}"
-        tag: "{{ LEDGER_VERSION | default('latest') }}"
-        type: ledger
-      - name: ledger-db
-        path: "{{ LEDGER_DB_IMAGE | default('ghcr.io/ctrliq/ascender-ledger/ledger-db') }}"
-        tag: "{{ LEDGER_VERSION | default('latest') }}"
-        type: ledger
       - name: ascender-operator
         path: ghcr.io/ctrliq/ascender-operator
         tag: "{{ ASCENDER_OPERATOR_VERSION }}"
@@ -225,16 +213,6 @@
           set_fact:
             images: "{{ lookup('fileglob', '{{ image_dir }}/*.tar', errors='warn') }}"
 
-        - name: Log into CIQ registry
-          community.docker.docker_login:
-            registry_url: "{{ LEDGER_REGISTRY.BASE }}"
-            username: "{{ LEDGER_REGISTRY.USERNAME }}"
-            password: "{{ LEDGER_REGISTRY.PASSWORD }}"
-            reauthorize: true
-          when: 
-            - LEDGER_REGISTRY.BASE is defined
-            - LEDGER_INSTALL == true
-
         - name: Pull images and create archives
           community.docker.docker_image:
             name: "{{ item.path }}"
@@ -244,7 +222,7 @@
             source: pull
           when: 
             - item.name ~ '-' ~ item.tag ~ '.tar' not in images
-            - item.type == 'ascender' or (item.type == 'ledger' and LEDGER_INSTALL == true)
+            - item.type == 'ascender'
           loop: "{{ containers }}"
 
         - name: Save Docker images
@@ -252,7 +230,7 @@
             cmd: docker save {{ item.path }}:{{ item.tag }} > {{ image_dir }}/{{ item.name }}-{{ item.tag }}.tar
           when: 
             - item.name ~ '-' ~ item.tag ~ '.tar' not in images
-            - item.type == 'ascender' or (item.type == 'ledger' and LEDGER_INSTALL == true)
+            - item.type == 'ascender'
           loop: "{{ containers }}"
 
     - name: "RKE2 : Download Images"
@@ -297,18 +275,18 @@
                 tag: "{{ item.tag }}"
                 source: pull
               loop: "{{ containers }}"
-              when: item.type == 'ascender' or (item.type == 'ledger' and LEDGER_INSTALL == true)
+              when: item.type == 'ascender'
 
             - name: Tag images
               community.docker.docker_image_tag:
                 name: "{{ item.path }}:{{ item.tag }}"
                 repository: "{{ k8s_container_registry | regex_replace('\\/$', '') }}/{{ item.path | basename }}:{{ item.tag }}"
               loop: "{{ containers }}"
-              when: item.type == 'ascender' or (item.type == 'ledger' and LEDGER_INSTALL == true)
+              when: item.type == 'ascender'
 
             - name: Push images
               community.docker.docker_image_push:
                 name: "{{ k8s_container_registry | regex_replace('\\/$', '') }}/{{ item.path | basename }}"
                 tag: "{{ item.tag }}"
               loop: "{{ containers }}"
-              when: item.type == 'ascender' or (item.type == 'ledger' and LEDGER_INSTALL == true)
+              when: item.type == 'ascender'
