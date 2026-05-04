@@ -4,105 +4,9 @@
 # This variable specificies which Kubernetes platform Ascender and its components will be installed on.
 k8s_platform: eks # Options include k3s, eks and dkp, with more to come.
 
-# Determines whether to use HTTP or HTTPS for Ascender and Ledger.
+# Determines whether to use HTTP or HTTPS for Ascender.
 # If set to https, you MUST provide certificate/key options for the Installer to use.
 k8s_lb_protocol: http #options include http and https
-
-# ---eks variables---
-
-# Determines whether to use Route53's Domain Management (which is automated)
-# Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
-#If this value is set to false, you will have to manually set a CNAME record for 
-# {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to their corresponding
-# AWS Loadbalancers
-USE_ROUTE_53: yes
-
-# If desired, this indicates an AWS IAM user that can be set up in order to have minimum 
-# permissions to set up a new eks cluster and install Ascender and its associoated components
-EKS_USER: ascenderuser
-
-# The name of the eks cluster to set up
-EKS_CLUSTER_NAME: ascender-eks-cluster
-
-# Determines what to do with the eks cluster Ascender wil be installed on:
-# provision: Provision a new EKS cluster from scratch
-# configure: use the cluster specified by the variable EKS_CLUSTER_NAME, and configure it with 
-#            policies for loa balancer creation and elastic block service access
-# no_action: use the cluster specified by the variable EKS_CLUSTER_NAME, but make no changes to it before
-#            installing Ascender.
-EKS_CLUSTER_STATUS: no_action
-
-# The AWS region hosting the eks cluster
-EKS_CLUSTER_REGION: us-east-1
-
-# The eks cluster subnet in CIDR notation
-# Only required if EKS_CLUSTER_STATUS is set to provision.
-EKS_CLUSTER_CIDR: "10.10.0.0/16"
-
-# Determines whether cluster nodes are assigned public IPs.
-# If this value is set to true, cluster nodes will be assigned public IPs.
-EKS_PUBLIC: false
-
-# The number of subnets for the eks cluster
-# Only required if EKS_CLUSTER_STATUS is set to provision.
-EKS_NUM_SUBNETS: 3
-
-# The network size for each of the subnets
-# Only required if EKS_CLUSTER_STATUS is set to provision.
-EKS_SUBNET_SIZE: 26
-
-# Set the SSL Policy for the EKS AWS Load Balancer
-EKS_SSL_POLICY: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
-
-# Whether to set up an Internet Gateway for the VPC
-# Only required if EKS_CLUSTER_STATUS is set to provision.
-EKS_INTERNET_GATEWAY: true
-
-# The security groups to use for the AWS Load Balancer; this controls who can access
-# the Load Balancer and therefore Ascender.
-# If left blank, the installer will create a security group that allows access from anywhere.
-#EKS_ALB_SECURITY_GROUPS: ""
-
-# The inbound CIDR blocks for the AWS Load Balancer security group; this controls
-# who can access the Load Balancer and therefore Ascender.
-EKS_ALB_INBOUND_CIDRS: ["0.0.0.0/0"]
-
-# The kubernetes version for the eks cluster; available kubernetes versions can be found here:
-# https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
-EKS_K8S_VERSION: "1.33"
-
-# The worker node instance types 
-EKS_INSTANCE_TYPE: t3.large
-
-# The minimum number of worker nodes that the cluster will run
-EKS_MIN_WORKER_NODES: 2
-
-# The maximum number of worker nodes that the cluster will run
-EKS_MAX_WORKER_NODES: 6
-
-# The desired number of worker nodes for the eks cluster
-EKS_NUM_WORKER_NODES: 3
-
-# The size of the Elastic Block Storage volume for each worker node
-EKS_WORKER_VOLUME_SIZE: 100
-
-# The ARN for the SSL certificate; required when k8s_lb_protocol is https.
-# The same certificate is used for all components (currently Ascender and Ledger); 
-# as such, we recommend that the certificate is set for a wildcard domain
-# (e.g., *.example.com)
-EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx
-
-# The Amazon Elastic Block Store Container Storage Interface (CSI) Driver provides
-# a CSI interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes.
-# This variable specifies the version in use by the cluster; all releases can be found here:
-# https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
-EKS_EBS_CSI_DRIVER_VERSION: "v1.48.0"
-
-# The default storage class to use for Ascender PVCs. This will determine the type of
-# EBS volume that Ascender uses for its storage. Valid options are gp2, gp3 and io2.
-# If this variable is not set, the installer will not create a default storage class
-# and you will have to set the storage class for the Ascender PVCs manually.
-EKS_DEFAULT_STORAGE_CLASS: gp3
 
 # ---Local artifact variables---
 
@@ -117,7 +21,7 @@ tls_key_path: "~/ascender.key"
 use_etc_hosts: true
 
 # A directory in which to place both temporary artifacts
-# and timestamped Kubernetes Manifests to make Ascender/Ledger easy
+# and timestamped Kubernetes Manifests to make Ascender easy
 # to uninstall
 tmp_dir: "{{ playbook_dir }}/../ascender_install_artifacts"
 
@@ -170,61 +74,3 @@ ascender_garbage_collect_secrets: true
 ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
 ascender_replicas: 1
 ascender_image_pull_policy: Always
-
-
-# ---Ledger install variables---
-
-# Determines whether or not Ledger will be installed
-LEDGER_INSTALL: true
-
-# DNS resolvable hostname for Ledger service. This is required for install.
-LEDGER_HOSTNAME: ledger.example.com
-
-    # Optional credentials for pulling the ledger image, all fields must be
-    # specified.
-#LEDGER_REGISTRY:
-#  BASE: depot.ciq.com
-#  USERNAME: username
-#  PASSWORD: password
-
-# The OCI container image for Ledger
-LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
-
-# The number of ledger web pods - this is good to ensure high availability
-ledger_web_replicas: 1
-
-# The OCI container image for the Ledger Parser
-LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-parser
-
-# The number of ledger parser pods - this is good to ensure high availability
-ledger_parser_replicas: 1
-
-# The OCI container image for the Ledger Database
-LEDGER_DB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-db
-
-# The image tag indicating the version of Ledger you wish to install
-LEDGER_VERSION: latest
-
-# The Kubernetes namespace in which Ledger objects will live
-LEDGER_NAMESPACE: ledger
-
-# Admin password for Ledger (the username is admin by default)
-LEDGER_ADMIN_PASSWORD: "myadminpassword"
-
-    # Uncomment these to use an external database for Ledger
-#LEDGER_DB_HOST: db
-#LEDGER_DB_PORT: "3306"
-#LEDGER_DB_NAME: "ledger"
-#LEDGER_DB_USERNAME: "ledger"
-
-    # Size of the Persistent Volume Claim for Ledger's database in GB
-    # Only uncomment on new installs or with storage classes that support volume expansion
-#LEDGER_PVC_SIZE_GB: 10
-    # Storage Class for the Persistent Volume Claim for Ledger's database
-    # Only uncomment to set a specific storage class on new installs
-    # Leaving blank will use the default storage class of the cluster
-#LEDGER_PVC_STORAGE_CLASS: ""
-
-# Password for Ledger database
-LEDGER_DB_PASSWORD: "mydbpassword"
-

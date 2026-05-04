@@ -86,10 +86,10 @@ README](../../README.md#general-prerequisites)
 ## RKE2-specific Prerequisites
 
 - These instructions assume that you either have an existing RKE2 cluster, and have the `kubeconfig` file necessary to access it, at `~/.kube/config`
-- Minimal System Requirements for installing Ascender and Ledger on RKE2:
+- Minimal System Requirements for installing Ascender on RKE2:
   - CPUs: 2
-  - Memory: 8Gb (if installing both Ascender and Ledger)
-  - 20GB of free disk (for Ascender and Ledger Volumes)
+  - Memory: 8Gb (if installing both Ascender)
+  - 20GB of free disk (for Ascender Volumes)
 - SSL Certificate and Key
   - To enable HTTPS on your website, you need to provide the Ascender
     installer with an SSL Certificate file, and a Private Key
@@ -118,11 +118,6 @@ In order to perform an offline installation of Ascender on RKE2, you must comple
       - awx-ee (Found at [Quay](https://quay.io/repository/ansible/awx-ee?tab=tags)) 
       - postgres (Found at [Dockerhub](https://hub.docker.com/_/postgres))
       - valkey (Found at [Dockerhub](https://ghcr.io/valkey-io/valkey))
-    - Ledger
-      - ledger-parser (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-parser))
-      - ledger-db (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-db))
-      - ledger-web (Found at [Github Container Registry](https://github.com/ctrliq/ascender-ledger/pkgs/container/ascender-ledger%2Fledger-web))
-
     
 
 ## Install Instructions
@@ -184,9 +179,9 @@ ASCENDER SUCCESSFULLY SETUP
 
 ### Connecting to Ascender Web UI
 
-The Ascender and Ledger web UIs are served from the `kubeapi_server_ip` specified in the config file used in the Ascender installer, and together with the Ingress object for Ascender and Legder, will give access to the respective GUIs.
+The Ascender web UI is served from the `kubeapi_server_ip` specified in the config file used in the Ascender installer, and together with the Ingress object for Ascender and Legder, will give access to the respective GUIs.
 
-To ensure access to the Ascender and Ledger GUIs, ensure that the `ASCENDER_HOSTNAME` resolves to `kubeapi_server_ip` with a DNS query. If the IP address is not being served by a DNS server, you will have to add that rule locally on the server you are using to connect to the Ascender GUI. For example, on a Mac, the file `/private/etc/hosts` would need the following line added:
+To ensure access to the Ascender GUI, ensure that the `ASCENDER_HOSTNAME` resolves to `kubeapi_server_ip` with a DNS query. If the IP address is not being served by a DNS server, you will have to add that rule locally on the server you are using to connect to the Ascender GUI. For example, on a Mac, the file `/private/etc/hosts` would need the following line added:
 
 ```
 127.0.0.1	localhost

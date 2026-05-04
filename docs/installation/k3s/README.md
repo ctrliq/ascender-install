@@ -28,13 +28,9 @@ If you have not done so already, be sure to follow the general prerequisites fou
   - If the OS family is Ubuntu/Debian then the major version must be 24
 - Minimal System Requirements for the k3s server:
   - CPUs: 2
-  - Memory: 8GB (if installing both Ascender and Ledger)
-  - 20GB of free disk (for Ascender and Ledger Volumes)
-- These instructions accommodate an existing K3s cluster, or will set up a new one on your behalf if
-  necessary. This behavior is determined by the variable `kube_install`
-  - If `kube_install` is set to true, the installer will set up K3s on the `ascender_host`in the
-    inventory file. (`ascender_host` can be localhost)
-  - If `kube_install` is set to false, the installer will not perform a K3s install
+  - Memory: 8GB (if installing both Ascender)
+  - 20GB of free disk (for Ascender Volumes)
+- These instructions accommodate an existing K3s cluster
 - SSL Certificate and Key
   - To enable HTTPS on your website, you need to provide the Ascender installer with an SSL
     Certificate file, and a Private Key file. While these can be self-signed certificates, it is
@@ -113,7 +109,7 @@ steps before running the installation script:
   install from.
 - When setting the variables in your `config_vars.sh`, be sure to set `k8s_platform` to `k3s`, and
   `k8s_offline` to `true`. This will instruct the installer to use archived container images rather
-  than using a container registry to install Ascender and Ledger.
+  than using a container registry to install Ascender.
 
 By doing these steps, the Ascender installer will copy the archived images to the k3s server, import
 them into k3s to allow their usage in Pods, and set the `imagePullPolicy` for all k3s images to
@@ -133,7 +129,7 @@ installation with one key change:
   install from.
 - When setting the variables in your `config_vars.sh`, be sure to set `k8s_platform` to `k3s`, and
   `k8s_offline` to `true`. This will instruct the installer to use archived container images rather
-  than to a container registry to install Ascender and Ledger.
+  than to a container registry to install Ascender.
 
 ### Connecting to Ascender Web UI
 
@@ -185,7 +181,6 @@ After running `setup.sh`, `tmp_dir` (by default `{{ playbook_dir}}/../ascender_i
 will contain timestamped kubernetes manifests for:
 
 - `ascender-deployment-{{ k8s_platform }}.yml`
-- `ledger-{{ k8s_platform }}.yml` (if you installed Ledger)
 - `kustomization.yml`
 
 Remove the timestamp from the filename and then run the following
@@ -193,8 +188,6 @@ commands from within `tmp_dir`:
 
 ```text
 $ kubectl delete -f ascender-deployment-{{ k8s_platform }}.yml
-
-$ kubectl delete -f ledger-{{ k8s_platform }}.yml # optional if you have installed ledger
 
 $ kubectl delete -k .
 ```
