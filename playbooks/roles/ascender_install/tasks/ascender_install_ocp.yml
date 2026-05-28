@@ -1,7 +1,7 @@
 - name: Retrieve the current time in order to timestamp files
   ansible.builtin.setup:
     gather_subset:
-     - date_time
+      - date_time
 
 - name: Create Namespace
   kubernetes.core.k8s:
@@ -56,11 +56,12 @@
 #     name: anyuid-scc-{{ service_account_name }}-binding
 #     state: absent
 
-- name: Grant privileged SCC to '{{ service_account_name }}' service account
+- name: Grant privileged SCC to service account "{{ service_account_name }}"
   kubernetes.core.k8s:
     api_version: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
     name: privileged-scc-{{ service_account_name }}-binding
+    verify_ssl: false
     state: present
     definition:
       metadata:
@@ -74,11 +75,12 @@
           name: "{{ service_account_name }}"
           namespace: "{{ ASCENDER_NAMESPACE }}"
 
-- name: Grant anyuid SCC to '{{ service_account_name }}' service account
+- name: Grant anyuid SCC to service account "{{ service_account_name }}"
   kubernetes.core.k8s:
     api_version: rbac.authorization.k8s.io/v1
     kind: ClusterRoleBinding
     name: anyuid-scc-{{ service_account_name }}-binding
+    verify_ssl: false
     state: present
     definition:
       metadata:
@@ -95,7 +97,7 @@
 - name: Wait for Operator deployment to be ready
   kubernetes.core.k8s_info:
     kind: Deployment
-    wait: yes
+    wait: true
     name: awx-operator-controller-manager
     namespace: "{{ ASCENDER_NAMESPACE }}"
     wait_sleep: 10
@@ -116,7 +118,7 @@
 - name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
   kubernetes.core.k8s_info:
     kind: Deployment
-    wait: yes
+    wait: true
     name: ascender-app-web
     namespace: "{{ ASCENDER_NAMESPACE }}"
     wait_sleep: 10
@@ -125,25 +127,27 @@
 
 - name: Set the Ascender URL
   ansible.builtin.set_fact:
-      ascender_ip: "{{ ASCENDER_HOSTNAME }}"
-      ascender_port: "443"
+    ascender_ip: "{{ ASCENDER_HOSTNAME }}"
+    ascender_port: "443"
 
-- ansible.builtin.debug:
+- name: Display the Ascender API endpoint
+  ansible.builtin.debug:
     msg: "The Ascender API endpoint is https://{{ ascender_ip }}/api/v2/ping/"
 
 - name: Wait until Ascender API is Up (This may take between 10-20 mins)
   ansible.builtin.uri:
     url: "https://{{ ascender_ip }}/api/v2/ping/"
-    return_content: yes
+    return_content: true
     validate_certs: false
     status_code:
       - 200
-  until: 
+  until:
     - uri_output.status|int == 200
     - uri_output.url == "https://" + ascender_ip + "/api/v2/ping/"
   retries: 200
   delay: 10
   register: uri_output
 
-- ansible.builtin.debug:
+- name: Display Ascender API status
+  ansible.builtin.debug:
     msg: "Ascender API is up"
