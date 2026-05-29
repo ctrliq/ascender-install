@@ -1,0 +1,70 @@
+---
+# Ascender DB Restore -- pull latest AWX backup from S3 and restore into Ascender
+# Each phase is tagged for --tags / --skip-tags control.
+# All tags run by default (no --tags = full restore).
+- block:
+  - name: Prep environment
+    ansible.builtin.include_tasks:
+      file: prep.yml
+      apply: { tags: [prep] }
+    tags: [prep]
+
+  - name: Download backup from S3
+    ansible.builtin.include_tasks:
+      file: download.yml
+      apply: { tags: [download] }
+    tags: [download]
+
+  - name: Read and apply secrets
+    ansible.builtin.include_tasks:
+      file: secrets.yml
+      apply: { tags: [secrets] }
+    tags: [secrets]
+
+  - name: Restore database
+    ansible.builtin.include_tasks:
+      file: pg_restore.yml
+      apply: { tags: [pg_restore] }
+    tags: [pg_restore]
+
+  - name: Run Ascender migrations
+    ansible.builtin.include_tasks:
+      file: migrate.yml
+      apply: { tags: [migrate] }
+    tags: [migrate]
+
+  - name: Cleanup after restore
+    ansible.builtin.include_tasks:
+      file: cleanup.yml
+      apply: { tags: [cleanup] }
+    tags: [cleanup]
+
+  - name: Patch Ascender CR with AWX backup spec
+    ansible.builtin.include_tasks:
+      file: patch_cr.yml
+      apply: { tags: [patch_cr] }
+    tags: [patch_cr]
+
+  - name: Start Ascender services
+    ansible.builtin.include_tasks:
+      file: startup.yml
+      apply: { tags: [startup] }
+    tags: [startup]
+
+  - name: Configure DR settings
+    ansible.builtin.include_tasks:
+      file: configure.yml
+      apply: { tags: [configure] }
+    tags: [configure]
+
+  - name: Verify Ascender API
+    ansible.builtin.include_tasks:
+      file: verify.yml
+      apply: { tags: [verify] }
+    tags: [verify]
+
+  module_defaults:
+    group/k8s:
+      api_key: "{{ k8s.token }}"
+      host: "{{ k8s.url }}"
+      validate_certs: false

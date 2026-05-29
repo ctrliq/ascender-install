@@ -1,0 +1,8 @@
+---
+- name: Migrate AWX to Ascender
+  hosts: localhost
+  gather_facts: true
+  connection: local
+
+  roles:
+    - role: awx_migrate_ascender

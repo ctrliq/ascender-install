@@ -1,0 +1,76 @@
+---
+# Run Ascender migrations natively via awx-manage in the web pod.
+# Must run AFTER pg_restore (DB restored + AWX-only records deleted)
+# and BEFORE startup (operator must find nothing to apply).
+
+- name: Scale up web deployment
+  kubernetes.core.k8s_scale:
+    kind: Deployment
+    name: "{{ ascender.instance }}-web"
+    namespace: "{{ ascender.namespace }}"
+    replicas: 1
+    wait: false
+
+- name: Wait for web pod to be running
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/name={{ ascender.instance }}-web"
+  register: web_pods
+  until:
+    - web_pods.resources | length > 0
+    - web_pods.resources[0].status.phase == 'Running'
+  retries: 30
+  delay: 10
+
+- name: Set web pod name
+  ansible.builtin.set_fact:
+    web_pod: "{{ web_pods.resources[0].metadata.name }}"
+
+- name: Run Ascender migrations via awx-manage
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ web_pod }}"
+    container: "{{ ascender.instance }}-web"
+    command: "bash -c {{ lookup('template', 'awx_migrate.sh.j2') | quote }}"
+  register: migrate_result
+
+- name: Show migration output
+  ansible.builtin.debug:
+    var: migrate_result.stdout_lines
+
+- name: Read admin password from K8s secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ ascender.instance }}-admin-password"
+    namespace: "{{ ascender.namespace }}"
+  register: admin_password_secret
+  no_log: true
+
+- name: Set admin password
+  ansible.builtin.set_fact:
+    admin_password: "{{ admin_password_secret.resources[0].data.password | b64decode }}"
+  no_log: true
+
+- name: Update admin password in database
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: "{{ web_pod }}"
+    container: "{{ ascender.instance }}-web"
+    command: "awx-manage update_password --username=admin --password={{ admin_password | quote }}"
+  register: admin_pw_result
+
+- name: Show password update result
+  ansible.builtin.debug:
+    var: admin_pw_result.stdout
+
+- name: Scale down web deployment
+  kubernetes.core.k8s_scale:
+    kind: Deployment
+    name: "{{ ascender.instance }}-web"
+    namespace: "{{ ascender.namespace }}"
+    replicas: 0
+    wait: true
+    wait_timeout: 120

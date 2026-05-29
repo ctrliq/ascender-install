@@ -1,0 +1,90 @@
+---
+name: "AWX - Migrate to Ascender"
+description: "Migrate AWX production database into Ascender"
+project: "Ascender Install"
+organization: "Default"
+inventory: "localhost"
+playbook: "playbooks/awx_migrate_ascender.yml"
+credentials: []
+execution_environment: ""
+instance_groups: []
+verbosity: 0
+ask_variables_on_launch: false
+job_tags: "prep,download,secrets,pg_restore,migrate,cleanup,patch_cr,startup,configure,verify"
+ask_tags_on_launch: true
+ask_skip_tags_on_launch: true
+survey_enabled: true
+survey:
+  name: "AWX Migrate Ascender Survey"
+  description: "Configure AWX to Ascender migration"
+  spec:
+    - question_name: "Ascender Namespace"
+      question_description: "Kubernetes namespace where Ascender is installed"
+      variable: "ascender_namespace"
+      type: "text"
+      required: true
+      default: "ascender"
+    - question_name: "Ascender Instance"
+      question_description: "AWX CR instance name in the namespace"
+      variable: "ascender_instance"
+      type: "text"
+      required: true
+      default: "ascender"
+    - question_name: "K8s API URL"
+      question_description: "Kubernetes API URL for the target cluster"
+      variable: "k8s_url"
+      type: "text"
+      required: true
+      default: ""
+    - question_name: "K8s API Token"
+      question_description: "Service account token for K8s API authentication"
+      variable: "k8s_token"
+      type: "password"
+      required: true
+      default: ""
+    - question_name: "S3 Endpoint"
+      question_description: "S3-compatible storage endpoint URL"
+      variable: "s3_endpoint"
+      type: "text"
+      required: true
+      default: ""
+    - question_name: "S3 Access Key"
+      question_description: "S3 access key"
+      variable: "s3_accesskey"
+      type: "password"
+      required: true
+      default: ""
+    - question_name: "S3 Secret Key"
+      question_description: "S3 secret key"
+      variable: "s3_secretkey"
+      type: "password"
+      required: true
+      default: ""
+    - question_name: "S3 Bucket"
+      question_description: "S3 bucket containing AWX backups"
+      variable: "s3_bucket"
+      type: "text"
+      required: true
+      default: ""
+    - question_name: "Source AWX Instance"
+      question_description: "AWX CR instance name on the source cluster (for secret name mapping)"
+      variable: "source_awx_instance"
+      type: "text"
+      required: true
+      default: "awx"
+    - question_name: "pg_restore Progress Interval"
+      question_description: "Seconds between pg_restore progress logs showing DB size and active queries"
+      variable: "restore_poll_interval"
+      type: "integer"
+      required: false
+      default: 30
+      min: 10
+      max: 300
+    - question_name: "pg_restore Parallel Jobs"
+      question_description: "Number of parallel pg_restore workers (max limited by vCPU)"
+      variable: "pg_restore_jobs"
+      type: "integer"
+      required: false
+      default: 16
+      min: 1
+      max: 64

@@ -1,0 +1,64 @@
+---
+- name: Wait for PostgreSQL pod to accept connections
+  kubernetes.core.k8s_info:
+    kind: Pod
+    name: "{{ ascender.instance }}-postgres-15-0"
+    namespace: "{{ ascender.namespace }}"
+  register: db_pods
+  until:
+    - db_pods.resources | length > 0
+    - db_pods.resources[0].status.phase == 'Running'
+    - db_pods.resources[0].status.containerStatuses[0].ready == true
+  retries: 60
+  delay: 10
+
+- name: Scale up operator
+  kubernetes.core.k8s_scale:
+    kind: Deployment
+    name: awx-operator-controller-manager
+    namespace: "{{ ascender.namespace }}"
+    replicas: 1
+    wait: true
+
+- name: Wait for migration job to complete
+  kubernetes.core.k8s_info:
+    kind: Job
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/managed-by=awx-operator"
+      - "app.kubernetes.io/part-of={{ ascender.instance }}"
+  register: migration_job
+  until:
+    - migration_job.resources | length > 0
+    - migration_job.resources[0].status.succeeded is defined
+    - migration_job.resources[0].status.succeeded == 1
+  retries: 30
+  delay: 30
+
+- name: Wait for web pod
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/name={{ ascender.instance }}-web"
+  register: web_pods
+  until:
+    - web_pods.resources is defined
+    - web_pods.resources | length > 0
+    - web_pods.resources[0].status.phase == 'Running'
+  retries: 60
+  delay: 20
+
+- name: Wait for task pod
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/name={{ ascender.instance }}-task"
+  register: task_pods
+  until:
+    - task_pods.resources is defined
+    - task_pods.resources | length > 0
+    - task_pods.resources[0].status.phase == 'Running'
+  retries: 60
+  delay: 20

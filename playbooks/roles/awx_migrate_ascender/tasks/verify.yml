@@ -1,0 +1,20 @@
+---
+- name: Get Ascender route
+  kubernetes.core.k8s_info:
+    kind: Route
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/managed-by=awx-operator"
+      - "app.kubernetes.io/part-of={{ ascender.instance }}"
+  register: ascender_route
+
+- name: Verify Ascender API is accessible
+  ansible.builtin.uri:
+    url: "https://{{ ascender_route.resources[0].spec.host }}/api/v2/"
+    validate_certs: false
+  register: api_check
+  until: api_check.status == 200
+  delay: 5
+  retries: 5
+  when: ascender_route.resources | length > 0
+

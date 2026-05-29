@@ -1,0 +1,149 @@
+---
+# DR configuration: disable schedules, notifications, jobs, and execution instances.
+# Runs AFTER startup (API must be live) and BEFORE verify.
+# Ported from roles/awx_restore/tasks/restore_configure_web.yml.
+
+- name: Get Ascender route
+  kubernetes.core.k8s_info:
+    kind: Route
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/managed-by=awx-operator"
+      - "app.kubernetes.io/part-of={{ ascender.instance }}"
+  register: ascender_route
+
+- name: Get Ascender web pod
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/name={{ ascender.instance }}-web"
+  register: web_pods
+  until:
+    - web_pods.resources | length > 0
+    - web_pods.resources[0].status.phase == 'Running'
+  retries: 10
+  delay: 10
+
+- name: Read admin password from K8s secret
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: "{{ ascender.instance }}-admin-password"
+    namespace: "{{ ascender.namespace }}"
+  register: admin_password_secret
+  no_log: true
+
+- name: Set admin password
+  ansible.builtin.set_fact:
+    admin_password: "{{ admin_password_secret.resources[0].data.password | b64decode }}"
+  no_log: true
+
+- name: Define controller auth parameters
+  ansible.builtin.set_fact:
+    awx_controller_auth:
+      host: "https://{{ ascender_route.resources[0].spec.host }}"
+      username: admin
+      password: "{{ admin_password }}"
+      verify_ssl: false
+  no_log: true
+
+- name: Define awx.awx module auth parameters
+  ansible.builtin.set_fact:
+    awx_auth: &awx_auth
+      controller_host: "{{ awx_controller_auth.host }}"
+      controller_username: "{{ awx_controller_auth.username }}"
+      controller_password: "{{ awx_controller_auth.password }}"
+      validate_certs: "{{ awx_controller_auth.verify_ssl }}"
+  no_log: true
+
+- name: Verify Ascender API health
+  ansible.builtin.uri:
+    url: "{{ awx_controller_auth.host }}/api/"
+    method: GET
+    validate_certs: false
+  retries: 5
+  delay: 10
+
+- name: Get list of enabled execution environment instances
+  ansible.builtin.set_fact:
+    awx_instances: "{{ lookup('awx.awx.controller_api',
+                        'instances/',
+                        query_params={
+                          'enabled': 'true'
+                        },
+                        wantlist=true,
+                        **awx_controller_auth) }}"
+
+- name: Disable enabled execution environment instances
+  awx.awx.instance:
+    <<: *awx_auth
+    hostname: "{{ item.hostname }}"
+    enabled: false
+  loop: "{{ awx_instances }}"
+  when: awx_instances | length > 0
+
+- name: Get enabled job template notifications
+  ansible.builtin.set_fact:
+    enabled_notifications: "{{ lookup('awx_templates_with_enabled_notifications', **awx_controller_auth) }}"
+
+- name: Disable enabled notifications on job templates
+  awx.awx.job_template:
+    <<: *awx_auth
+    name: "{{ item.name }}"
+    notification_templates_started: []
+    notification_templates_success: []
+    notification_templates_error: []
+    state: present
+  loop: "{{ enabled_notifications.job_templates }}"
+  loop_control:
+    label: "Job Template ID: {{ item.id }} - {{ item.name }}"
+
+- name: Get list of jobs to cancel
+  ansible.builtin.set_fact:
+    awx_jobs: "{{ lookup('awx.awx.controller_api',
+                        'jobs/',
+                        query_params={
+                          'status__in': 'pending,waiting,running,new'
+                        },
+                        wantlist=true,
+                        **awx_controller_auth) }}"
+
+- name: Cancel running jobs
+  awx.awx.job_cancel:
+    <<: *awx_auth
+    job_id: "{{ item.id }}"
+  loop: "{{ awx_jobs }}"
+  when: awx_jobs | length > 0
+  register: cancel_result
+  failed_when: >
+    cancel_result is failed and
+    not ((cancel_result.msg is defined) and (cancel_result.msg is search('The read operation timed out')))
+  changed_when: >
+    (cancel_result.msg is defined and cancel_result.msg is search('The read operation timed out'))
+
+- name: Get list of enabled schedules
+  ansible.builtin.set_fact:
+    awx_schedule_list: "{{ lookup('awx.awx.controller_api',
+                        'schedules/',
+                        query_params={
+                          'enabled': 'true',
+                          'page_size': 200
+                        },
+                        wantlist=true,
+                        **awx_controller_auth) }}"
+
+- name: Disable enabled schedules
+  awx.awx.schedule:
+    <<: *awx_auth
+    name: "{{ item.id }}"
+    state: present
+    enabled: false
+  loop: "{{ awx_schedule_list }}"
+  when: awx_schedule_list | length > 0
+
+- name: "Set LDAP Server URIs as {{ ascender.ldap_servers | join(',') }}"
+  awx.awx.settings:
+    <<: *awx_auth
+    name: "AUTH_LDAP_SERVER_URI"
+    value: "{{ ascender.ldap_servers | join(',') }}"

@@ -1,0 +1,67 @@
+---
+# Download AWX backup from S3 using a worker pod.
+# Requires restore PVC to exist (created by prep.yml).
+
+- name: Remove leftover worker pod
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Pod
+    name: awx-migrate-ascender
+    namespace: "{{ ascender.namespace }}"
+    wait: true
+
+- name: Create worker pod
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: awx-migrate-ascender
+        namespace: "{{ ascender.namespace }}"
+      spec:
+        volumes:
+          - name: restore-pvc
+            persistentVolumeClaim:
+              claimName: "{{ restore_pvc.name }}"
+        containers:
+          - name: worker
+            image: "{{ s3.mc_image }}:{{ s3.mc_image_tag }}"
+            imagePullPolicy: IfNotPresent
+            command: ["sleep", "infinity"]
+            env:
+              - name: MC_INSECURE
+                value: "true"
+            volumeMounts:
+              - name: restore-pvc
+                mountPath: /backups
+        restartPolicy: Never
+    wait: true
+    wait_timeout: 180
+
+- name: Wait for worker pod to be ready
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    name: awx-migrate-ascender
+    namespace: "{{ ascender.namespace }}"
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 120
+
+- name: Download latest AWX backup from S3
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: awx-migrate-ascender
+    command: "bash -c {{ lookup('template', 's3_download.sh.j2') | quote }}"
+
+- name: Verify tower.db exists in AWX backup
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ascender.namespace }}"
+    pod: awx-migrate-ascender
+    command: sh -c "test -f /backups/awx-prod/tower.db && echo found"
+  register: db_check
+  failed_when: "'found' not in db_check.stdout"

@@ -1,0 +1,69 @@
+---
+# Scale down all Ascender services (including postgres) and create restore PVC.
+# Must run before any other phase.
+
+- name: Scale down operator, web, and task
+  kubernetes.core.k8s_scale:
+    kind: Deployment
+    name: "{{ item }}"
+    namespace: "{{ ascender.namespace }}"
+    replicas: 0
+    wait: true
+    wait_timeout: 120
+  loop:
+    - awx-operator-controller-manager
+    - "{{ ascender.instance }}-web"
+    - "{{ ascender.instance }}-task"
+
+- name: Delete stale migration job
+  kubernetes.core.k8s:
+    state: absent
+    kind: Job
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/managed-by=awx-operator"
+      - "app.kubernetes.io/part-of={{ ascender.instance }}"
+    wait: true
+
+- name: Get PostgreSQL StatefulSet
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    namespace: "{{ ascender.namespace }}"
+    label_selectors:
+      - "app.kubernetes.io/component=database"
+      - "app.kubernetes.io/managed-by=awx-operator"
+  register: pg_statefulset
+
+- name: Scale down PostgreSQL StatefulSet
+  kubernetes.core.k8s_scale:
+    kind: StatefulSet
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+    replicas: 0
+    wait: false
+
+- name: Wait for PostgreSQL StatefulSet to scale down
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "{{ pg_statefulset.resources[0].metadata.name }}"
+    namespace: "{{ ascender.namespace }}"
+  register: pg_ss_status
+  until: pg_ss_status.resources[0].status.replicas | default(0) == 0
+  retries: 20
+  delay: 15
+
+- name: Create restore PVC
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: "{{ restore_pvc.name }}"
+        namespace: "{{ ascender.namespace }}"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{ restore_pvc.sc }}"
+        resources:
+          requests:
+            storage: "{{ restore_pvc.size }}"
