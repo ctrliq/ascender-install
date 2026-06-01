@@ -87,6 +87,9 @@
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
 
+- name: Restart Ledger deployments if running latest tag
+  ansible.builtin.include_tasks: restart_latest_deployments.yml
+
 - name: Retrieve the ledger-web-ingress Ingress object
   kubernetes.core.k8s_info:
     api_version: v1

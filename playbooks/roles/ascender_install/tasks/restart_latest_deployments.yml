@@ -1,0 +1,25 @@
+---
+# When running the 'latest' tag, Kubernetes won't re-pull the image if
+# the Deployment spec is unchanged. Patching a restartedAt annotation
+# into the pod template forces a rolling restart.
+
+- name: Restart Ascender deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item }}"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    verify_ssl: false
+  loop:
+    - ascender-app-web
+    - ascender-app-task
+  when: ASCENDER_VERSION == "latest"

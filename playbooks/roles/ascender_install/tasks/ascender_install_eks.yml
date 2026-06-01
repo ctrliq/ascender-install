@@ -90,6 +90,9 @@
     wait_timeout: 900
     verify_ssl: false
 
+- name: Restart Ascender deployments if running latest tag
+  ansible.builtin.include_tasks: restart_latest_deployments.yml
+
 - name: Retrieve the ascender-app-ingress Ingress object
   kubernetes.core.k8s_info:
     api_version: v1

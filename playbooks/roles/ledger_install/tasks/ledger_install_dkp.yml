@@ -50,6 +50,9 @@
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
 
+- name: Restart Ledger deployments if running latest tag
+  ansible.builtin.include_tasks: restart_latest_deployments.yml
+
 - name: Set the Ledger URL
   ansible.builtin.set_fact:
       ledger_ip: "{{ LEDGER_HOSTNAME }}"
