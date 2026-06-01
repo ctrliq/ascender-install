@@ -92,8 +92,26 @@
     wait_timeout: 360
     verify_ssl: false
 
-- name: Restart Ascender deployments if running latest tag
-  ansible.builtin.include_tasks: restart_latest_deployments.yml
+- name: Restart Ascender deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item }}"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    verify_ssl: false
+  loop:
+    - ascender-app-web
+    - ascender-app-task
+  when: ASCENDER_VERSION == "latest"
 
 - name: Retrieve the ascender-app-ingress Ingress object
   kubernetes.core.k8s_info:

@@ -53,8 +53,27 @@
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
 
-- name: Restart Ledger deployments if running latest tag
-  ansible.builtin.include_tasks: restart_latest_deployments.yml
+- name: Restart Ledger deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item }}"
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    verify_ssl: false
+  loop:
+    - db
+    - parser
+    - web
+  when: LEDGER_VERSION == "latest"
 
 - name: Set the Ledger URL
   ansible.builtin.set_fact:
