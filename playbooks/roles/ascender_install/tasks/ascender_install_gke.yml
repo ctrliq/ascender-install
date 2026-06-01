@@ -111,7 +111,7 @@
   loop:
     - ascender-app-web
     - ascender-app-task
-  when: ASCENDER_VERSION == "latest"
+  when: ASCENDER_VERSION | lower == "latest"
 
 - name: Retrieve the ascender-app-ingress Ingress object
   kubernetes.core.k8s_info:

@@ -105,7 +105,7 @@
   loop:
     - ascender-app-web
     - ascender-app-task
-  when: ASCENDER_VERSION == "latest"
+  when: ASCENDER_VERSION | lower == "latest"
 
 - name: Set the Ascender URL
   ansible.builtin.set_fact:

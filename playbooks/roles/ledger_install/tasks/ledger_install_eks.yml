@@ -107,7 +107,7 @@
     - db
     - parser
     - web
-  when: LEDGER_VERSION == "latest"
+  when: LEDGER_VERSION | lower == "latest"
 
 - name: Retrieve the ledger-web-ingress Ingress object
   kubernetes.core.k8s_info:

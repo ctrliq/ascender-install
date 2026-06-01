@@ -109,7 +109,7 @@
     - db
     - parser
     - web
-  when: LEDGER_VERSION == "latest"
+  when: LEDGER_VERSION | lower == "latest"
 
 - name: Set the Ledger URL
   ansible.builtin.set_fact:
