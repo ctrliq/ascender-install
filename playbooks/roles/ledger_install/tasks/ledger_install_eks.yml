@@ -62,6 +62,7 @@
     namespace: "{{ LEDGER_NAMESPACE }}"
     definition: "{{ lookup('template', 'templates/ledger_deployment_eks.yaml') | from_yaml_all }}"
     verify_ssl: false
+  register: ledger_apply_result
 
 - name: Wait for Ledger web Deployment to complete setting up
   kubernetes.core.k8s_info:
@@ -86,6 +87,30 @@
       
 - ansible.builtin.debug:
     var: parser_svc.resources[0].spec.ports[0].port
+
+- name: Restart Ledger deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item }}"
+    namespace: "{{ LEDGER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    verify_ssl: false
+  loop:
+    - db
+    - parser
+    - web
+  when:
+    - LEDGER_VERSION | lower == "latest"
+    - not ledger_apply_result.changed
 
 - name: Retrieve the ledger-web-ingress Ingress object
   kubernetes.core.k8s_info:

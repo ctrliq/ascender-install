@@ -81,6 +81,7 @@
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-aks.yml') }}"
     verify_ssl: false
+  register: ascender_apply_result
 
 - name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
   kubernetes.core.k8s_info:
@@ -91,6 +92,29 @@
     wait_sleep: 10
     wait_timeout: 360
     verify_ssl: false
+
+- name: Restart Ascender deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item }}"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    verify_ssl: false
+  loop:
+    - ascender-app-web
+    - ascender-app-task
+  when:
+    - ASCENDER_VERSION | lower == "latest"
+    - not ascender_apply_result.changed
 
 - name: Retrieve the ascender-app-ingress Ingress object
   kubernetes.core.k8s_info:
