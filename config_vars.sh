@@ -607,15 +607,15 @@ echo "ASCENDER_ADMIN_PASSWORD: "\"$ascender_admin_password\" >> custom.config.ym
 # ASCENDER_VERSION
 echo $'\n'
 echo "# The image tag indicating the version of Ascender you wish to install" >> custom.config.yml
-read -p "The image tag indicating the version of Ascender you wish to install [25.3.6]: " a_version
-ascender_version=${a_version:-25.3.6}
+read -p "The image tag indicating the version of Ascender you wish to install [25.4.0]: " a_version
+ascender_version=${a_version:-25.4.0}
 echo "ASCENDER_VERSION: "$ascender_version >> custom.config.yml
 
 # ASCENDER_OPERATOR_VERSION
 echo $'\n'
 echo "# The version of the AWX Operator used to install Ascender and its components" >> custom.config.yml
-read -p "The version of the AWX Operator used to install Ascender and its components [2.19.5]: " a_operator_version
-ascender_operator_version=${a_operator_version:-2.19.5}
+read -p "The version of the AWX Operator used to install Ascender and its components [2.19.6]: " a_operator_version
+ascender_operator_version=${a_operator_version:-2.19.6}
 echo "ASCENDER_OPERATOR_VERSION: "$ascender_operator_version >> custom.config.yml
 
 # ascender_garbage_collect_secrets
