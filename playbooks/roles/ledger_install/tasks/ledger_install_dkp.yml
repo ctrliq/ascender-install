@@ -27,6 +27,7 @@
     state: present
     namespace: "{{ LEDGER_NAMESPACE }}"
     definition: "{{ lookup('template', 'templates/ledger_deployment_dkp.yaml') | from_yaml_all }}"
+  register: ledger_apply_result
 
 - name: Wait for Ledger web Deployment to complete setting up
   kubernetes.core.k8s_info:
@@ -70,7 +71,9 @@
     - db
     - parser
     - web
-  when: LEDGER_VERSION | lower == "latest"
+  when:
+    - LEDGER_VERSION | lower == "latest"
+    - not ledger_apply_result.changed
 
 - name: Set the Ledger URL
   ansible.builtin.set_fact:

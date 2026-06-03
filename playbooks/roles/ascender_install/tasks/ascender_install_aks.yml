@@ -81,6 +81,7 @@
     state: present
     definition: "{{ lookup('ansible.builtin.template', 'ascender-deployment/ascender-deployment-aks.yml') }}"
     verify_ssl: false
+  register: ascender_apply_result
 
 - name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
   kubernetes.core.k8s_info:
@@ -111,7 +112,9 @@
   loop:
     - ascender-app-web
     - ascender-app-task
-  when: ASCENDER_VERSION | lower == "latest"
+  when:
+    - ASCENDER_VERSION | lower == "latest"
+    - not ascender_apply_result.changed
 
 - name: Retrieve the ascender-app-ingress Ingress object
   kubernetes.core.k8s_info:
