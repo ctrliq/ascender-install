@@ -76,7 +76,7 @@
         project_path: "{{ playbook_dir }}/../ascender_install_artifacts/aks_deploy"
         state: present
         variables:
-          home_dir: "/home/{{ ansible_user}}"
+          home_dir: "{{ ansible_env.HOME }}"
           aks_cluster_name: "{{ AKS_CLUSTER_NAME }}"
           resource_group_location: "{{ AKS_CLUSTER_REGION }}"
           node_count: "{{ AKS_NUM_WORKER_NODES }}"
