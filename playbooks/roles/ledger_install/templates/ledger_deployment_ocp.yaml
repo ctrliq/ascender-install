@@ -174,6 +174,7 @@ metadata:
   name: db
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
+  revisionHistoryLimit: 1
   replicas: 1
   selector:
     matchLabels:
@@ -252,6 +253,7 @@ metadata:
   name: parser
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
+  revisionHistoryLimit: 1
   replicas: {{ ledger_parser_replicas }}
   selector:
     matchLabels:
@@ -319,6 +321,7 @@ metadata:
   name: web
   namespace: {{ LEDGER_NAMESPACE }}
 spec:
+  revisionHistoryLimit: 1
   replicas: {{ ledger_web_replicas }}
   selector:
     matchLabels:
