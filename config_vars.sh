@@ -2,6 +2,26 @@
 
 rm ./custom.config.yml
 
+# Prompts for a password and re-prompts until the value does not contain a
+# double-quote ("). A double-quote would break the quoted YAML value written
+# to custom.config.yml. The accepted value is returned via the global
+# PASSWORD_REPLY variable.
+read_password() {
+    local prompt="$1"
+    local default="$2"
+    local value
+    while true; do
+        read -p "$prompt" value
+        value=${value:-$default}
+        if [[ $value == *'"'* ]]; then
+            echo "Error: password cannot contain a double-quote (\") character. Please try again." >&2
+            continue
+        fi
+        break
+    done
+    PASSWORD_REPLY=$value
+}
+
 # k8s_platform
 echo $'\n'
 platforms=(k3s eks aks gke rke2 dkp ocp)
@@ -593,8 +613,8 @@ echo "ASCENDER_ADMIN_USER: "$ascender_admin_user >> custom.config.yml
 # Define ASCENDER_ADMIN_PASSWORD variable
 echo $'\n'
 echo "# Administrator password for Ascender" >> custom.config.yml
-read -p "Administrator password for Ascender [myadminpassword]: " a_admin_password
-ascender_admin_password=${a_admin_password:-myadminpassword}
+read_password "Administrator password for Ascender [myadminpassword]: " "myadminpassword"
+ascender_admin_password=$PASSWORD_REPLY
 echo "ASCENDER_ADMIN_PASSWORD: \"$ascender_admin_password\"" >> custom.config.yml
 
 # Define ASCENDER_IMAGE variable
@@ -659,8 +679,8 @@ if [ $ascender_pgsql_host != "None" ]; then
 
    # ASCENDER_PGSQL_PWD
    echo $'\n'
-   read -p "External PostgreSQL password. NOTE: Do NOT use special characters in the postgres password (Django requirement) [mypgadminpassword]: " a_pgsql_pwd
-   ascender_pgsql_pwd=${a_pgsql_pwd:-ascender}
+   read_password "External PostgreSQL password. NOTE: Do NOT use special characters in the postgres password (Django requirement) [mypgadminpassword]: " "ascender"
+   ascender_pgsql_pwd=$PASSWORD_REPLY
    echo "# External PostgreSQL password" >> custom.config.yml
    echo "ASCENDER_PGSQL_PWD: \"$ascender_pgsql_pwd\"" >> custom.config.yml
 
@@ -787,15 +807,15 @@ if [ $ledger_install == "true" ]; then
 
     # LEDGER_ADMIN_PASSWORD
     echo $'\n'
-    read -p "Admin password for Ledger [myadminpassword]: " l_admin_password
-    ledger_admin_password=${l_admin_password:-myadminpassword}
+    read_password "Admin password for Ledger [myadminpassword]: " "myadminpassword"
+    ledger_admin_password=$PASSWORD_REPLY
     echo "# Admin password for Ledger (the username is admin by default)" >> custom.config.yml
     echo "LEDGER_ADMIN_PASSWORD: \"$ledger_admin_password\"" >> custom.config.yml
 
     # LEDGER_DB_PASSWORD
     echo $'\n'
-    read -p "Password for Ledger database [mydbpassword]: " l_db_password
-    ledger_db_password=${l_db_password:-mydbpassword}
+    read_password "Password for Ledger database [mydbpassword]: " "mydbpassword"
+    ledger_db_password=$PASSWORD_REPLY
     echo "# Password for Ledger database" >> custom.config.yml
     echo "LEDGER_DB_PASSWORD: \"$ledger_db_password\"" >> custom.config.yml
 fi
