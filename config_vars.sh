@@ -2,23 +2,26 @@
 
 rm ./custom.config.yml
 
-# Prompts for a password and re-prompts until the value does not contain a
-# double-quote ("). A double-quote would break the quoted YAML value written
-# to custom.config.yml. The accepted value is returned via the global
-# PASSWORD_REPLY variable.
+# Escapes a string for safe inclusion in a YAML double-quoted scalar by
+# escaping backslashes first, then double-quotes. The result is returned via
+# the global YAML_ESCAPED variable.
+yaml_escape() {
+    local s=$1
+    s=${s//\\/\\\\}
+    s=${s//\"/\\\"}
+    YAML_ESCAPED=$s
+}
+
+# Prompts for a password, reading the raw input (-r) so backslashes are kept
+# literally. The accepted value is returned via the global PASSWORD_REPLY
+# variable. Values are escaped with yaml_escape before being written to
+# custom.config.yml.
 read_password() {
     local prompt="$1"
     local default="$2"
     local value
-    while true; do
-        read -p "$prompt" value
-        value=${value:-$default}
-        if [[ $value == *'"'* ]]; then
-            echo "Error: password cannot contain a double-quote (\") character. Please try again." >&2
-            continue
-        fi
-        break
-    done
+    read -rp "$prompt" value
+    value=${value:-$default}
     PASSWORD_REPLY=$value
 }
 
@@ -615,7 +618,8 @@ echo $'\n'
 echo "# Administrator password for Ascender" >> custom.config.yml
 read_password "Administrator password for Ascender [myadminpassword]: " "myadminpassword"
 ascender_admin_password=$PASSWORD_REPLY
-echo "ASCENDER_ADMIN_PASSWORD: \"$ascender_admin_password\"" >> custom.config.yml
+yaml_escape "$ascender_admin_password"
+echo "ASCENDER_ADMIN_PASSWORD: \"$YAML_ESCAPED\"" >> custom.config.yml
 
 # Define ASCENDER_IMAGE variable
 # echo $'\n'
@@ -679,10 +683,11 @@ if [ $ascender_pgsql_host != "None" ]; then
 
    # ASCENDER_PGSQL_PWD
    echo $'\n'
-   read_password "External PostgreSQL password. NOTE: Do NOT use special characters in the postgres password (Django requirement) [mypgadminpassword]: " "ascender"
+   read_password "External PostgreSQL password. NOTE: Do NOT use special characters in the postgres password (Django requirement) [mypgadminpassword]: " "mypgadminpassword"
    ascender_pgsql_pwd=$PASSWORD_REPLY
    echo "# External PostgreSQL password" >> custom.config.yml
-   echo "ASCENDER_PGSQL_PWD: \"$ascender_pgsql_pwd\"" >> custom.config.yml
+   yaml_escape "$ascender_pgsql_pwd"
+   echo "ASCENDER_PGSQL_PWD: \"$YAML_ESCAPED\"" >> custom.config.yml
 
    # ASCENDER_PGSQL_DB
    echo $'\n'
@@ -810,12 +815,14 @@ if [ $ledger_install == "true" ]; then
     read_password "Admin password for Ledger [myadminpassword]: " "myadminpassword"
     ledger_admin_password=$PASSWORD_REPLY
     echo "# Admin password for Ledger (the username is admin by default)" >> custom.config.yml
-    echo "LEDGER_ADMIN_PASSWORD: \"$ledger_admin_password\"" >> custom.config.yml
+    yaml_escape "$ledger_admin_password"
+    echo "LEDGER_ADMIN_PASSWORD: \"$YAML_ESCAPED\"" >> custom.config.yml
 
     # LEDGER_DB_PASSWORD
     echo $'\n'
     read_password "Password for Ledger database [mydbpassword]: " "mydbpassword"
     ledger_db_password=$PASSWORD_REPLY
     echo "# Password for Ledger database" >> custom.config.yml
-    echo "LEDGER_DB_PASSWORD: \"$ledger_db_password\"" >> custom.config.yml
+    yaml_escape "$ledger_db_password"
+    echo "LEDGER_DB_PASSWORD: \"$YAML_ESCAPED\"" >> custom.config.yml
 fi
