@@ -595,7 +595,7 @@ echo $'\n'
 echo "# Administrator password for Ascender" >> custom.config.yml
 read -p "Administrator password for Ascender [myadminpassword]: " a_admin_password
 ascender_admin_password=${a_admin_password:-myadminpassword}
-echo "ASCENDER_ADMIN_PASSWORD: "\"$ascender_admin_password\" >> custom.config.yml
+echo "ASCENDER_ADMIN_PASSWORD: \"$ascender_admin_password\"" >> custom.config.yml
 
 # Define ASCENDER_IMAGE variable
 # echo $'\n'
@@ -662,7 +662,7 @@ if [ $ascender_pgsql_host != "None" ]; then
    read -p "External PostgreSQL password. NOTE: Do NOT use special characters in the postgres password (Django requirement) [mypgadminpassword]: " a_pgsql_pwd
    ascender_pgsql_pwd=${a_pgsql_pwd:-ascender}
    echo "# External PostgreSQL password" >> custom.config.yml
-   echo "ASCENDER_PGSQL_PWD: "\"$ascender_pgsql_pwd\" >> custom.config.yml
+   echo "ASCENDER_PGSQL_PWD: \"$ascender_pgsql_pwd\"" >> custom.config.yml
 
    # ASCENDER_PGSQL_DB
    echo $'\n'
@@ -790,12 +790,12 @@ if [ $ledger_install == "true" ]; then
     read -p "Admin password for Ledger [myadminpassword]: " l_admin_password
     ledger_admin_password=${l_admin_password:-myadminpassword}
     echo "# Admin password for Ledger (the username is admin by default)" >> custom.config.yml
-    echo "LEDGER_ADMIN_PASSWORD: "\"$ledger_admin_password\" >> custom.config.yml
+    echo "LEDGER_ADMIN_PASSWORD: \"$ledger_admin_password\"" >> custom.config.yml
 
     # LEDGER_DB_PASSWORD
     echo $'\n'
     read -p "Password for Ledger database [mydbpassword]: " l_db_password
     ledger_db_password=${l_db_password:-mydbpassword}
     echo "# Password for Ledger database" >> custom.config.yml
-    echo "LEDGER_DB_PASSWORD: "\"$ledger_db_password\" >> custom.config.yml
+    echo "LEDGER_DB_PASSWORD: \"$ledger_db_password\"" >> custom.config.yml
 fi
