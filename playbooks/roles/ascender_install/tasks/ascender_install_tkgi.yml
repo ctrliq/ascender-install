@@ -1,0 +1,335 @@
+- name: Set kubeconfig path for tkgi platform
+  ansible.builtin.set_fact:
+    kubeconfig_path: "{{ TKGI_KUBECONFIG_PATH | default(lookup('env', 'KUBECONFIG'), true) | default(lookup('env', 'HOME') + '/.kube/config', true) }}"
+
+- name: Expand tilde in kubeconfig path
+  ansible.builtin.set_fact:
+    kubeconfig_path: "{{ kubeconfig_path | regex_replace('^~', lookup('env', 'HOME')) }}"
+
+- name: Get current kubeconfig context for tkgi platform
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - config
+      - current-context
+      - --kubeconfig={{ kubeconfig_path }}
+  register: current_context
+  changed_when: false
+
+- name: Set kubeconfig context for tkgi platform
+  ansible.builtin.set_fact:
+    tkgi_k8s_context: "{{ TKGI_K8S_CONTEXT | default(current_context.stdout, true) }}"
+
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Query ingress classes for tkgi install
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - ingressclass
+      - -o
+      - jsonpath={range .items[*]}{.metadata.name}{"\n"}{end}
+  register: ingress_class_info
+  changed_when: false
+
+- name: Set ingress class names for tkgi install
+  ansible.builtin.set_fact:
+    ingress_class_names: "{{ ingress_class_info.stdout_lines | reject('equalto', '') | list }}"
+
+- name: Query Contour deployment fallback for tkgi install
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - deployment
+      - contour
+      - -n
+      - projectcontour
+      - --ignore-not-found
+      - -o
+      - name
+  register: contour_deployment_info
+  changed_when: false
+  failed_when: false
+
+- name: Set tkgi ingress annotations from Contour fallback when not explicitly configured
+  ansible.builtin.set_fact:
+    TKGI_INGRESS_ANNOTATIONS: "kubernetes.io/ingress.class: contour"
+  when:
+    - TKGI_INGRESS_CLASS_NAME | default('') == ''
+    - ingress_class_names | length == 0
+    - contour_deployment_info.stdout | length > 0
+
+- name: Set tkgi ingress annotations for Contour when not explicitly configured
+  ansible.builtin.set_fact:
+    TKGI_INGRESS_ANNOTATIONS: "kubernetes.io/ingress.class: contour"
+  when:
+    - TKGI_INGRESS_CLASS_NAME | default('') == ''
+    - "'contour' in ingress_class_names"
+
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ ASCENDER_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    context: "{{ tkgi_k8s_context }}"
+    kubeconfig: "{{ kubeconfig_path }}"
+    verify_ssl: false
+
+- name: Generate manifest to install AWX Operator
+  ansible.builtin.template:
+    src: templates/ascender-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/kustomization.yml"
+
+- name: Generate manifest to install AWX Operator with timestamp attached, for purposes of operator deletion later
+  ansible.builtin.template:
+    src: templates/ascender-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Copy Operator Source
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../offline/ascender-operator-{{ ASCENDER_OPERATOR_VERSION }}/config"
+    dest: "{{ tmp_dir }}/"
+    remote_src: true
+  when:
+    - k8s_offline
+
+- name: Install AWX Operator with Kustomize
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - apply
+      - --server-side
+      - -k
+      - "{{ tmp_dir }}"
+  register: tkgi_operator_apply
+  changed_when: >-
+    'created' in tkgi_operator_apply.stdout or
+    'configured' in tkgi_operator_apply.stdout or
+    'serverside-applied' in tkgi_operator_apply.stdout
+
+- name: delete Kustomization file
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}/kustomization.yml"
+    state: absent
+
+- name: Wait for Operator deployment to be ready
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - wait
+      - --for=condition=available
+      - --timeout=360s
+      - deployment/awx-operator-controller-manager
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+  changed_when: false
+
+- name: Set postgres deployment mode for tkgi install
+  ansible.builtin.set_fact:
+    ascender_external_postgres: "{{ ASCENDER_PGSQL_HOST is defined and (ASCENDER_PGSQL_HOST | string | trim | length > 0) }}"
+
+- name: Check for Postgres Pod
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - statefulset
+      - ascender-app-postgres-15
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+      - -o
+      - jsonpath={.spec.template.spec.containers[0].image}
+  register: postgres_statefulset
+  changed_when: false
+  failed_when: false
+  when: not ascender_external_postgres
+
+- name: Check for old postgres install
+  ansible.builtin.fail:
+    msg: Old version of postgres detected. Please run upgrade postgres playbook.  ansible-playbook playbooks/upgrade_postgres.yml
+  when:
+    - not ascender_external_postgres
+    - postgres_statefulset.rc == 0
+    - postgres_statefulset.stdout == "docker.io/postgres:13" or postgres_statefulset.stdout == "docker.io/postgres:15"
+
+- name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: "ascender-deployment/ascender-deployment-tkgi.yml"
+    dest: "{{ tmp_dir }}/ascender-deployment-tkgi.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Apply AWX ascender-app manifest for tkgi
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - apply
+      - -f
+      - "{{ tmp_dir }}/ascender-deployment-tkgi.yml.{{ ansible_date_time.iso8601_basic_short }}"
+  register: tkgi_awx_apply
+  changed_when: >-
+    'created' in tkgi_awx_apply.stdout or
+    'configured' in tkgi_awx_apply.stdout or
+    'unchanged' not in tkgi_awx_apply.stdout
+
+- name: Wait for Postgres StatefulSet to be created by operator
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - statefulset
+      - ascender-app-postgres-15
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+  register: postgres_sts_check
+  retries: 30
+  delay: 2
+  until: postgres_sts_check.rc == 0
+  changed_when: false
+  when: not ascender_external_postgres
+
+- name: Check if Postgres StatefulSet has pod-level fsGroup
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - statefulset
+      - ascender-app-postgres-15
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+      - -o
+      - jsonpath={.spec.template.spec.securityContext.fsGroup}
+  register: current_fsgroup
+  changed_when: false
+  failed_when: false
+  when: not ascender_external_postgres
+
+- name: Patch Postgres StatefulSet with pod-level fsGroup
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - patch
+      - statefulset
+      - ascender-app-postgres-15
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+      - --type=merge
+      - -p={"spec":{"template":{"spec":{"securityContext":{"fsGroup":26}}}}}
+  when:
+    - not ascender_external_postgres
+    - current_fsgroup.stdout != '26'
+  changed_when: true
+
+- name: Delete Postgres pod to apply fsGroup patch
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - delete
+      - pod
+      - ascender-app-postgres-15-0
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+      - --ignore-not-found
+  when:
+    - not ascender_external_postgres
+    - current_fsgroup.stdout != '26'
+  changed_when: true
+
+- name: Wait for Postgres pod to be ready after fsGroup patch
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - wait
+      - --for=condition=ready
+      - --timeout=300s
+      - pod/ascender-app-postgres-15-0
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+  when:
+    - not ascender_external_postgres
+    - current_fsgroup.stdout != '26'
+  changed_when: false
+
+- name: Wait for ascender-app-web Deployment to be created by operator
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - deployment
+      - ascender-app-web
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+      - --ignore-not-found
+      - -o
+      - name
+  register: ascender_web_deployment
+  until: ascender_web_deployment.stdout != ''
+  retries: 60
+  delay: 10
+  changed_when: false
+
+- name: Wait for ascender-app-web Deployment to complete setting up (this may take up to 10 minutes)
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - wait
+      - --for=condition=available
+      - --timeout=360s
+      - deployment/ascender-app-web
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+  changed_when: false
+
+- name: Set the Ascender URL
+  ansible.builtin.set_fact:
+      ascender_ip: "{{ ASCENDER_HOSTNAME }}"
+      ascender_port: "{{ '443' if k8s_lb_protocol == 'https' else '80' }}"
+
+- ansible.builtin.debug:
+    msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+
+- name: Wait until Ascender API is Up (This may take between 10-20 mins)
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
+    return_content: yes
+    validate_certs: false
+    status_code: 200
+  until:
+    - uri_output.status|int == 200
+    - uri_output.url == k8s_lb_protocol + "://" + ascender_ip + ":" + ascender_port + "/api/v2/ping/"
+  retries: 200
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Ascender API is up"

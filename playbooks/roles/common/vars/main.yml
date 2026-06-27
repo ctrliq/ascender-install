@@ -13,6 +13,12 @@ common_packages:
       - kubectl
       - python3-kubernetes
   Debian:
+    11:
+      - jq
+      - python3-pip
+      - python3-setuptools
+      - kubectl
+      - python3-kubernetes
     24:
       - jq
       - python3-pip

@@ -1,0 +1,59 @@
+---
+# ---Kubernetes-specific variables---
+
+k8s_platform: tkgi
+kube_install: false
+k8s_lb_protocol: http
+use_etc_hosts: true
+
+# Set to https and provide local TLS files if you want the installer to create
+# the TKGI ingress TLS secret.
+#tls_crt_path: "~/ascender-fullchain.crt"
+#tls_key_path: "~/ascender.key"
+
+# Optional path to the kubeconfig used for TKGI cluster access.
+#TKGI_KUBECONFIG_PATH: "~/.kube/config"
+
+# Optional kubeconfig context.
+#TKGI_K8S_CONTEXT: ""
+
+# Optional explicit ingress class name.
+#TKGI_INGRESS_CLASS_NAME: contour
+
+# Reuse existing upstream registry options if your cluster needs them.
+k8s_container_registry: ""
+k8s_image_pull_secret: None
+
+tmp_dir: "{{ playbook_dir }}/../ascender_install_artifacts"
+
+ASCENDER_HOSTNAME: ascender.example.com
+ASCENDER_NAMESPACE: ascender
+ASCENDER_ADMIN_USER: admin
+ASCENDER_ADMIN_PASSWORD: "replace-me"
+ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
+ASCENDER_VERSION: 25.3.6
+ASCENDER_OPERATOR_VERSION: 2.19.5
+ascender_garbage_collect_secrets: true
+
+# Optional explicit StorageClass for PostgreSQL.
+#POSTGRES_STORAGE_CLASS: ""
+
+# Optional external PostgreSQL settings.
+# ASCENDER_PGSQL_HOST: "10.10.10.10"
+# ASCENDER_PGSQL_PORT: 5432
+# ASCENDER_PGSQL_USER: ascender
+# ASCENDER_PGSQL_PWD: "replace-me"
+# ASCENDER_PGSQL_DB: ascenderdb
+# ASCENDER_PGSQL_SSLMODE: disable
+
+LEDGER_INSTALL: true
+LEDGER_HOSTNAME: ledger.example.com
+LEDGER_WEB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-web
+ledger_web_replicas: 1
+LEDGER_PARSER_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-parser
+ledger_parser_replicas: 1
+LEDGER_DB_IMAGE: ghcr.io/ctrliq/ascender-ledger/ledger-db
+LEDGER_VERSION: latest
+LEDGER_NAMESPACE: ledger
+LEDGER_ADMIN_PASSWORD: "replace-me"
+LEDGER_DB_PASSWORD: "replace-me"

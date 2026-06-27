@@ -63,6 +63,13 @@
 - when: ansible_os_family == "Debian"
   name: Ensure necessary packages for Ubuntu/Debian
   block:
+    - name: Ensure apt keyrings directory exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+      become: true
+
     - name: Check for repo key
       ansible.builtin.stat:
         path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg

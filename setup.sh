@@ -17,6 +17,9 @@ fi
 # Read the k8s_platform value from the configuration file
 k8s_platform=$(grep '^k8s_platform:' "$config_file" | awk '{print $2}')
 OS_FAMILY=$(grep -oP '(?<=^ID_LIKE=).+' /etc/os-release | tr -d '"')
+if [ "$OS_FAMILY" == "" ]; then
+  OS_FAMILY=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+fi
 LINUX_VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"' | cut -d. -f1)
 LINUX_ARCH=$(arch)
 OS=""
@@ -29,10 +32,10 @@ fi
 if [[ "$OS_FAMILY" == *"rhel"* || "$OS_FAMILY" == *"fedora"* || "$OS_FAMILY" == *"centos"* ]]; then
   OS="rhel"
 else 
-  if [[ "$OS_FAMILY" == *"debian"* ]]; then
+  if [[ "$OS_FAMILY" == *"debian"* || "$OS_FAMILY" == *"ubuntu"* ]]; then
     OS="debian"
   else
-    echo "Error: Unsupported OS family $OS_FAMILY. This script must be run on RHEL or Rocky Linux."
+    echo "Error: Unsupported OS family $OS_FAMILY. This script must be run on a supported RHEL or Debian family distribution."
     exit 1
   fi
 fi
@@ -45,14 +48,16 @@ if [[ "$k8s_platform" == "eks" || "$k8s_platform" == "gke" || "$k8s_platform" ==
   #   exit 1
   # fi
 
-  # Check if the system is RHEL or Rocky Linux version 9 or higher
+  # Check if the system is using a supported Linux family for this platform
   if [[ "$OS" == "rhel" ]]; then
     if [ "$LINUX_VERSION" -lt 9 ]; then
-      echo "Error: This script must be run on RHEL or Rocky Linux version 9 or higher when k8s_platform is $k8s_platform."
-      exit 1
+      if [[ "$OS" == "rhel" ]]; then
+        echo "Error: This script must be run on RHEL or Rocky Linux version 9 or higher when k8s_platform is $k8s_platform."
+        exit 1
+      fi
     fi
   else
-    echo "Error: Unsupported OS family $OS_FAMILY. This script must be run on RHEL or Rocky Linux when k8s_platform is $k8s_platform."
+    echo "Error: Unsupported OS family $OS_FAMILY. This script must be run on a supported RHEL or Debian family distribution when k8s_platform is $k8s_platform."
     exit 1
   fi
 fi
@@ -86,6 +91,10 @@ echo "Using Inventory File: ${INVENTORY_FILE}"
 
 check_ansible() {
   type -p ansible-playbook > /dev/null
+}
+
+check_python_kubernetes() {
+  python3 -c "import kubernetes" > /dev/null 2>&1
 }
 
 check_collections() {
@@ -135,6 +144,12 @@ if [ $? -ne 1 ]; then
   fi
 fi
 
+check_python_kubernetes
+if [ $? -ne 0 ]; then
+  echo "#### INSTALLING PYTHON KUBERNETES CLIENT ####"
+  python3 -m pip install --user kubernetes
+fi
+
 PASSED_ARG=$@
 if [[ ${#PASSED_ARG} -ne 0 ]]
 then
@@ -177,4 +192,6 @@ else
   else
     echo "ASCENDER SUCCESSFULLY SETUP"
   fi
+
+  exit "${RC}"
 fi
