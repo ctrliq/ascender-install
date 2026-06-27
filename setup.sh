@@ -145,15 +145,17 @@ fi
 check_python_kubernetes
 if [ $? -ne 0 ]; then
   echo "#### INSTALLING PYTHON KUBERNETES CLIENT ####"
+  # We are going to attempt to install the kubernetes client
+  # but we don't want this failing to stop us if we are in offline mode
   if ! python3 -m pip --version > /dev/null 2>&1; then
     if [[ "$OS" == "debian" ]]; then
-      sudo apt-get update -y && sudo apt-get install -y python3-pip
+      sudo apt-get update -y && sudo apt-get install -y python3-pip || true
     fi
     if [[ "$OS" == "rhel" ]]; then
-      sudo dnf install -y python3-pip
+      sudo dnf install -y python3-pip || true
     fi
   fi
-  python3 -m pip install --user kubernetes
+  python3 -m pip install --user kubernetes || true
 fi
 
 PASSED_ARG=$@

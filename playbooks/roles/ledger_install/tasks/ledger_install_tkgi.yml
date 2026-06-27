@@ -222,8 +222,7 @@
         validate_certs: false
         status_code:
           - 200
-      register: uri_output
-      until: uri_output.status == 200
+      until: (ledger_settings.status | default(0)) == 200
       retries: 60
       delay: 10
       register: ledger_settings
