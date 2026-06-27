@@ -13,14 +13,15 @@ yaml_escape() {
 }
 
 # Prompts for a password, reading the raw input (-r) so backslashes are kept
-# literally. The accepted value is returned via the global PASSWORD_REPLY
-# variable. Values are escaped with yaml_escape before being written to
-# custom.config.yml.
+# literally and silently (-s) so the secret is not echoed to the terminal. The
+# accepted value is returned via the global PASSWORD_REPLY variable. Values are
+# escaped with yaml_escape before being written to custom.config.yml.
 read_password() {
     local prompt="$1"
     local default="$2"
     local value
-    read -rp "$prompt" value
+    read -rsp "$prompt" value
+    echo >&2
     value=${value:-$default}
     PASSWORD_REPLY=$value
 }
