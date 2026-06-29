@@ -95,7 +95,7 @@ The [**Uninstall**](#uninstall) section of this tutorial references
 two of the variables that need to be set:
 
 - `k8s_platform`: The Kubernetes platform Ascender is being installed
-  on. This could be K3s, EKS, GKE, or AKS.
+  on. This could be K3s, EKS, GKE, AKS, RKE2, DKP, OCP, or TKGI.
 - `tmp_dir`: The directory on the server running the install script,
   where temporary artifacts will be stored.
 

@@ -4,7 +4,7 @@ rm ./custom.config.yml
 
 # k8s_platform
 echo $'\n'
-platforms=(k3s eks aks gke rke2 dkp ocp)
+platforms=(k3s eks aks gke rke2 dkp ocp tkgi)
 selected=()
 PS3='Select the number of the Kubernetes platform you are using to install Ascender: '
 select name in "${platforms[@]}" ; do
@@ -510,7 +510,7 @@ if [ $k8s_platform == "dkp" ]; then
    echo "# The name of the dkp cluster you wish to deploy Ascender to and/or create" >> custom.config.yml
    echo "DKP_CLUSTER_NAME: "$dkp_cluster_name >> custom.config.yml
 fi
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2") ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "tkgi") ]]; then
    echo $'\n'
    u_etc_hosts=(true false)
    selected=()
@@ -526,7 +526,7 @@ if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rk
    echo "use_etc_hosts: "$use_etc_hosts >> custom.config.yml
 fi
 
-if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "aks" || $k8s_platform == "gke" || $k8s_platform == "eks" ) && $k8s_lb_protocol == "https" ]]; then
+if [[ ( $k8s_platform == "k3s" || $k8s_platform == "dkp" || $k8s_platform == "rke2" || $k8s_platform == "tkgi" || $k8s_platform == "aks" || $k8s_platform == "gke" || $k8s_platform == "eks" ) && $k8s_lb_protocol == "https" ]]; then
    #tls_crt_path
    echo $'\n'
    read -p "TLS Certificate file location on the local installing machine [~/ascender.crt]:" t_cert_path

@@ -257,7 +257,7 @@
         validate_certs: false
         status_code:
           - 200
-      until: uri_output.status == 200
+      until: (ledger_settings.status | default(0)) == 200
       retries: 60
       delay: 10
       register: ledger_settings
@@ -272,7 +272,7 @@
         validate_certs: false
         status_code:
           - 200
-      until: uri_output.status == 200
+      until: (ledger_settings2.status | default(0)) == 200
       retries: 60
       delay: 10
       register: ledger_settings2
@@ -288,7 +288,7 @@
         validate_certs: false
         status_code:
           - 200
-      until: uri_output.status == 200
+      until: (ledger_settings.status | default(0)) == 200
       retries: 60
       delay: 10
       register: ledger_settings
@@ -309,13 +309,13 @@
         validate_certs: false
         status_code:
           - 200
-      until: uri_output.status == 200
+      register: uri_output
+      until: (uri_output.status | default(0)) == 200
       retries: 60
       delay: 10
       when:
         - ledger_settings.json.auth_token is defined
         - ledger_settings.json.require_auth_token is undefined or ledger_settings.json.require_auth_token == 0
-      register: test
 
 - name: Set all the logging parameters
   awx.awx.settings:

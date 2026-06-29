@@ -1,0 +1,325 @@
+- name: Wait 600 seconds for target connection to become reachable/usable
+  ansible.builtin.wait_for_connection:
+    delay: 15
+
+- name: Set kubeconfig path for tkgi platform
+  ansible.builtin.set_fact:
+    kubeconfig_path: "{{ TKGI_KUBECONFIG_PATH | default(lookup('env', 'KUBECONFIG'), true) | default(lookup('env', 'HOME') + '/.kube/config', true) }}"
+
+- name: Expand tilde in kubeconfig path
+  ansible.builtin.set_fact:
+    kubeconfig_path: "{{ kubeconfig_path | regex_replace('^~', lookup('env', 'HOME')) }}"
+
+- name: Check if kubeconfig exists
+  ansible.builtin.stat:
+    path: "{{ kubeconfig_path }}"
+  register: kubeconfig_stat
+
+- name: Fail if kubeconfig was not found
+  ansible.builtin.fail:
+    msg: "Kubeconfig not found at {{ kubeconfig_path }}"
+  when: not kubeconfig_stat.stat.exists
+
+- name: Get available kubeconfig contexts
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - config
+      - get-contexts
+      - -o
+      - name
+      - --kubeconfig={{ kubeconfig_path }}
+  register: available_contexts
+  changed_when: false
+
+- name: Get current kubeconfig context
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - config
+      - current-context
+      - --kubeconfig={{ kubeconfig_path }}
+  register: current_context
+  changed_when: false
+
+- name: Select kubeconfig context for tkgi platform
+  ansible.builtin.set_fact:
+    tkgi_k8s_context: "{{ TKGI_K8S_CONTEXT | default(current_context.stdout, true) }}"
+
+- name: Fail if the selected kubeconfig context is not present
+  ansible.builtin.fail:
+    msg: "Context '{{ tkgi_k8s_context }}' was not found in {{ kubeconfig_path }}"
+  when: tkgi_k8s_context not in available_contexts.stdout_lines
+
+- name: Get Kubernetes server version for the selected context
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - version
+      - -o
+      - json
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+  register: kubectl_version
+  changed_when: false
+
+- name: Parse Kubernetes server version
+  ansible.builtin.set_fact:
+    tkgi_server_version: "{{ (kubectl_version.stdout | from_json).serverVersion.gitVersion }}"
+    tkgi_server_major: "{{ ((kubectl_version.stdout | from_json).serverVersion.major | regex_replace('[^0-9].*$', '')) | int }}"
+    tkgi_server_minor: "{{ ((kubectl_version.stdout | from_json).serverVersion.minor | regex_replace('[^0-9].*$', '')) | int }}"
+
+- name: Fail if Kubernetes version is too old for tkgi support
+  ansible.builtin.fail:
+    msg: "TKGI requires Kubernetes v1.25.0 or newer, found {{ tkgi_server_version }}"
+  when: tkgi_server_major < 1 or (tkgi_server_major == 1 and tkgi_server_minor < 25)
+
+- name: Get a list of cluster nodes
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - nodes
+      - -o
+      - name
+  changed_when: false
+
+- name: Query ingress classes
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - ingressclass
+      - -o
+      - jsonpath={range .items[*]}{.metadata.name}{"\n"}{end}
+  register: ingress_class_info
+  changed_when: false
+
+- name: Set ingress class names
+  ansible.builtin.set_fact:
+    ingress_class_names: "{{ ingress_class_info.stdout_lines | reject('equalto', '') | list }}"
+
+- name: Query Contour deployment fallback
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - deployment
+      - contour
+      - -n
+      - projectcontour
+      - --ignore-not-found
+      - -o
+      - name
+  register: contour_deployment_info
+  changed_when: false
+  failed_when: false
+
+- name: Set detected tkgi ingress annotations from Contour fallback
+  ansible.builtin.set_fact:
+    TKGI_INGRESS_ANNOTATIONS: "kubernetes.io/ingress.class: contour"
+  when:
+    - TKGI_INGRESS_CLASS_NAME is not defined or TKGI_INGRESS_CLASS_NAME | length == 0
+    - ingress_class_names | length == 0
+    - contour_deployment_info.stdout | length > 0
+
+- name: Set detected tkgi ingress annotations
+  ansible.builtin.set_fact:
+    TKGI_INGRESS_ANNOTATIONS: "kubernetes.io/ingress.class: contour"
+  when:
+    - TKGI_INGRESS_CLASS_NAME is not defined or TKGI_INGRESS_CLASS_NAME | length == 0
+    - "'contour' in ingress_class_names"
+
+- name: Fail if explicit tkgi ingress class is not present
+  ansible.builtin.fail:
+    msg: "IngressClass '{{ TKGI_INGRESS_CLASS_NAME }}' was not found in the TKGI cluster"
+  when:
+    - TKGI_INGRESS_CLASS_NAME is defined
+    - TKGI_INGRESS_CLASS_NAME | length > 0
+    - TKGI_INGRESS_CLASS_NAME not in ingress_class_names
+
+- name: Fail if no ingress controller could be confirmed for tkgi
+  ansible.builtin.fail:
+    msg: "No supported ingress class was detected for TKGI. Set TKGI_INGRESS_CLASS_NAME explicitly if needed."
+  when:
+    - ingress_class_names | length == 0
+    - TKGI_INGRESS_CLASS_NAME is not defined or TKGI_INGRESS_CLASS_NAME | length == 0
+    - contour_deployment_info.stdout | length == 0
+
+- name: Query storage classes
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - storageclass
+      - -o
+      - json
+  changed_when: false
+  register: storage_class_info
+
+- name: Set storage class names and defaults
+  vars:
+    storage_class_items: "{{ (storage_class_info.stdout | from_json)['items'] | default([]) }}"
+  ansible.builtin.set_fact:
+    storage_class_names: "{{ storage_class_items | map(attribute='metadata.name') | list }}"
+    default_storage_classes: >-
+      {%- set defaults = [] -%}
+      {%- for storage_class in storage_class_items -%}
+      {%- set annotations = storage_class.metadata.annotations | default({}) -%}
+      {%- if annotations.get('storageclass.kubernetes.io/is-default-class') == 'true' or annotations.get('storageclass.beta.kubernetes.io/is-default-class') == 'true' -%}
+      {%- set _ = defaults.append(storage_class.metadata.name) -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ defaults }}
+
+- name: Check whether the Ascender namespace already exists
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - namespace
+      - "{{ ASCENDER_NAMESPACE }}"
+      - --ignore-not-found
+      - -o
+      - name
+  changed_when: false
+  register: ascender_namespace_info
+
+- name: Set postgres deployment mode for tkgi setup
+  ansible.builtin.set_fact:
+    ascender_external_postgres: "{{ ASCENDER_PGSQL_HOST is defined and (ASCENDER_PGSQL_HOST | string | trim | length > 0) }}"
+
+- name: Fail if explicit PostgreSQL storage class is not present
+  ansible.builtin.fail:
+    msg: "POSTGRES_STORAGE_CLASS '{{ POSTGRES_STORAGE_CLASS }}' was not found in the TKGI cluster"
+  when:
+    - not ascender_external_postgres
+    - POSTGRES_STORAGE_CLASS is defined
+    - POSTGRES_STORAGE_CLASS | length > 0
+    - POSTGRES_STORAGE_CLASS not in storage_class_names
+
+- name: Fail if no default storage class is available for tkgi
+  ansible.builtin.fail:
+    msg: "No default StorageClass was found. Set POSTGRES_STORAGE_CLASS in your configuration."
+  when:
+    - not ascender_external_postgres
+    - POSTGRES_STORAGE_CLASS is not defined or POSTGRES_STORAGE_CLASS | length == 0
+    - default_storage_classes | length == 0
+
+- name: Check namespace creation RBAC
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - auth
+      - can-i
+      - create
+      - namespaces
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+  register: namespace_rbac
+  changed_when: false
+
+- name: Check tkgi namespace-scoped RBAC
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - auth
+      - can-i
+      - create
+      - "{{ item }}"
+      - -n
+      - "{{ ASCENDER_NAMESPACE }}"
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+  loop:
+    - secrets
+    - deployments
+    - statefulsets
+    - ingresses.networking.k8s.io
+  register: tkgi_namespace_rbac
+  changed_when: false
+
+- name: Fail if required tkgi RBAC permissions are missing
+  ansible.builtin.fail:
+    msg: "The selected TKGI credentials do not have the RBAC required to install Ascender."
+  when:
+    - ((ascender_namespace_info.stdout | length == 0) and namespace_rbac.stdout != 'yes') or (tkgi_namespace_rbac.results | map(attribute='stdout') | list | difference(['yes']) | length > 0)
+
+- name: Get Contour envoy service information
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - --kubeconfig={{ kubeconfig_path }}
+      - --context={{ tkgi_k8s_context }}
+      - get
+      - service
+      - envoy
+      - -n
+      - projectcontour
+      - --ignore-not-found
+      - -o
+      - jsonpath={.status.loadBalancer.ingress[0].ip}
+  changed_when: false
+  register: contour_envoy_service
+  failed_when: false
+  when:
+    - use_etc_hosts | bool
+    - TKGI_INGRESS_CLASS_NAME | default('') in ['', 'contour']
+
+- name: Set tkgi ingress address from Contour envoy service
+  ansible.builtin.set_fact:
+    tkgi_ingress_address: "{{ contour_envoy_service.stdout | default('') }}"
+  when:
+    - contour_envoy_service.stdout is defined
+    - contour_envoy_service.stdout | length > 0
+
+- name: Ensure a local DNS entry for Ascender exists when an ingress IP is available
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ ASCENDER_HOSTNAME }}"
+    line: "{{ tkgi_ingress_address }}   {{ ASCENDER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+    unsafe_writes: true
+  become: true
+  delegate_to: localhost
+  when:
+    - use_etc_hosts | bool
+    - tkgi_ingress_address is defined
+    - tkgi_ingress_address | length > 0
+
+- name: Ensure a local DNS entry for Ledger exists when an ingress IP is available
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ LEDGER_HOSTNAME }}"
+    line: "{{ tkgi_ingress_address }}   {{ LEDGER_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+    unsafe_writes: true
+  become: true
+  delegate_to: localhost
+  when:
+    - use_etc_hosts | bool
+    - LEDGER_INSTALL | bool
+    - tkgi_ingress_address is defined
+    - tkgi_ingress_address | length > 0
+
+- name: Display tkgi validation summary
+  ansible.builtin.debug:
+    msg:
+      - "Validated kubeconfig {{ kubeconfig_path }}"
+      - "Using context {{ tkgi_k8s_context }}"
+      - "Kubernetes version {{ tkgi_server_version }}"
+      - "Ascender namespace exists already: {{ ascender_namespace_info.stdout | length > 0 }}"
