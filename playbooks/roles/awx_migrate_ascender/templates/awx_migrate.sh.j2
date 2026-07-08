@@ -21,4 +21,29 @@ awx-manage migrate dab_resource_registry --noinput
 # Tables were cleared by migration_fix.sh.j2 so data migrations find zero rows.
 awx-manage migrate dab_rbac --noinput
 
+# Reconcile derived RBAC state the bulk pg_restore left stale. A SQL-level
+# restore fires no Django ORM signals, so the role ancestor cache, implicit
+# role parents, and superuser membership in the system_administrator singleton
+# arrive cold from an AWX 24.6.x database. Without this, job template access
+# lists and the team/user role views render empty even though grants restored
+# intact. Idempotent; only ever adds superusers.
+awx-manage shell <<'PYEOF'
+from django.apps import apps
+from django.contrib.auth.models import User
+from awx.main.models.rbac import Role, ROLE_SINGLETON_SYSTEM_ADMINISTRATOR
+from awx.main.migrations._rbac import rebuild_role_parentage, rebuild_role_hierarchy
+
+rebuild_role_parentage(apps, None)   # main_rbac_roles_parents + implicit_parents
+rebuild_role_hierarchy(apps, None)   # main_rbac_role_ancestors (full recompute)
+for u in User.objects.filter(is_superuser=True):
+    u.save(update_fields=['is_superuser'])  # fires sync_superuser_status_to_rbac
+
+sa = Role.singleton(ROLE_SINGLETON_SYSTEM_ADMINISTRATOR)
+supers = User.objects.filter(is_superuser=True).count()
+members = sa.members.count()
+print("RBAC reconcile complete: %d superusers, %d singleton members" % (supers, members))
+if supers > 0 and members == 0:
+    raise SystemExit("ERROR: system_administrator singleton has no members after reconcile")
+PYEOF
+
 echo "All Ascender migrations applied successfully."
