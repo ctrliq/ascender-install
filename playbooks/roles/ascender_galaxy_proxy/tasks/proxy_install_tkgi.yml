@@ -1,0 +1,103 @@
+- name: Set kubeconfig path for tkgi platform
+  ansible.builtin.set_fact:
+    kubeconfig_path: "{{ TKGI_KUBECONFIG_PATH | default(lookup('env', 'KUBECONFIG'), true) | default(lookup('env', 'HOME') + '/.kube/config', true) }}"
+
+- name: Expand tilde in kubeconfig path
+  ansible.builtin.set_fact:
+    kubeconfig_path: "{{ kubeconfig_path | regex_replace('^~', lookup('env', 'HOME')) }}"
+
+- name: Get current kubeconfig context for tkgi platform
+  ansible.builtin.command:
+    argv:
+      - kubectl
+      - config
+      - current-context
+      - --kubeconfig={{ kubeconfig_path }}
+  register: current_context
+  changed_when: false
+
+- name: Set kubeconfig context for tkgi platform
+  ansible.builtin.set_fact:
+    tkgi_k8s_context: "{{ TKGI_K8S_CONTEXT | default(current_context.stdout, true) }}"
+
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ ASCENDER_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    context: "{{ tkgi_k8s_context }}"
+    kubeconfig: "{{ kubeconfig_path }}"
+    verify_ssl: false
+
+- name: Generate manifest to install proxy k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: proxy_deployment_tkgi.yml
+    dest: "{{ tmp_dir }}/proxy_deployment_tkgi.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: "Apply proxy manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/proxy_deployment_tkgi.yml') | from_yaml_all }}"
+    context: "{{ tkgi_k8s_context }}"
+    kubeconfig: "{{ kubeconfig_path }}"
+    verify_ssl: false
+  register: proxy_apply_result
+
+- name: Wait for Proxy Deployment to complete setting up
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: ascender-galaxy-proxy
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    context: "{{ tkgi_k8s_context }}"
+    kubeconfig: "{{ kubeconfig_path }}"
+    verify_ssl: false
+     
+- name: Restart Proxy deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "ascender-galaxy-proxy"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    context: "{{ tkgi_k8s_context }}"
+    kubeconfig: "{{ kubeconfig_path }}"
+    verify_ssl: false
+  when:
+    - PROXY_VERSION | lower == "latest"
+    - not proxy_apply_result.changed
+
+- ansible.builtin.debug:
+    msg: "The Proxy endpoint is {{ k8s_lb_protocol }}://{{ PROXY_HOSTNAME }}"
+
+- name: Wait until Proxy endpoint is Up
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ PROXY_HOSTNAME }}/healthz"
+    return_content: yes
+    validate_certs: false
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 200
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Proxy endpoint is up"

@@ -1,0 +1,28 @@
+- name: "Informal image name (format: my-custom-ascender-ee): "
+  prompt:
+    prompt: " "
+  register: config_vars_ee_image_name
+
+- name: "Formal image path (format: registry-address/namespace/my-custom-ascender-ee:tag): "
+  prompt:
+    prompt: " "
+  register: config_vars_ee_image_path
+
+- name: Append the EE image to the config
+  ansible.builtin.set_fact:
+    config_data: >-
+      {{ config_data | combine({
+        'ee_images': (config_data.ee_images | default([])) + [{
+          'name': (config_vars_ee_image_name.user_input | trim),
+          'image': (config_vars_ee_image_path.user_input | trim)
+        }]
+      }, recursive=True) }}
+
+- name: "Do you have another image to enter? (true/false)"
+  prompt:
+    prompt: "Enter your selection [false]: "
+  register: config_vars_ee_image_more
+
+- name: Collect another EE image
+  ansible.builtin.include_tasks: ee_images.yml
+  when: (config_vars_ee_image_more.user_input | trim | default('false', true) | lower) in ['true', '1', 'yes', 'on']

@@ -1,0 +1,65 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Generate manifest to install proxy k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: proxy_deployment_ocp.yml
+    dest: "{{ tmp_dir }}/proxy_deployment_ocp.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: "Apply proxy manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/proxy_deployment_ocp.yml') | from_yaml_all }}"
+    verify_ssl: false
+  register: proxy_apply_result
+
+- name: Wait for Proxy Deployment to complete setting up
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: ascender-galaxy-proxy
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+     
+- name: Restart Proxy deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "ascender-galaxy-proxy"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    verify_ssl: false
+  when:
+    - PROXY_VERSION | lower == "latest"
+    - not proxy_apply_result.changed
+
+- ansible.builtin.debug:
+    msg: "The Proxy endpoint is {{ k8s_lb_protocol }}://{{ PROXY_HOSTNAME }}"
+
+- name: Wait until Proxy endpoint is Up
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ PROXY_HOSTNAME }}/healthz"
+    return_content: yes
+    validate_certs: false
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 200
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Proxy endpoint is up"

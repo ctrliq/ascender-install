@@ -1,0 +1,45 @@
+- name: "{{ config_vars_menu_prompt }}"
+  prompt:
+    prompt: |-
+      {% for option in config_vars_menu_options_display %}
+      {{ loop.index }} - {{ option }}
+      {% endfor %}
+      Enter your selection [{{ config_vars_menu_default_display }}]:{{ ' ' }}
+  register: config_vars_menu_input
+  until: >-
+      (config_vars_menu_input.user_input | default('') | trim == '') or
+      (
+        (config_vars_menu_input.user_input | default('0') | trim is match('^[0-9]+$')) and
+        ((config_vars_menu_input.user_input | int) >= 1) and
+        ((config_vars_menu_input.user_input | int) <= (config_vars_menu_options_display | length))
+      )
+  retries: "{{ config_vars_prompt_retries }}"
+  delay: "{{ config_vars_prompt_delay }}"
+
+- name: Save the menu choice
+  vars:
+    config_vars_menu_selected_value: >-
+      {{
+        config_vars_menu_default_value
+        if (config_vars_menu_input.user_input | default('') | trim) == ''
+        else config_vars_menu_options_value[(config_vars_menu_input.user_input | int) - 1]
+      }}
+  ansible.builtin.set_fact:
+    config_data: >-
+      {{
+        config_data | combine(
+          (
+            {
+              (config_vars_menu_target): config_vars_menu_selected_value
+            }
+            if config_vars_menu_target_parent is not defined or config_vars_menu_target_child is not defined
+            else {
+              (config_vars_menu_target_parent): (
+                (config_data[config_vars_menu_target_parent] | default({}))
+                | combine({ (config_vars_menu_target_child): config_vars_menu_selected_value }, recursive=True)
+              )
+            }
+          ),
+          recursive=True
+        )
+      }}

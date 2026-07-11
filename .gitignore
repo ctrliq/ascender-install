@@ -2,7 +2,9 @@ collections/
 ascender-install-instructions/
 inventory
 inventory.yml
-custom.config.yml
+custom.config.yml*
 offline/
 .vscode/*
 ascender_install_artifacts/*
+playbooks/action_plugins/__pycache__
+playbooks/callback_plugins/__pycache__
