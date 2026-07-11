@@ -1,0 +1,15 @@
+# This file is managed by playbooks/config_vars.yml.
+{% set rendered_config = config_data | to_nice_yaml(indent=2, sort_keys=False, width=4096) %}
+{% set rendered_config = rendered_config
+	| regex_replace('(?m)^(ASCENDER_ADMIN_PASSWORD: ).*$', '\\1' ~ (config_data.ASCENDER_ADMIN_PASSWORD | default('', true) | to_json))
+	| regex_replace('(?m)^(ASCENDER_PGSQL_PWD: ).*$', '\\1' ~ (config_data.ASCENDER_PGSQL_PWD | default('', true) | to_json))
+	| regex_replace('(?m)^(LEDGER_ADMIN_PASSWORD: ).*$', '\\1' ~ (config_data.LEDGER_ADMIN_PASSWORD | default('', true) | to_json))
+	| regex_replace('(?m)^(LEDGER_DB_PASSWORD: ).*$', '\\1' ~ (config_data.LEDGER_DB_PASSWORD | default('', true) | to_json))
+%}
+{% if config_data.LEDGER_REGISTRY is defined and config_data.LEDGER_REGISTRY.PASSWORD is defined %}
+{% set rendered_config = rendered_config | regex_replace('(?m)^(  PASSWORD: ).*$', '\\1' ~ (config_data.LEDGER_REGISTRY.PASSWORD | to_json)) %}
+{% endif %}
+{% if config_data.PROXY_CONFIG is defined and config_data.PROXY_CONFIG.GALAXY_API_TOKEN is defined %}
+{% set rendered_config = rendered_config | regex_replace('(?m)^(  GALAXY_API_TOKEN: ).*$', '\\1' ~ (config_data.PROXY_CONFIG.GALAXY_API_TOKEN | to_json)) %}
+{% endif %}
+{{ rendered_config }}
