@@ -175,4 +175,4 @@ spec:
   tls:
   - hosts:
     - {{ PROXY_HOSTNAME }}
-    secretName: ascender-tls-secret
+    secretName: ascender-galaxy-proxy-tls

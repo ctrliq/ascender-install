@@ -82,7 +82,7 @@
 
 - name: Retrieve the ascender-galaxy-proxy Ingress object
   kubernetes.core.k8s_info:
-    api_version: v1
+    api_version: networking.k8s.io/v1
     kind: Ingress
     name: ascender-galaxy-proxy
     namespace: "{{ ASCENDER_NAMESPACE }}"
@@ -154,7 +154,7 @@
 
 - name: Indicate Instructions for non-AWS DNS Domain Management
   ansible.builtin.debug: 
-    msg: "Please manually create a DNS CNAME record for {{ ASCENDER_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+    msg: "Please manually create a DNS CNAME record for {{ PROXY_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
   when: not USE_ROUTE_53
 
 - name: Indicate Instructions for non-AWS DNS Domain Management

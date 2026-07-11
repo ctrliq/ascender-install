@@ -108,7 +108,7 @@
 - name: Prompt for the Kubernetes load balancer protocol
   ansible.builtin.include_tasks: menu_choice.yml
   vars:
-    config_vars_menu_prompt: "Select the number of the prototol you want to support. Selecting 'https' requires the SSL certificate being present:"
+    config_vars_menu_prompt: "Select the number of the protocol you want to support. Selecting 'https' requires the SSL certificate being present:"
     config_vars_menu_options_display: "{{ config_vars_k8s_lb_protocol_options }}"
     config_vars_menu_options_value: "{{ config_vars_k8s_lb_protocol_options }}"
     config_vars_menu_target: k8s_lb_protocol

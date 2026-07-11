@@ -48,7 +48,7 @@
 
 - name: Retrieve the ascender-galaxy-proxy Ingress object
   kubernetes.core.k8s_info:
-    api_version: v1
+    api_version: networking.k8s.io/v1
     kind: Ingress
     name: ascender-galaxy-proxy
     namespace: "{{ ASCENDER_NAMESPACE }}"

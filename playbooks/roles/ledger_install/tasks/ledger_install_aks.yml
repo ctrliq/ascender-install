@@ -120,7 +120,7 @@
 - name: create A record set with metadata information
   azure.azcollection.azure_rm_dnsrecordset:
     resource_group: "{{ resource_group }}"
-    relative_name: "{{ LEDGER_NAMESPACE }}"
+    relative_name: "{{ PROXY_HOSTNAME | regex_replace('\\.' ~ ASCENDER_DOMAIN ~ '$', '') }}"
     zone_name: "{{ ASCENDER_DOMAIN }}"
     record_type: A
     records:
