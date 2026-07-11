@@ -157,11 +157,6 @@
     msg: "Please manually create a DNS CNAME record for {{ PROXY_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
   when: not USE_ROUTE_53
 
-- name: Indicate Instructions for non-AWS DNS Domain Management
-  ansible.builtin.debug: 
-    msg: "Please manually create a DNS A record for {{ PROXY_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
-  when: not USE_ROUTE_53
-
 - ansible.builtin.debug:
     msg: "The Proxy endpoint is {{ k8s_lb_protocol }}://{{ PROXY_HOSTNAME }}"
 
