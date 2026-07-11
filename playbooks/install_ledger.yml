@@ -1,4 +1,4 @@
-# Copyright (c) 2025, Ctrl IQ, Inc. All rights reserved.
+# Copyright (c) 2026, Ctrl IQ, Inc. All rights reserved.
 
 - hosts: localhost
   become: false
@@ -22,7 +22,7 @@
         state: present
         validate_certs: false
 
-    - name: "Run ascender_install role for {{ k8s_platform }}"
+    - name: "Run ledger_install role for {{ k8s_platform }}"
       ansible.builtin.include_role:
         name: ledger_install
         tasks_from: "ledger_install_{{ k8s_platform }}"

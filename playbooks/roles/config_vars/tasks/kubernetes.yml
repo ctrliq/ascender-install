@@ -1,0 +1,580 @@
+- name: Prompt for the Kubernetes platform
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Select the number of the Kubernetes platform you are using to install Ascender:"
+    config_vars_menu_options_display: "{{ config_vars_k8s_platform_options }}"
+    config_vars_menu_options_value: "{{ config_vars_k8s_platform_options }}"
+    config_vars_menu_target: k8s_platform
+    config_vars_menu_default_display: "{{ config_data.k8s_platform if config_data.k8s_platform in config_vars_k8s_platform_options else config_vars_k8s_platform_options[0] }}"
+    config_vars_menu_default_value: "{{ config_data.k8s_platform if config_data.k8s_platform in config_vars_k8s_platform_options else config_vars_k8s_platform_options[0] }}"
+
+- name: Prompt whether to set up a new k3s cluster
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Boolean indicating whether to set up a new k3s/k8s on premise cluster (true) or use an existing k3s/k8s on premise cluster (false):"
+    config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+    config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+    config_vars_menu_target: kube_install
+    config_vars_menu_default_display: "{{ config_data.kube_install | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.kube_install | bool }}"
+  when: config_data.k8s_platform == 'k3s'
+
+- name: Prompt whether to use local assets for an offline install
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Boolean indicating whether to use local assets to complete an OFFLINE install (true) or perform a traditional install using internet resources (false):"
+    config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+    config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+    config_vars_menu_target: k8s_offline
+    config_vars_menu_default_display: "{{ config_data.k8s_offline | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.k8s_offline | bool }}"
+  when: config_data.k8s_platform in ['k3s', 'rke2']
+
+- name: Record the offline operator version
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ANSIBLE_OPERATOR_OFFLINE_VERSION': '2.9.0'}, recursive=True) }}"
+  when:
+    - config_data.k8s_platform in ['k3s', 'rke2']
+    - config_data.k8s_offline | bool
+
+- block:
+    - name: "Specify an internal container registry and namespace"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.k8s_container_registry | default('registry.io/namespace') }}]: "
+      register: config_vars_k8s_container_registry
+
+    - name: Save the internal container registry
+      vars:
+        k8s_container_registry_default: "{{ config_data.k8s_container_registry | default('registry.io/namespace') }}"
+        k8s_container_registry_value: "{{ config_vars_k8s_container_registry.user_input | trim | default(k8s_container_registry_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'k8s_container_registry': k8s_container_registry_value}, recursive=True) }}"
+
+    - name: "Kubernetes secret for the ASCENDER images"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.k8s_image_pull_secret | default('None') }}]: "
+      register: config_vars_k8s_image_pull_secret
+
+    - name: Save the ASCENDER image pull secret
+      vars:
+        k8s_image_pull_secret_default: "{{ config_data.k8s_image_pull_secret | default('None') }}"
+        k8s_image_pull_secret_value: "{{ config_vars_k8s_image_pull_secret.user_input | trim | default(k8s_image_pull_secret_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'k8s_image_pull_secret': k8s_image_pull_secret_value}, recursive=True) }}"
+
+    - name: "Kubernetes secret for the EXECUTION ENVIRONMENT images"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.k8s_ee_pull_credentials_secret | default('None') }}]: "
+      register: config_vars_k8s_ee_pull_credentials_secret
+
+    - name: Save the execution environment pull credentials secret
+      vars:
+        k8s_ee_pull_credentials_secret_default: "{{ config_data.k8s_ee_pull_credentials_secret | default('None') }}"
+        k8s_ee_pull_credentials_secret_value: "{{ config_vars_k8s_ee_pull_credentials_secret.user_input | trim | default(k8s_ee_pull_credentials_secret_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'k8s_ee_pull_credentials_secret': k8s_ee_pull_credentials_secret_value}, recursive=True) }}"
+  when: config_data.k8s_platform == 'rke2' and config_data.k8s_offline | bool
+
+- name: Prompt whether to include additional Execution Environments
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Do you wish to pull container images to serve as additional Execution Environments? If unsure, choose false:"
+    config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+    config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+    config_vars_menu_target: use_ee_images
+    config_vars_menu_default_display: "false"
+    config_vars_menu_default_value: false
+  when: config_data.k8s_platform in ['k3s', 'eks', 'aks', 'gke', 'rke2', 'dkp', 'ocp', 'tkgi']
+
+- name: Reset the EE image list when custom images are requested
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ee_images': []}, recursive=True) }}"
+  when: config_data.use_ee_images | bool
+
+- name: Collect additional Execution Environment images
+  ansible.builtin.include_tasks: ee_images.yml
+  when: config_data.use_ee_images | bool
+
+- name: Prompt whether to download the kubeconfig to the controller
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Boolean indicating whether or not the kubeconfig file needs to be downloaded to the Ansible controller:"
+    config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+    config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+    config_vars_menu_target: download_kubeconfig
+    config_vars_menu_default_display: "{{ config_data.download_kubeconfig | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.download_kubeconfig | bool }}"
+
+- name: Prompt for the Kubernetes load balancer protocol
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Select the number of the protocol you want to support. Selecting 'https' requires the SSL certificate being present:"
+    config_vars_menu_options_display: "{{ config_vars_k8s_lb_protocol_options }}"
+    config_vars_menu_options_value: "{{ config_vars_k8s_lb_protocol_options }}"
+    config_vars_menu_target: k8s_lb_protocol
+    config_vars_menu_default_display: "{{ config_data.k8s_lb_protocol if config_data.k8s_lb_protocol in config_vars_k8s_lb_protocol_options else config_vars_k8s_lb_protocol_options[0] }}"
+    config_vars_menu_default_value: "{{ config_data.k8s_lb_protocol if config_data.k8s_lb_protocol in config_vars_k8s_lb_protocol_options else config_vars_k8s_lb_protocol_options[0] }}"
+
+- block:
+    - name: "Routable IP address for the K3s Master/Worker node"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.k3s_master_node_ip }}]: "
+      register: config_vars_k3s_master_node_ip
+
+    - name: Save the K3s master node IP
+      vars:
+        k3s_master_node_ip_default: "{{ config_data.k3s_master_node_ip }}"
+        k3s_master_node_ip_value: "{{ config_vars_k3s_master_node_ip.user_input | trim | default(k3s_master_node_ip_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'k3s_master_node_ip': k3s_master_node_ip_value}, recursive=True) }}"
+  when: config_data.k8s_platform == 'k3s'
+
+- block:
+    - name: "Routable IP address for the K8s API Server"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.kubeapi_server_ip }}]: "
+      register: config_vars_kubeapi_server_ip
+
+    - name: Save the RKE2 API server IP
+      vars:
+        kubeapi_server_ip_default: "{{ config_data.kubeapi_server_ip }}"
+        kubeapi_server_ip_value: "{{ config_vars_kubeapi_server_ip.user_input | trim | default(kubeapi_server_ip_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'kubeapi_server_ip': kubeapi_server_ip_value}, recursive=True) }}"
+  when: config_data.k8s_platform == 'rke2'
+
+- block:
+    - name: Prompt whether to use Route53 domain management
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Boolean indicating Determines whether to use Route53 Domain Management (true) Or a third-party service such as Cloudflare or GoDaddy (false). If this value is set to false, you will have to manually set a CNAME record for Ascender/Ledger to point to their respective AWS Load Balancers:"
+        config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+        config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+        config_vars_menu_target: USE_ROUTE_53
+        config_vars_menu_default_display: "{{ config_data.USE_ROUTE_53 | bool | ternary('true', 'false') }}"
+        config_vars_menu_default_value: "{{ config_data.USE_ROUTE_53 | bool }}"
+
+    - name: "The name of the EKS cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.EKS_CLUSTER_NAME }}]: "
+      register: config_vars_eks_cluster_name
+
+    - name: Save the EKS cluster name
+      vars:
+        eks_cluster_name_default: "{{ config_data.EKS_CLUSTER_NAME }}"
+        eks_cluster_name_value: "{{ config_vars_eks_cluster_name.user_input | trim | default(eks_cluster_name_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'EKS_CLUSTER_NAME': eks_cluster_name_value}, recursive=True) }}"
+
+    - name: Prompt for the EKS cluster status
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Specifies whether the EKS cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action):"
+        config_vars_menu_options_display: "{{ config_vars_k8s_cluster_status_options }}"
+        config_vars_menu_options_value: "{{ config_vars_k8s_cluster_status_options }}"
+        config_vars_menu_target: EKS_CLUSTER_STATUS
+        config_vars_menu_default_display: "{{ config_data.EKS_CLUSTER_STATUS if config_data.EKS_CLUSTER_STATUS in config_vars_k8s_cluster_status_options else config_vars_k8s_cluster_status_options[0] }}"
+        config_vars_menu_default_value: "{{ config_data.EKS_CLUSTER_STATUS if config_data.EKS_CLUSTER_STATUS in config_vars_k8s_cluster_status_options else config_vars_k8s_cluster_status_options[0] }}"
+
+    - name: "The AWS region hosting the EKS cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.EKS_CLUSTER_REGION }}]: "
+      register: config_vars_eks_cluster_region
+
+    - name: Save the EKS cluster region
+      vars:
+        eks_cluster_region_default: "{{ config_data.EKS_CLUSTER_REGION }}"
+        eks_cluster_region_value: "{{ config_vars_eks_cluster_region.user_input | trim | default(eks_cluster_region_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'EKS_CLUSTER_REGION': eks_cluster_region_value}, recursive=True) }}"
+
+    - block:
+        - name: "The CIDR block for the EKS cluster "
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_CLUSTER_CIDR }}]: "
+          register: config_vars_eks_cluster_cidr
+
+        - name: Save the EKS cluster CIDR
+          vars:
+            eks_cluster_cidr_default: "{{ config_data.EKS_CLUSTER_CIDR }}"
+            eks_cluster_cidr_value: "{{ config_vars_eks_cluster_cidr.user_input | trim | default(eks_cluster_cidr_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_CLUSTER_CIDR': eks_cluster_cidr_value}, recursive=True) }}"
+
+        - name: Prompt whether EKS nodes should be public
+          ansible.builtin.include_tasks: menu_choice.yml
+          vars:
+            config_vars_menu_prompt: "Should cluster nodes be assigned public IPs? If true, nodes will be publicly accessible (false is recommended for production):"
+            config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+            config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+            config_vars_menu_target: EKS_PUBLIC
+            config_vars_menu_default_display: "{{ config_data.EKS_PUBLIC | bool | ternary('true', 'false') }}"
+            config_vars_menu_default_value: "{{ config_data.EKS_PUBLIC | bool }}"
+
+        - name: "The number of subnets for the EKS cluster"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_NUM_SUBNETS }}]: "
+          register: config_vars_eks_num_subnets
+
+        - name: Save the number of EKS subnets
+          vars:
+            eks_num_subnets_default: "{{ config_data.EKS_NUM_SUBNETS }}"
+            eks_num_subnets_value: "{{ config_vars_eks_num_subnets.user_input | trim | default(eks_num_subnets_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_NUM_SUBNETS': eks_num_subnets_value}, recursive=True) }}"
+
+        - name: "The network prefix size for each subnet"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_SUBNET_SIZE }}]: "
+          register: config_vars_eks_subnet_size
+
+        - name: Save the EKS subnet size
+          vars:
+            eks_subnet_size_default: "{{ config_data.EKS_SUBNET_SIZE }}"
+            eks_subnet_size_value: "{{ config_vars_eks_subnet_size.user_input | trim | default(eks_subnet_size_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_SUBNET_SIZE': eks_subnet_size_value}, recursive=True) }}"
+
+        - name: "The Kubernetes version for the EKS cluster"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_K8S_VERSION }}]: "
+          register: config_vars_eks_k8s_version
+
+        - name: Save the EKS Kubernetes version
+          vars:
+            eks_k8s_version_default: "{{ config_data.EKS_K8S_VERSION }}"
+            eks_k8s_version_value: "{{ config_vars_eks_k8s_version.user_input | trim | default(eks_k8s_version_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_K8S_VERSION': eks_k8s_version_value}, recursive=True) }}"
+
+        - name: "The EBS CSI driver version for the EKS cluster"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_EBS_CSI_DRIVER_VERSION }}]: "
+          register: config_vars_eks_ebs_csi_driver_version
+
+        - name: Save the EKS EBS CSI driver version
+          vars:
+            eks_ebs_csi_driver_version_default: "{{ config_data.EKS_EBS_CSI_DRIVER_VERSION }}"
+            eks_ebs_csi_driver_version_value: "{{ config_vars_eks_ebs_csi_driver_version.user_input | trim | default(eks_ebs_csi_driver_version_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_EBS_CSI_DRIVER_VERSION': eks_ebs_csi_driver_version_value}, recursive=True) }}"
+
+        - name: "The EKS worker node instance type"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_INSTANCE_TYPE }}]: "
+          register: config_vars_eks_instance_type
+
+        - name: Save the EKS instance type
+          vars:
+            eks_instance_type_default: "{{ config_data.EKS_INSTANCE_TYPE }}"
+            eks_instance_type_value: "{{ config_vars_eks_instance_type.user_input | trim | default(eks_instance_type_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_INSTANCE_TYPE': eks_instance_type_value}, recursive=True) }}"
+
+        - name: "The minimum number of EKS worker nodes"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_MIN_WORKER_NODES }}]: "
+          register: config_vars_eks_min_worker_nodes
+
+        - name: Save the minimum number of EKS worker nodes
+          vars:
+            eks_min_worker_nodes_default: "{{ config_data.EKS_MIN_WORKER_NODES }}"
+            eks_min_worker_nodes_value: "{{ config_vars_eks_min_worker_nodes.user_input | trim | default(eks_min_worker_nodes_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_MIN_WORKER_NODES': eks_min_worker_nodes_value}, recursive=True) }}"
+
+        - name: "The maximum number of EKS worker nodes"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_MAX_WORKER_NODES }}]: "
+          register: config_vars_eks_max_worker_nodes
+
+        - name: Save the maximum number of EKS worker nodes
+          vars:
+            eks_max_worker_nodes_default: "{{ config_data.EKS_MAX_WORKER_NODES }}"
+            eks_max_worker_nodes_value: "{{ config_vars_eks_max_worker_nodes.user_input | trim | default(eks_max_worker_nodes_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_MAX_WORKER_NODES': eks_max_worker_nodes_value}, recursive=True) }}"
+
+        - name: "The desired number of EKS worker nodes"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_NUM_WORKER_NODES }}]: "
+          register: config_vars_eks_num_worker_nodes
+
+        - name: Save the desired number of EKS worker nodes
+          vars:
+            eks_num_worker_nodes_default: "{{ config_data.EKS_NUM_WORKER_NODES }}"
+            eks_num_worker_nodes_value: "{{ config_vars_eks_num_worker_nodes.user_input | trim | default(eks_num_worker_nodes_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_NUM_WORKER_NODES': eks_num_worker_nodes_value}, recursive=True) }}"
+
+        - name: "The volume size of EKS worker nodes in GB"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.EKS_WORKER_VOLUME_SIZE }}]: "
+          register: config_vars_eks_worker_volume_size
+
+        - name: Save the EKS worker volume size
+          vars:
+            eks_worker_volume_size_default: "{{ config_data.EKS_WORKER_VOLUME_SIZE }}"
+            eks_worker_volume_size_value: "{{ config_vars_eks_worker_volume_size.user_input | trim | default(eks_worker_volume_size_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'EKS_WORKER_VOLUME_SIZE': eks_worker_volume_size_value}, recursive=True) }}"
+      when: config_data.EKS_CLUSTER_STATUS == 'provision'
+  when: config_data.k8s_platform == 'eks'
+
+- block:
+    - name: Prompt whether to use Azure DNS domain management
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Boolean indicating Determines whether to use Azure DNS Domain Management (true) Or a third-party service such as Cloudflare or GoDaddy (false). If this value is set to false, you will have to manually set an A record for Ascender/Ledger to point to their respective Azure Load Balancers:"
+        config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+        config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+        config_vars_menu_target: USE_AZURE_DNS
+        config_vars_menu_default_display: "{{ config_data.USE_AZURE_DNS | bool | ternary('true', 'false') }}"
+        config_vars_menu_default_value: "{{ config_data.USE_AZURE_DNS | bool }}"
+
+    - name: "The name of the AKS cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.AKS_CLUSTER_NAME }}]: "
+      register: config_vars_aks_cluster_name
+
+    - name: Save the AKS cluster name
+      vars:
+        aks_cluster_name_default: "{{ config_data.AKS_CLUSTER_NAME }}"
+        aks_cluster_name_value: "{{ config_vars_aks_cluster_name.user_input | trim | default(aks_cluster_name_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'AKS_CLUSTER_NAME': aks_cluster_name_value}, recursive=True) }}"
+
+    - name: Prompt for the AKS cluster status
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Specifies whether the AKS cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action):"
+        config_vars_menu_options_display: "{{ config_vars_k8s_cluster_status_options }}"
+        config_vars_menu_options_value: "{{ config_vars_k8s_cluster_status_options }}"
+        config_vars_menu_target: AKS_CLUSTER_STATUS
+        config_vars_menu_default_display: "{{ config_data.AKS_CLUSTER_STATUS if config_data.AKS_CLUSTER_STATUS in config_vars_k8s_cluster_status_options else config_vars_k8s_cluster_status_options[0] }}"
+        config_vars_menu_default_value: "{{ config_data.AKS_CLUSTER_STATUS if config_data.AKS_CLUSTER_STATUS in config_vars_k8s_cluster_status_options else config_vars_k8s_cluster_status_options[0] }}"
+
+    - name: "The Azure region hosting the AKS cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.AKS_CLUSTER_REGION }}]: "
+      register: config_vars_aks_cluster_region
+
+    - name: Save the AKS cluster region
+      vars:
+        aks_cluster_region_default: "{{ config_data.AKS_CLUSTER_REGION }}"
+        aks_cluster_region_value: "{{ config_vars_aks_cluster_region.user_input | trim | default(aks_cluster_region_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'AKS_CLUSTER_REGION': aks_cluster_region_value}, recursive=True) }}"
+
+    - block:
+        - name: "The Kubernetes version for the AKS cluster"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.AKS_K8S_VERSION }}]: "
+          register: config_vars_aks_k8s_version
+
+        - name: Save the AKS Kubernetes version
+          vars:
+            aks_k8s_version_default: "{{ config_data.AKS_K8S_VERSION }}"
+            aks_k8s_version_value: "{{ config_vars_aks_k8s_version.user_input | trim | default(aks_k8s_version_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'AKS_K8S_VERSION': aks_k8s_version_value}, recursive=True) }}"
+
+        - name: "The AKS worker node instance type"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.AKS_INSTANCE_TYPE }}]: "
+          register: config_vars_aks_instance_type
+
+        - name: Save the AKS instance type
+          vars:
+            aks_instance_type_default: "{{ config_data.AKS_INSTANCE_TYPE }}"
+            aks_instance_type_value: "{{ config_vars_aks_instance_type.user_input | trim | default(aks_instance_type_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'AKS_INSTANCE_TYPE': aks_instance_type_value}, recursive=True) }}"
+
+        - name: "The desired number of AKS worker nodes"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.AKS_NUM_WORKER_NODES }}]: "
+          register: config_vars_aks_num_worker_nodes
+
+        - name: Save the AKS desired number of worker nodes
+          vars:
+            aks_num_worker_nodes_default: "{{ config_data.AKS_NUM_WORKER_NODES }}"
+            aks_num_worker_nodes_value: "{{ config_vars_aks_num_worker_nodes.user_input | trim | default(aks_num_worker_nodes_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'AKS_NUM_WORKER_NODES': aks_num_worker_nodes_value}, recursive=True) }}"
+
+        - name: "The volume size of AKS worker nodes in GB"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.AKS_WORKER_VOLUME_SIZE }}]: "
+          register: config_vars_aks_worker_volume_size
+
+        - name: Save the AKS worker volume size
+          vars:
+            aks_worker_volume_size_default: "{{ config_data.AKS_WORKER_VOLUME_SIZE }}"
+            aks_worker_volume_size_value: "{{ config_vars_aks_worker_volume_size.user_input | trim | default(aks_worker_volume_size_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'AKS_WORKER_VOLUME_SIZE': aks_worker_volume_size_value}, recursive=True) }}"
+      when: config_data.AKS_CLUSTER_STATUS == 'provision'
+  when: config_data.k8s_platform == 'aks'
+
+- block:
+    - name: "The Google Cloud Project ID for the GKE cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.GKE_PROJECT_ID }}]: "
+      register: config_vars_gke_project_id
+
+    - name: Save the GKE project ID
+      vars:
+        gke_project_id_default: "{{ config_data.GKE_PROJECT_ID }}"
+        gke_project_id_value: "{{ config_vars_gke_project_id.user_input | trim | default(gke_project_id_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'GKE_PROJECT_ID': gke_project_id_value}, recursive=True) }}"
+
+    - name: Prompt whether to use Google Cloud DNS domain management
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Boolean indicating Determines whether to use Google Cloud DNS Domain Management (true) Or a third-party service such as Cloudflare or GoDaddy (false). If this value is set to false, you will have to manually set an A record for Ascender/Ledger to point to their respective Google Cloud Load Balancers:"
+        config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+        config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+        config_vars_menu_target: USE_GOOGLE_DNS
+        config_vars_menu_default_display: "{{ config_data.USE_GOOGLE_DNS | bool | ternary('true', 'false') }}"
+        config_vars_menu_default_value: "{{ config_data.USE_GOOGLE_DNS | bool }}"
+
+    - name: "The name of the GKE cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.GKE_CLUSTER_NAME }}]: "
+      register: config_vars_gke_cluster_name
+
+    - name: Save the GKE cluster name
+      vars:
+        gke_cluster_name_default: "{{ config_data.GKE_CLUSTER_NAME }}"
+        gke_cluster_name_value: "{{ config_vars_gke_cluster_name.user_input | trim | default(gke_cluster_name_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'GKE_CLUSTER_NAME': gke_cluster_name_value}, recursive=True) }}"
+
+    - name: Prompt for the GKE cluster status
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Specifies whether the GKE cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action):"
+        config_vars_menu_options_display: "{{ config_vars_k8s_cluster_status_options }}"
+        config_vars_menu_options_value: "{{ config_vars_k8s_cluster_status_options }}"
+        config_vars_menu_target: GKE_CLUSTER_STATUS
+        config_vars_menu_default_display: "{{ config_data.GKE_CLUSTER_STATUS if config_data.GKE_CLUSTER_STATUS in config_vars_k8s_cluster_status_options else config_vars_k8s_cluster_status_options[0] }}"
+        config_vars_menu_default_value: "{{ config_data.GKE_CLUSTER_STATUS if config_data.GKE_CLUSTER_STATUS in config_vars_k8s_cluster_status_options else config_vars_k8s_cluster_status_options[0] }}"
+
+    - name: "The Google Cloud zone hosting the GKE cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.GKE_CLUSTER_ZONE }}]: "
+      register: config_vars_gke_cluster_zone
+
+    - name: Save the GKE cluster zone
+      vars:
+        gke_cluster_zone_default: "{{ config_data.GKE_CLUSTER_ZONE }}"
+        gke_cluster_zone_value: "{{ config_vars_gke_cluster_zone.user_input | trim | default(gke_cluster_zone_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'GKE_CLUSTER_ZONE': gke_cluster_zone_value}, recursive=True) }}"
+
+    - block:
+        - name: "The Kubernetes version for the GKE cluster "
+          prompt:
+            prompt: "Enter your selection [{{ config_data.GKE_K8S_VERSION }}]: "
+          register: config_vars_gke_k8s_version
+
+        - name: Save the GKE Kubernetes version
+          vars:
+            gke_k8s_version_default: "{{ config_data.GKE_K8S_VERSION }}"
+            gke_k8s_version_value: "{{ config_vars_gke_k8s_version.user_input | trim | default(gke_k8s_version_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'GKE_K8S_VERSION': gke_k8s_version_value}, recursive=True) }}"
+
+        - name: "The GKE worker node instance type"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.GKE_INSTANCE_TYPE }}]: "
+          register: config_vars_gke_instance_type
+
+        - name: Save the GKE instance type
+          vars:
+            gke_instance_type_default: "{{ config_data.GKE_INSTANCE_TYPE }}"
+            gke_instance_type_value: "{{ config_vars_gke_instance_type.user_input | trim | default(gke_instance_type_default, true) }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'GKE_INSTANCE_TYPE': gke_instance_type_value}, recursive=True) }}"
+
+        - name: "The desired number of GKE worker nodes"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.GKE_NUM_WORKER_NODES }}]: "
+          register: config_vars_gke_num_worker_nodes
+
+        - name: Save the GKE desired number of worker nodes
+          vars:
+            gke_num_worker_nodes_default: "{{ config_data.GKE_NUM_WORKER_NODES }}"
+            gke_num_worker_nodes_value: "{{ config_vars_gke_num_worker_nodes.user_input | trim | default(gke_num_worker_nodes_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'GKE_NUM_WORKER_NODES': gke_num_worker_nodes_value}, recursive=True) }}"
+
+        - name: "The volume size of GKE worker nodes in GB"
+          prompt:
+            prompt: "Enter your selection [{{ config_data.GKE_WORKER_VOLUME_SIZE }}]: "
+          register: config_vars_gke_worker_volume_size
+
+        - name: Save the GKE worker volume size
+          vars:
+            gke_worker_volume_size_default: "{{ config_data.GKE_WORKER_VOLUME_SIZE }}"
+            gke_worker_volume_size_value: "{{ config_vars_gke_worker_volume_size.user_input | trim | default(gke_worker_volume_size_default, true) | int }}"
+          ansible.builtin.set_fact:
+            config_data: "{{ config_data | combine({'GKE_WORKER_VOLUME_SIZE': gke_worker_volume_size_value}, recursive=True) }}"
+      when: config_data.GKE_CLUSTER_STATUS == 'provision'
+  when: config_data.k8s_platform == 'gke'
+
+- block:
+    - name: "The name of the DKP cluster"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.DKP_CLUSTER_NAME }}]: "
+      register: config_vars_dkp_cluster_name
+
+    - name: Save the DKP cluster name
+      vars:
+        dkp_cluster_name_default: "{{ config_data.DKP_CLUSTER_NAME }}"
+        dkp_cluster_name_value: "{{ config_vars_dkp_cluster_name.user_input | trim | default(dkp_cluster_name_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'DKP_CLUSTER_NAME': dkp_cluster_name_value}, recursive=True) }}"
+  when: config_data.k8s_platform == 'dkp'
+
+- block:
+    - name: Prompt whether to use the local /etc/hosts file
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Boolean indicating whether to use the local /etc/hosts file for DNS resolution to access Ascender:"
+        config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+        config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+        config_vars_menu_target: use_etc_hosts
+        config_vars_menu_default_display: "{{ config_data.use_etc_hosts | bool | ternary('true', 'false') }}"
+        config_vars_menu_default_value: "{{ config_data.use_etc_hosts | bool }}"
+  when: config_data.k8s_platform in ['k3s', 'dkp', 'rke2', 'tkgi']
+
+- block:
+    - name: "TLS certificate file location on the local installing machine"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.tls_crt_path }}]: "
+      register: config_vars_tls_crt_path
+
+    - name: Save the TLS certificate path
+      vars:
+        tls_crt_path_default: "{{ config_data.tls_crt_path }}"
+        tls_crt_path_value: "{{ config_vars_tls_crt_path.user_input | trim | default(tls_crt_path_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'tls_crt_path': tls_crt_path_value, 'PROXY_TLS_CRT_PATH': tls_crt_path_value}, recursive=True) }}"
+
+    - name: "TLS private key file location on the local installing machine"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.tls_key_path }}]: "
+      register: config_vars_tls_key_path
+
+    - name: Save the TLS private key path
+      vars:
+        tls_key_path_default: "{{ config_data.tls_key_path }}"
+        tls_key_path_value: "{{ config_vars_tls_key_path.user_input | trim | default(tls_key_path_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'tls_key_path': tls_key_path_value, 'PROXY_TLS_KEY_PATH': tls_key_path_value}, recursive=True) }}"
+  when:
+    - config_data.k8s_platform in ['k3s', 'dkp', 'rke2', 'tkgi', 'aks', 'gke', 'eks']
+    - config_data.k8s_lb_protocol == 'https'

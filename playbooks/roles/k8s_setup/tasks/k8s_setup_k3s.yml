@@ -124,3 +124,17 @@
   when:
     - use_etc_hosts
     - LEDGER_INSTALL
+
+- name: "Ensure a local DNS entry for {{ PROXY_HOSTNAME }} exists"
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "{{ PROXY_HOSTNAME }}"
+    line: "{{ k3s_master_node_ip }}   {{ PROXY_HOSTNAME }}"
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  delegate_to: localhost
+  when:
+    - use_etc_hosts
+    - PROXY_INSTALL

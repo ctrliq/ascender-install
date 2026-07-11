@@ -255,7 +255,7 @@ ascender_image_pull_policy: Always
     # ---Ledger install variables---
 
     # Determines whether or not Ledger will be installed
-LEDGER_INSTALL: true
+LEDGER_INSTALL: false
 
     # DNS resolvable hostname for Ledger service. This is required for install.
 LEDGER_HOSTNAME: ledger.example.com
@@ -308,3 +308,47 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 
     # Password for Ledger database
 LEDGER_DB_PASSWORD: "mydbpassword"
+
+    # Whether to install the Ascender Galaxy Proxy
+PROXY_INSTALL: false
+
+PROXY_HOSTNAME: galaxy-proxy.example.com
+
+PROXY_IMAGE: ghcr.io/ctrliq/ascender-galaxy-proxy
+
+PROXY_VERSION: latest
+
+PROXY_CONFIG:
+  # Enable debug logging.
+  DEBUG: "false"
+  # Cache API responses for this many days.
+  QUERY_CACHE_EXPIRE: "1"
+  # Cache artifact downloads for this many days.
+  ARTIFACT_CACHE_EXPIRE: "30"
+  # Comma-separated trusted proxy IPs.
+  TRUSTED_PROXIES: ""
+  # Public proxy URL used in rewritten links.  Must include http/https.
+  URL: "https://{{ PROXY_HOSTNAME }}"
+  # Upstream Galaxy server to proxy requests to.
+  UPSTREAM_BASEURL: "https://galaxy.ansible.com"
+  # Clear the on-disk cache when the app starts.
+  CLEAR_CACHE_ON_START: "0"
+  # Max number of responses kept in memory.
+  MEM_CACHE_SIZE: "2000"
+  # Optional outbound HTTP proxy for upstream calls.
+  HTTP_PROXY: ""
+  # Token required for API authentication to Proxy
+  GALAXY_API_TOKEN: ""
+  # PVC Size in Gigabytes
+  PVC_SIZE: 5
+
+    # TLS Certificate file, required when deploying HTTPS in K3s
+PROXY_TLS_CRT_PATH: "~/ascender.crt"
+
+    # TLS Private Key file, required when deploying HTTPS in K3s
+PROXY_TLS_KEY_PATH: "~/ascender.key"
+
+    # Storage Class for the Persistent Volume Claim for Ledger's database
+    # Only uncomment to set a specific storage class on new installs
+    # Leaving blank will use the default storage class of the cluster
+#PROXY_PVC_STORAGE_CLASS: ""

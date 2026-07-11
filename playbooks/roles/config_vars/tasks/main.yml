@@ -1,0 +1,30 @@
+- name: Load the default config data
+  ansible.builtin.set_fact:
+    config_data: "{{ lookup('ansible.builtin.file', config_vars_default_config_path) | from_yaml }}"
+
+- name: Check whether a custom config already exists
+  ansible.builtin.stat:
+    path: "{{ config_vars_custom_config_path }}"
+  register: config_vars_custom_config_stat
+
+- name: Load the existing custom config data
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine(lookup('ansible.builtin.file', config_vars_custom_config_path) | from_yaml, recursive=True) }}"
+  when: config_vars_custom_config_stat.stat.exists
+
+- name: Collect Kubernetes configuration
+  ansible.builtin.include_tasks: kubernetes.yml
+
+- name: Collect Ascender configuration
+  ansible.builtin.include_tasks: ascender.yml
+
+- name: Collect Ledger configuration
+  ansible.builtin.include_tasks: ledger.yml
+
+- name: Collect Proxy configuration
+  ansible.builtin.include_tasks: proxy.yml
+
+- name: Render custom.config.yml
+  ansible.builtin.template:
+    src: custom.config.yml.j2
+    dest: "{{ config_vars_output_path }}"

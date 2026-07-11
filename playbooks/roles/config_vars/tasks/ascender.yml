@@ -1,0 +1,271 @@
+- name: "Where will install artifacts be stored"
+  prompt:
+    prompt: "Enter your selection [{{ config_data.tmp_dir }}]: "
+  register: config_vars_tmp_dir
+
+- name: Save the temporary artifact directory
+  vars:
+    tmp_dir_default: "{{ config_data.tmp_dir }}"
+    tmp_dir_value: "{{ config_vars_tmp_dir.user_input | trim | default(tmp_dir_default, true) }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'tmp_dir': tmp_dir_value}, recursive=True) }}"
+
+- name: "DNS resolvable hostname for Ascender service"
+  prompt:
+    prompt: "Enter your selection [{{ config_data.ASCENDER_HOSTNAME }}]: "
+  register: config_vars_ascender_hostname
+
+- name: Save the Ascender hostname
+  vars:
+    ascender_hostname_default: "{{ config_data.ASCENDER_HOSTNAME }}"
+    ascender_hostname_value: "{{ config_vars_ascender_hostname.user_input | trim | default(ascender_hostname_default, true) }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ASCENDER_HOSTNAME': ascender_hostname_value}, recursive=True) }}"
+
+- block:
+    - name: "DNS domain for Ascender service"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.ASCENDER_DOMAIN }}]: "
+      register: config_vars_ascender_domain
+
+    - name: Save the Ascender domain
+      vars:
+        ascender_domain_default: "{{ config_data.ASCENDER_DOMAIN }}"
+        ascender_domain_value: "{{ config_vars_ascender_domain.user_input | trim | default(ascender_domain_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'ASCENDER_DOMAIN': ascender_domain_value}, recursive=True) }}"
+  when: config_data.k8s_platform in ['eks', 'aks', 'gke']
+
+- name: "Namespace for Ascender Kubernetes objects"
+  prompt:
+    prompt: "Enter your selection [{{ config_data.ASCENDER_NAMESPACE }}]: "
+  register: config_vars_ascender_namespace
+
+- name: Save the Ascender namespace
+  vars:
+    ascender_namespace_default: "{{ config_data.ASCENDER_NAMESPACE }}"
+    ascender_namespace_value: "{{ config_vars_ascender_namespace.user_input | trim | default(ascender_namespace_default, true) }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ASCENDER_NAMESPACE': ascender_namespace_value}, recursive=True) }}"
+
+- name: "Administrator username for Ascender"
+  prompt:
+    prompt: "Enter your selection [{{ config_data.ASCENDER_ADMIN_USER }}]: "
+  register: config_vars_ascender_admin_user
+
+- name: Save the Ascender admin user
+  vars:
+    ascender_admin_user_default: "{{ config_data.ASCENDER_ADMIN_USER }}"
+    ascender_admin_user_value: "{{ config_vars_ascender_admin_user.user_input | trim | default(ascender_admin_user_default, true) }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ASCENDER_ADMIN_USER': ascender_admin_user_value}, recursive=True) }}"
+
+- name: "Administrator password for Ascender"
+  prompt:
+    prompt: "Enter your selection [hidden]: "
+    echo: false
+  register: config_vars_ascender_admin_password
+  until: >-
+    '"' not in (
+      (config_vars_ascender_admin_password.user_input | default('', true) | trim)
+      if (config_vars_ascender_admin_password.user_input | default('', true) | trim) != ''
+      else (config_data.ASCENDER_ADMIN_PASSWORD | default(''))
+    )
+  retries: "{{ config_vars_prompt_retries }}"
+  delay: "{{ config_vars_prompt_delay }}"
+  no_log: true
+
+- name: Save the Ascender admin password
+  vars:
+    ascender_admin_password_default: "{{ config_data.ASCENDER_ADMIN_PASSWORD }}"
+    ascender_admin_password_value: "{{ config_vars_ascender_admin_password.user_input | trim | default(ascender_admin_password_default, true) }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ASCENDER_ADMIN_PASSWORD': ascender_admin_password_value}, recursive=True) }}"
+  no_log: true
+
+- name: "The image tag indicating the version of Ascender you wish to install"
+  prompt:
+    prompt: "Enter your selection [{{ config_data.ASCENDER_VERSION }}]: "
+  register: config_vars_ascender_version
+
+- name: Save the Ascender version
+  vars:
+    ascender_version_default: "{{ config_data.ASCENDER_VERSION }}"
+    ascender_version_value: "{{ config_vars_ascender_version.user_input | trim | default(ascender_version_default, true) }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ASCENDER_VERSION': ascender_version_value}, recursive=True) }}"
+
+- name: "The version of the AWX Operator used to install Ascender"
+  prompt:
+    prompt: "Enter your selection [{{ config_data.ASCENDER_OPERATOR_VERSION }}]: "
+  register: config_vars_ascender_operator_version
+
+- name: Save the Ascender operator version
+  vars:
+    ascender_operator_version_default: "{{ config_data.ASCENDER_OPERATOR_VERSION }}"
+    ascender_operator_version_value: "{{ config_vars_ascender_operator_version.user_input | trim | default(ascender_operator_version_default, true) }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ASCENDER_OPERATOR_VERSION': ascender_operator_version_value}, recursive=True) }}"
+
+- name: Prompt whether to keep the secrets required to encrypt within Ascender
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Boolean indicating whether to keep the secrets required to encrypt within Ascender (important when backing up):"
+    config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+    config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+    config_vars_menu_target: ascender_garbage_collect_secrets
+    config_vars_menu_default_display: "{{ config_data.ascender_garbage_collect_secrets | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.ascender_garbage_collect_secrets | bool }}"
+
+- name: "Boolean indicating whether to use an external PostgreSQL database for Ascender:"
+  vars:
+    ascender_pgsql_host_current: "{{ config_data.ASCENDER_PGSQL_HOST | default('', true) }}"
+    ascender_pgsql_host_current_is_set: "{{ (ascender_pgsql_host_current | trim | lower) not in ['', 'none'] }}"
+  prompt:
+    prompt: |
+      1 - true
+      2 - false
+      Enter your selection [{{ 'true' if ascender_pgsql_host_current_is_set else 'false' }}]:
+  register: config_vars_ascender_use_external_pgsql
+  until: >-
+      (config_vars_ascender_use_external_pgsql.user_input | default('') | trim == '') or
+      (
+        (config_vars_ascender_use_external_pgsql.user_input | default('0') | trim is match('^[0-9]+$')) and
+        ((config_vars_ascender_use_external_pgsql.user_input | int) >= 1) and
+        ((config_vars_ascender_use_external_pgsql.user_input | int) <= 2)
+      )
+  retries: "{{ config_vars_prompt_retries }}"
+  delay: "{{ config_vars_prompt_delay }}"
+
+- block:
+    - name: Remove the external PostgreSQL host when not using it
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | dict2items | rejectattr('key', 'equalto', 'ASCENDER_PGSQL_HOST') | list | items2dict }}"
+      when: not (ascender_use_external_pgsql_enabled | bool)
+
+    - block:
+        - name: "External PostgreSQL ip or url resolvable by the cluster"
+          prompt:
+            prompt: "Enter your selection [{{ ascender_pgsql_host_current if ascender_pgsql_host_current_is_set else '' }}]: "
+          register: config_vars_ascender_pgsql_host
+
+        - name: Save the external PostgreSQL host
+          vars:
+            ascender_pgsql_host_value: "{{ config_vars_ascender_pgsql_host.user_input | default('', true) | trim }}"
+          ansible.builtin.set_fact:
+            config_data: >-
+              {{
+                (
+                  config_data
+                  | dict2items
+                  | rejectattr('key', 'equalto', 'ASCENDER_PGSQL_HOST')
+                  | list
+                  | items2dict
+                )
+                if ascender_pgsql_host_value == '' and not ascender_pgsql_host_current_is_set
+                else config_data | combine(
+                  {'ASCENDER_PGSQL_HOST': (ascender_pgsql_host_value if ascender_pgsql_host_value != '' else ascender_pgsql_host_current)},
+                  recursive=True
+                )
+              }}
+      when: ascender_use_external_pgsql_enabled | bool
+  vars:
+    ascender_pgsql_host_current: "{{ config_data.ASCENDER_PGSQL_HOST | default('', true) }}"
+    ascender_pgsql_host_current_is_set: "{{ (ascender_pgsql_host_current | trim | lower) not in ['', 'none'] }}"
+    ascender_use_external_pgsql_value: "{{ config_vars_ascender_use_external_pgsql.user_input | default('' if ascender_pgsql_host_current_is_set else '2', true) | trim }}"
+    ascender_use_external_pgsql_enabled: "{{ (ascender_use_external_pgsql_value == '' and ascender_pgsql_host_current_is_set) or (ascender_use_external_pgsql_value == '1') }}"
+
+- block:
+    - name: "External PostgreSQL port"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.ASCENDER_PGSQL_PORT | default(5432) }}]: "
+      register: config_vars_ascender_pgsql_port
+
+    - name: Save the external PostgreSQL port
+      vars:
+        ascender_pgsql_port_default: "{{ config_data.ASCENDER_PGSQL_PORT | default(5432) }}"
+        ascender_pgsql_port_value: "{{ config_vars_ascender_pgsql_port.user_input | trim | default(ascender_pgsql_port_default, true) | int }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'ASCENDER_PGSQL_PORT': ascender_pgsql_port_value}, recursive=True) }}"
+
+    - name: "External PostgreSQL username"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.ASCENDER_PGSQL_USER | default('ascender') }}]: "
+      register: config_vars_ascender_pgsql_user
+
+    - name: Save the external PostgreSQL user
+      vars:
+        ascender_pgsql_user_default: "{{ config_data.ASCENDER_PGSQL_USER | default('ascender') }}"
+        ascender_pgsql_user_value: "{{ config_vars_ascender_pgsql_user.user_input | trim | default(ascender_pgsql_user_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'ASCENDER_PGSQL_USER': ascender_pgsql_user_value}, recursive=True) }}"
+
+    - name: "External PostgreSQL password"
+      prompt:
+        prompt: "Enter your selection [hidden]: "
+        echo: false
+      register: config_vars_ascender_pgsql_pwd
+      until: >-
+        '"' not in (
+          (config_vars_ascender_pgsql_pwd.user_input | default('', true) | trim)
+          if (config_vars_ascender_pgsql_pwd.user_input | default('', true) | trim) != ''
+          else (config_data.ASCENDER_PGSQL_PWD | default('mypgadminpassword'))
+        )
+      retries: "{{ config_vars_prompt_retries }}"
+      delay: "{{ config_vars_prompt_delay }}"
+      no_log: true
+
+    - name: Save the external PostgreSQL password
+      vars:
+        ascender_pgsql_pwd_default: "{{ config_data.ASCENDER_PGSQL_PWD | default('mypgadminpassword') }}"
+        ascender_pgsql_pwd_value: "{{ config_vars_ascender_pgsql_pwd.user_input | trim | default(ascender_pgsql_pwd_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'ASCENDER_PGSQL_PWD': ascender_pgsql_pwd_value}, recursive=True) }}"
+      no_log: true
+
+    - name: "External PostgreSQL database name used for Ascender"
+      prompt:
+        prompt: "Enter your selection [{{ config_data.ASCENDER_PGSQL_DB | default('ascenderdb') }}]: "
+      register: config_vars_ascender_pgsql_db
+
+    - name: Save the external PostgreSQL database name
+      vars:
+        ascender_pgsql_db_default: "{{ config_data.ASCENDER_PGSQL_DB | default('ascenderdb') }}"
+        ascender_pgsql_db_value: "{{ config_vars_ascender_pgsql_db.user_input | trim | default(ascender_pgsql_db_default, true) }}"
+      ansible.builtin.set_fact:
+        config_data: "{{ config_data | combine({'ASCENDER_PGSQL_DB': ascender_pgsql_db_value}, recursive=True) }}"
+  when: config_data.ASCENDER_PGSQL_HOST is defined and config_data.ASCENDER_PGSQL_HOST != 'None'
+
+- name: "Number of replicas for the Ascender web container"
+  prompt:
+    prompt: "Enter your selection [{{ config_data.ascender_replicas }}]: "
+  register: config_vars_ascender_replicas
+
+- name: Save the number of Ascender replicas
+  vars:
+    ascender_replicas_default: "{{ config_data.ascender_replicas }}"
+    ascender_replicas_value: "{{ config_vars_ascender_replicas.user_input | trim | default(ascender_replicas_default, true) | int }}"
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | combine({'ascender_replicas': ascender_replicas_value}, recursive=True) }}"
+
+- block:
+    - name: Prompt for the Ascender image pull policy
+      ansible.builtin.include_tasks: menu_choice.yml
+      vars:
+        config_vars_menu_prompt: "Select the Ascender web container image pull policy:"
+        config_vars_menu_options_display: "{{ config_vars_ascender_image_pull_policy_options }}"
+        config_vars_menu_options_value: "{{ config_vars_ascender_image_pull_policy_options }}"
+        config_vars_menu_target: ascender_image_pull_policy
+        config_vars_menu_default_display: "{{ config_data.ascender_image_pull_policy }}"
+        config_vars_menu_default_value: "{{ config_data.ascender_image_pull_policy }}"
+  when: not config_data.k8s_offline | bool
+
+- name: Prompt whether to add standard playbooks into Ascender after installation
+  ansible.builtin.include_tasks: menu_choice.yml
+  vars:
+    config_vars_menu_prompt: "Boolean indicating whether to add standard playbooks into Ascender after installation:"
+    config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
+    config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
+    config_vars_menu_target: ascender_setup_playbooks
+    config_vars_menu_default_display: "{{ config_data.ascender_setup_playbooks | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.ascender_setup_playbooks | bool }}"

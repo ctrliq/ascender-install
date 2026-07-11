@@ -1,8 +1,8 @@
 # Copyright (c) 2026, Ctrl IQ, Inc. All rights reserved.
 
 - hosts: localhost
-  gather_facts: no
   become: false
+  gather_facts: no
 
   vars_files:
     - ["../custom.config.yml", "../default.config.yml"]
@@ -12,12 +12,20 @@
     NAMESPACE: "{{ ASCENDER_NAMESPACE }}"
     PATH: "/usr/local/bin:{{ lookup('env', 'PATH') }}" #required as the aws cli lives at /usr/local/bin/aws
 
-  tasks: 
+  tasks:
 
-    - name: "Run ascender_install role for {{ k8s_platform }}"
+    - name: Create Namespace
+      kubernetes.core.k8s:
+        name: "{{ ASCENDER_NAMESPACE }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+        validate_certs: false
+
+    - name: "Run proxy_install role for {{ k8s_platform }}"
       ansible.builtin.include_role:
-        name: ascender_install
-        tasks_from: "ascender_install_{{ k8s_platform }}"
+        name: ascender_galaxy_proxy
+        tasks_from: "proxy_install_{{ k8s_platform }}"
 
     - ansible.builtin.debug:
-        msg: "Ascender install complete."
+        msg: "Proxy install complete."

@@ -1,0 +1,37 @@
+config_vars_default_config_path: "{{ playbook_dir }}/../default.config.yml"
+config_vars_custom_config_path: "{{ playbook_dir }}/../custom.config.yml"
+config_vars_output_path: "{{ playbook_dir }}/../custom.config.yml"
+config_vars_prompt_retries: 100
+config_vars_prompt_delay: 0
+
+config_vars_boolean_options_display:
+  - "true"
+  - "false"
+
+config_vars_boolean_options_value:
+  - true
+  - false
+
+config_vars_k8s_platform_options:
+  - k3s
+  - eks
+  - aks
+  - gke
+  - rke2
+  - dkp
+  - ocp
+  - tkgi
+
+config_vars_k8s_lb_protocol_options:
+  - http
+  - https
+
+config_vars_k8s_cluster_status_options:
+  - provision
+  - configure
+  - no_action
+
+config_vars_ascender_image_pull_policy_options:
+  - IfNotPresent
+  - Always
+  - Never

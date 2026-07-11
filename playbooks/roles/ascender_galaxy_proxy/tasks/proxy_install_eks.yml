@@ -1,0 +1,176 @@
+- name: Get Certificates (Proxy)
+  community.aws.acm_certificate_info:
+    domain_name: "{{ PROXY_HOSTNAME }}"
+    region: "{{ EKS_CLUSTER_REGION }}"
+  register: certificate
+
+- name: Check for Ascender Certificate if Proxy Certificate is not found
+  when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
+  block:
+    - name: Get Certificates (Ascender)
+      community.aws.acm_certificate_info:
+        domain_name: "{{ ASCENDER_HOSTNAME }}"
+        region: "{{ EKS_CLUSTER_REGION }}"
+      register: certificate2
+      when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
+
+    - name: Set certificate fact to Ascender certificate if Proxy certificate not found
+      ansible.builtin.set_fact:
+        certificate: "{{ certificate2 }}"
+      when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
+
+# - name: send ACM request if needed
+#   shell: aws acm request-certificate --domain-name "{{ acm_domain_name }}"  --domain-validation-options DomainName="{{ acm_domain_name }}",ValidationDomain="{{ acm_validation_domain }}"
+#   when: not domain_in_certificate_list
+
+- name: Check Certificate
+  ansible.builtin.fail:
+    msg: Certificate for domain "{{ PROXY_HOSTNAME }}" not found in region "{{ EKS_CLUSTER_REGION }}"
+  when: certificate.certificates is not defined or certificate.certificates | length == 0 or certificate.certificates[0].certificate_arn is not defined
+
+- name: Set domain fact
+  ansible.builtin.set_fact:
+    certificate: "{{ certificate.certificates[0] }}"
+
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+- name: Generate manifest to install proxy k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: proxy_deployment_eks.yml
+    dest: "{{ tmp_dir }}/proxy_deployment_eks.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: "Apply proxy manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition: "{{ lookup('template', 'templates/proxy_deployment_eks.yml') | from_yaml_all }}"
+    verify_ssl: false
+  register: proxy_apply_result
+
+- name: Wait for Proxy Deployment to complete setting up
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: ascender-galaxy-proxy
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+     
+- name: Restart Proxy deployments to pull latest image
+  kubernetes.core.k8s:
+    state: present
+    api_version: apps/v1
+    kind: Deployment
+    name: "ascender-galaxy-proxy"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    definition:
+      spec:
+        template:
+          metadata:
+            annotations:
+              kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+    merge_type:
+      - strategic-merge
+    verify_ssl: false
+  when:
+    - PROXY_VERSION | lower == "latest"
+    - not proxy_apply_result.changed
+
+- name: Retrieve the ascender-galaxy-proxy Ingress object
+  kubernetes.core.k8s_info:
+    api_version: networking.k8s.io/v1
+    kind: Ingress
+    name: ascender-galaxy-proxy
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+  register: proxy_ingress
+  until:
+    - proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname is defined
+    - proxy_ingress.resources[0].spec.rules[0].host is defined
+  retries: 20
+
+- ansible.builtin.debug: 
+    var: proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname
+
+- ansible.builtin.debug: 
+    var: proxy_ingress.resources[0].spec.rules[0].host
+
+- name: Retrieve the hosted zone ID
+  ansible.builtin.command: >
+    aws route53 list-hosted-zones
+    --query "HostedZones[?Name == '{{ ASCENDER_DOMAIN }}.'].Id | [0]"
+    --output text
+  register: hosted_zone_id
+  when: USE_ROUTE_53
+
+- name: Check if hosted zone ID was found
+  ansible.builtin.fail:
+    msg: "Hosted zone ID not found for domain {{ ASCENDER_DOMAIN }}"
+  when: 
+    - USE_ROUTE_53
+    - hosted_zone_id.stdout == ""
+
+- name: Prepare change batch JSON
+  ansible.builtin.set_fact:
+    change_batch: |
+      {{
+        {
+          "Comment": "Updating or creating CNAME record for " + PROXY_HOSTNAME,
+          "Changes": [
+            {
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": PROXY_HOSTNAME,
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                  {
+                    "Value": proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname
+                  }
+                ]
+              }
+            }
+          ]
+        } | to_nice_json
+      }}
+  when: USE_ROUTE_53
+
+- name: Write change batch JSON to file
+  ansible.builtin.copy:
+    content: "{{ change_batch }}"
+    dest: /tmp/change-batch.json
+  when: USE_ROUTE_53
+
+- name: Update or create CNAME record
+  ansible.builtin.command: >
+    aws route53 change-resource-record-sets
+    --hosted-zone-id {{ hosted_zone_id.stdout }}
+    --change-batch file:///tmp/change-batch.json
+  register: update_result
+  when: USE_ROUTE_53
+
+- name: Indicate Instructions for non-AWS DNS Domain Management
+  ansible.builtin.debug: 
+    msg: "Please manually create a DNS CNAME record for {{ PROXY_HOSTNAME }} in your DNS Record Manager of choice, mapping to {{ proxy_ingress.resources[0].status.loadBalancer.ingress[0].hostname }}"
+  when: not USE_ROUTE_53
+
+- ansible.builtin.debug:
+    msg: "The Proxy endpoint is {{ k8s_lb_protocol }}://{{ PROXY_HOSTNAME }}"
+
+- name: Wait until Proxy endpoint is Up
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ PROXY_HOSTNAME }}/healthz"
+    return_content: yes
+    validate_certs: false
+    status_code:
+      - 200
+  until: uri_output.status == 200
+  retries: 200
+  delay: 10
+  register: uri_output
+
+- ansible.builtin.debug:
+    msg: "Proxy endpoint is up"

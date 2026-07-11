@@ -13,6 +13,10 @@
   ansible.builtin.import_playbook: install_ledger.yml
   when: LEDGER_INSTALL
 
+- name: Install Proxy
+  ansible.builtin.import_playbook: install_proxy.yml
+  when: PROXY_INSTALL
+
 - name: Configure Initial Playbooks
   ansible.builtin.import_playbook: setup_playbooks.yml
   when:
