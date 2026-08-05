@@ -1,6 +1,6 @@
 ee_images:
-  - name: Ascender-EE (Latest)
-    image: ghcr.io/ctrliq/ascender-ee:latest
+  - name: Ascender-EE ({{ ASCENDER_VERSION }})
+    image: ghcr.io/ctrliq/ascender-ee:{{ ASCENDER_VERSION }}
 
 # DNS resolvable hostname for Ascender service. This is required for install.
 ASCENDER_HOSTNAME: ascender.example.com
@@ -24,6 +24,6 @@ ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 ASCENDER_VERSION: latest
 
 # The version of the AWX Operator used to install Ascender and its components
-ASCENDER_OPERATOR_VERSION: 2.19.6
+ASCENDER_OPERATOR_VERSION: 25.5.0
 
 k8s_container_registry: ghcr.io/ctrliq

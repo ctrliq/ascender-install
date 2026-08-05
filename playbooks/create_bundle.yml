@@ -28,7 +28,7 @@
         type: ascender
       - name: ascender-ee
         path: ghcr.io/ctrliq/ascender-ee
-        tag: latest
+        tag: "{{ ASCENDER_VERSION }}"
         type: ascender
       - name: postgres
         path: quay.io/sclorg/postgresql-15-c9s
