@@ -769,13 +769,13 @@ These fields cause the operator to mount volumes, register execution environment
 | Field | AWX source value | Ascender CR value | Why keep Ascender's |
 |---|---|---|---|
 | `image` | Source AWX image | `ghcr.io/ctrliq/ascender` | Different product, different image repo. |
-| `image_version` | not in backup | `25.5.0` | Ascender-specific. |
+| `image_version` | not in backup | `25.5.1` | Ascender-specific. |
 | `redis_image` | Source redis image | `ghcr.io/valkey-io/valkey` | Ascender uses valkey, not redis. |
 | `route_host` | Source AWX hostname | Destination Ascender hostname | DNS-specific. Source hostname would break routing. |
 | `hostname` | not in backup | Destination Ascender hostname | Matches route_host. |
 | `extra_settings` (CSRF) | not in backup | CSRF trusted origins for destination hostname | Tied to hostname. |
 | `admin_user` | `admin` | `admin` | Same. Set by Ascender install. |
-| `control_plane_ee_image` | not in backup | `ghcr.io/ctrliq/ascender-ee:25.5.0` | Ascender-specific. |
+| `control_plane_ee_image` | not in backup | `ghcr.io/ctrliq/ascender-ee:25.5.1` | Ascender-specific. |
 | `init_container_image` | not in backup | `ghcr.io/ctrliq/ascender-ee` | Ascender-specific. |
 | `postgres_image` | not in backup | `quay.io/sclorg/postgresql-15-c9s` | Ascender-specific. |
 | `garbage_collect_secrets` | `false` | `true` | Ascender install set this. Keep. |
