@@ -156,6 +156,7 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
+  storageClassName: {{ LEDGER_PVC_STORAGE_CLASS | default(omit, true) }}
   resources:
     requests:
       storage: {{ LEDGER_PVC_SIZE_GB }}Gi
