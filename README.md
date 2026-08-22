@@ -1,135 +1,96 @@
-The Ascender installer is a script that makes for relatively easy
-install of Ascender Automation Platform on Kubernetes platforms of
-multiple flavors. The installer is being expanded to new Kubernetes
-platforms as users/contributors allow, and if you have specific needs
-for a platform not yet supported, please submit an issue to this
-Github repository.
+# Ascender Installer
 
-While Ascender installs on Kubernetes, you don't need to be a guru in
-Kubernetes, or even have a Kubernetes cluster up and working!  For
-each specified Kubernetes platform, the installer will set up a
-Kubernetes cluster on your behalf, and set up the cluster access file
-at its default location of `~/.kube/config`.  Windows and Network
-admins rejoice!
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
+[![Ascender](https://img.shields.io/badge/ascender-25.5.1-blue.svg)](https://github.com/ctrliq/ascender)
+[![Platforms](https://img.shields.io/badge/platforms-8-blue.svg)](./docs/README.md)
 
-## Table of Contents
+An Ansible-driven installer that deploys [Ascender](https://github.com/ctrliq/ascender), [Ledger](https://github.com/ctrliq/ascender-ledger), and the [Galaxy Proxy](https://github.com/ctrliq/ascender-galaxy-proxy) onto Kubernetes. You do not need an existing cluster or Kubernetes expertise. For every supported platform the installer can provision the cluster on your behalf and write the access file to `~/.kube/config`.
 
-- [General Prerequisites](#general-prerequisites)
-- [Optional Components](#optional-components)
-- [Configuration File](#configuration-file)
-- [Installation Guides](#installation-guides)
-- [Upgrading](#upgrading-ascender)
-- [Uninstall](#uninstall)
-- [Contributing](#contributing)
-- [Reporting Issues](#reporting-issues)
+## Requirements
 
-## General Prerequisites
+- Control machine on Enterprise Linux 8 or 9, or Ubuntu/Debian 24, `x86_64` only
+  - Enterprise Linux covers Rocky, RHEL, Alma, CentOS, and Fedora
+  - EL 9 is required when `k8s_platform` is `aks`, `gke`, or `eks`
+  - Ubuntu and Debian are not supported for `aks`, `gke`, or `eks`
+- `git`: `sudo dnf install git -y` or `sudo apt-get install git -y`
+- `ansible-core`: installed by `setup.sh` when missing
+- SSH access to `ascender_host` as a user that can `become` root
+- An existing `~/.kube/config`, or `kube_install: true` to build the cluster
 
-- On the local server (on which the installer script will run), you
-  will need the following prerequisites met:
-  - Operating System
-    - If the OS family is Enterprise Linux (Rocky, Fedora, Alma, RHEL, CentOS, or other EL based OS) then the major version must be 8 or 9.
-      - ***For the AKS and GKE installers, this must be version 9.**
-    - If the OS family is Ubuntu/Debian then the major version must be 24
-      - ***Installation on AKS, GKE, or EKS not currently supported on this OS***
-  - git needs to be installed
-    - `$ sudo dnf install git -y`
-    - or
-    - `$ sudo apt-get install git -y`
-  - The [ansible inventory file](inventory) file needs to be changed
-    to:
-    - `ascender_host`
-      - `ansible_host` needs to be a set to a server that hosts the [kube-apiserver](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/) kubernetes cluster access or that you want to eventually host the kube-apiserver.
-      - `ansible_user` needs to set to a user that can escalate to
-        root with `become` (if different than your logged in user)
-      - A port needs to be open for SSH access (typically TCP port
-        22). If you choose to have SSH accept connections on a
-        different port, you need to specify this port with the
-        built-in host variable `ansible_port`.
-  - [ansible-core][] will have to be installed, but the setup script
-    will install it if it is not already there.
-- On `ascender_host`, the following is required:
-  - If a Kubernetes cluster is already up, you will need the
-    [kubeconfig][] file, located at `~/.kube/config`. The server IP
-    address in the [cluster][] section of this file will determine the
-    cluster where Ascender will be installed. This cluster must be up
-    and running at the time of install.
-  - If a kubernetes cluster is to be set up, then the installer script it will create the
-    kubeconfig for you automatically.
+## Installation
 
-[ansible-core]: https://github.com/ansible/ansible
-[kubeconfig]: https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/
-[cluster]: https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context
+Clone the repository onto the control machine:
 
-## Optional Components
+```bash
+git clone https://github.com/ctrliq/ascender-install.git
+cd ascender-install
+```
 
-- An external PostgreSQL server that the Ascender application can
-  access. If not specified, the AWX Operator responsible for
-  installing Ascender will create a managed PostgreSQL server.
+## Using the installer
 
-### Offline Installation
+Generate a configuration file, point the inventory at your target host, then run the installer:
 
-For certain Kubernetes platforms (such as k3s, kubeadm, rke2), the Ascender installer supports installation for clusters that do not have outside internet access. In these cases, you can either use:
-  - An included bundle of container images (this is the case for k3s)
-  - Move the Ascender and Ledger container images into an internal container registry for the installer to consume (this is the case for rke2 and kubeadm)
+```bash
+./config_vars.sh    # interactive; writes custom.config.yml (gitignored)
+./setup.sh
+```
 
-A bundled AWX operator is also included for the purposes of offline install.
+`setup.sh` reads `custom.config.yml` when present and falls back to `default.config.yml`. To change an existing deployment (switching to SSL, adding Ledger, or moving to a new Ascender version), edit the config and rerun `setup.sh`.
 
-For more detailed instructions, see the section on the corresponding Kubernetes platform.
+Platform-by-platform walkthroughs, including config and inventory templates for each, are in [docs/README.md](./docs/README.md).
 
-## Configuration File and Inventory
+## Configuration
 
-There is a [default configuration file](default.config.yml) that will
-hold all of the options required to set up your installation
-properly. While this file is comprehensive, you can find more
-platform-specific config file templates in the respective Kubernetes
-platform install instructions directory.
+Two files drive every install, both at the repository root:
 
-Additionally, there is an executable script in this directory called [config_vars.sh](./config_vars.sh) that will generate a config file based on user input, named `custom.config.yml`. `custon.config.yml` is listed in .gitignore, and as such is the suggested/preferred method of setting your install variables.
+| File | Purpose |
+| ---- | ------- |
+| [`default.config.yml`](./default.config.yml) | Every available variable, documented inline by comment |
+| [`inventory`](./inventory) | Defines `ascender_host` with `ansible_host`, `ansible_user`, and `ansible_port` |
 
-The Ascender Install script also uses the Ansible inventory file, [inventory](./inventory), located in the top level directory of this repository. 
+The variables referenced most often:
 
-For both the config file and inventory files, you will find templates for each Kubernetes distribution in its corresponding directory in [docs](./docs/). You can use these templates as guides for how `custom.config.ml` and `inventory` should look for your particular install.
+- `k8s_platform`: `k3s`, `eks`, `aks`, `gke`, `rke2`, `dkp`, `ocp`, or `tkgi`
+- `kube_install`: whether the installer provisions the cluster itself
+- `k8s_offline`: use bundled images instead of pulling from the internet
+- `k8s_lb_protocol`: `http`, or `https` with certificate and key paths
+- `LEDGER_INSTALL`: whether Ledger is deployed alongside Ascender
+- `PROXY_INSTALL`: whether the Galaxy Proxy is deployed
+- `tmp_dir`: where install artifacts are staged on the control machine
 
-The [**Uninstall**](#uninstall) section of this tutorial references
-two of the variables that need to be set:
+### Offline installation
 
-- `k8s_platform`: The Kubernetes platform Ascender is being installed
-  on. This could be K3s, EKS, GKE, AKS, RKE2, DKP, OCP, or TKGI.
-- `tmp_dir`: The directory on the server running the install script,
-  where temporary artifacts will be stored.
+On k3s, RKE2, and DKP the installer can run without outside internet access, using either the bundled container images or images you have mirrored into an internal registry. A bundled Ascender Operator is included for the same purpose. See the guide for your platform in [docs/installation](./docs/installation).
 
-All of the variables and flags in these files have their
-description/proper usage directly present in the comments.
+## Included content
 
-## Installation Guides
+- **8 platform installers**: k3s, EKS, AKS, GKE, RKE2, DKP, OCP, TKGI
+- **12 roles**: cluster setup, Ascender, Ledger, Galaxy Proxy, backup, restore, migration
+- **AWX migration**: move an existing AWX deployment onto Ascender in place
+- **Troubleshooting guides**: DNS, kubeconfig, API startup, namespace deletion
 
-- [Installation Guides by Kubernetes Platform](docs/README.md)
-- [Configuration Guides](docs/README.md)
-- [Troubleshooting Guides](docs/README.md)
+## The Ascender ecosystem
 
-## Adding Components/Configuration Changes
+| Repository | Description |
+| ---------- | ----------- |
+| [ascender](https://github.com/ctrliq/ascender) | The platform itself: web UI, REST API, and task engine |
+| [ascender-install](https://github.com/ctrliq/ascender-install) | Installer for Ascender and Ledger, with Galaxy Proxy support |
+| [ascender-k8s-install](https://github.com/ctrliq/ascender-k8s-install) | Kubernetes installer for Ascender, Ledger, and React |
+| [ascender-pro-install](https://github.com/ctrliq/ascender-pro-install) | Enhanced installer adding Reaqt, Registry, and Galaxy Proxy |
+| [ascender-operator](https://github.com/ctrliq/ascender-operator) | Kubernetes operator that deploys and manages Ascender |
+| [ascender-ee](https://github.com/ctrliq/ascender-ee) | Default execution environment image for Ascender jobs |
+| [ascender-kit](https://github.com/ctrliq/ascender-kit) | The `ascender` command line client and Python API library |
+| [ascender-collection](https://github.com/ctrliq/ascender-collection) | The `ctrliq.ascender` Ansible collection for a controller |
+| [ascender-ledger](https://github.com/ctrliq/ascender-ledger) | Reporting tool for host facts and playbook changes |
+| [ascender-galaxy-proxy](https://github.com/ctrliq/ascender-galaxy-proxy) | Caching proxy for Ansible Galaxy collection downloads |
+| [ascender-playbooks](https://github.com/ctrliq/ascender-playbooks) | Example playbooks for use with Ascender |
+## Contributing
 
-Consider a situation where you have already installed Ascender, and wish to change one or more of the attributes of how it is deployed. Some of these changes may include:
+- See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, testing, and pull requests.
+- Report bugs and platform requests via [GitHub Issues](https://github.com/ctrliq/ascender-install/issues).
+- For security vulnerabilities, follow [SECURITY.md](./SECURITY.md) rather than opening an issue.
+- Join the [Ascender forum](https://forum.ascender-automation.org) to discuss development topics.
 
-- Moving from non-SSL to an SSL connection 
-- Installing Ledger when you may have only installed Ascender first
-- Changing the version of Ascender and or Ledger that is installed
+## License
 
-This can be accomplished by either running `config_vars.sh` again, or editing an existing `custom.config.yml`, in each case, changing the desired install variables. You can then rerun `setup.sh`.`
-
-## Upgrading Ascender
-
-Refer to the following [Upgrade Guide](docs/configuration/upgrading.md) to upgrade Ascender or Ledger
-
-
-## Uninstall
-
-Refer to the following [Uninstall Guide](docs/configuration/uninstall.md) to uninstall Ascender or Ledger
-
-
-## Reporting Issues
-
-If you're experiencing a problem that you feel is a bug in the
-installer or have ideas for improving the installer, we encourage you
-to open a Github issue and share your feedback.
+Licensed under the **Apache License 2.0**. See [LICENSE.md](./LICENSE.md) and [COPYRIGHT.md](./COPYRIGHT.md).
