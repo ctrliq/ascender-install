@@ -25,6 +25,10 @@ kube_install: false
     # Offline Install - Whether to use local assets to complete the install
 k8s_offline: false 
 
+    # Whether to configure the upstream Kubernetes package repository on the installing server
+    # Set this to false when kubectl is already served by a local mirror you have configured
+add_kubernetes_repo: true
+
     # Specify an INTERNAL container registry and namespace where the k8s cluster can access Ascender images
 k8s_container_registry: ""
 

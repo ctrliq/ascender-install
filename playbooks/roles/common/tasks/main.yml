@@ -41,7 +41,9 @@
           gpgcheck=1
           gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
       become: true
-      when: not k8s_offline
+      when:
+        - not k8s_offline
+        - add_kubernetes_repo
 
     - name: Install Necessary Packages (if offline)
       ansible.builtin.dnf:
@@ -69,23 +71,29 @@
         state: directory
         mode: '0755'
       become: true
+      when: add_kubernetes_repo
 
     - name: Check for repo key
       ansible.builtin.stat:
         path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       register: k8s_keyring
+      when: add_kubernetes_repo
 
     - name: Get the K8s repo key
       ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       become: true
-      when: not k8s_keyring.stat.exists
+      when:
+        - add_kubernetes_repo
+        - not k8s_keyring.stat.exists
 
     - name: Add the Kubernetes deb repository
       ansible.builtin.apt_repository:
         repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /"
         state: present
       become: true
-      when: not k8s_offline
+      when:
+        - not k8s_offline
+        - add_kubernetes_repo
 
     - name: Install Necessary Packages (if offline)
       ansible.builtin.apt:
