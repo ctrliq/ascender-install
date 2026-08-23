@@ -15,4 +15,41 @@
   retries: 20
   delay: 5
 
+# A job template is rejected with "Playbook not found for project" until the project's
+# SCM update has finished and the playbooks it published are readable through the API.
+# The project module only waits for the update when the response it gets back already
+# carries it, so wait for both conditions here rather than letting the template task
+# retry against a project that is not ready.
+- name: Wait for the SCM update of {{ project.name }} to finish
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/{{ result.id }}/"
+    user: "{{ ASCENDER_ADMIN_USER }}"
+    password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: project_update
+  until: project_update.json.status | default('') in ['successful', 'failed', 'error', 'canceled']
+  retries: 60
+  delay: 10
+  ignore_errors: true
 
+- name: Wait for the playbooks of {{ project.name }} to be published
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/{{ result.id }}/playbooks/"
+    user: "{{ ASCENDER_ADMIN_USER }}"
+    password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: project_playbooks
+  until: project_playbooks.json | default([]) | length > 0
+  retries: 12
+  delay: 5
+  ignore_errors: true
+  when: project_update.json.status | default('') == 'successful'
+
+- name: Verify that {{ project.name }} is ready for its job templates
+  ansible.builtin.assert:
+    that:
+      - project_update.json.status | default('unknown') == 'successful'
+      - project_playbooks.json | default([]) | length > 0
+    fail_msg: "The project {{ project.name }} is not ready: its SCM update ended as '{{ project_update.json.status | default('unknown') }}' and it published {{ project_playbooks.json | default([]) | length }} playbooks. Job templates that use this project cannot be created until the update succeeds and its playbooks are visible through the API."
