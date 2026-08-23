@@ -14,6 +14,30 @@
     - firewalld_disable | bool 
     - "'firewalld.service' in services"
 
+- name: Configure firewalld for K3s
+  when:
+    - not firewalld_disable | bool
+    - "'firewalld.service' in services"
+    - services['firewalld.service'].state == 'running'
+  become: true
+  block:
+  - name: Open the ports required to reach the K3s cluster
+    ansible.posix.firewalld:
+      port: "{{ item }}"
+      permanent: true
+      immediate: true
+      state: enabled
+    loop: "{{ k3s_firewalld_ports }}"
+
+  - name: Trust the K3s pod and service networks
+    ansible.posix.firewalld:
+      source: "{{ item }}"
+      zone: trusted
+      permanent: true
+      immediate: true
+      state: enabled
+    loop: "{{ k3s_firewalld_trusted_sources }}"
+
 - name: Install K3s Online (this may take up to 5 minutes)
   ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
   when:
