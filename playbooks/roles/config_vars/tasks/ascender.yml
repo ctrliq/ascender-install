@@ -1,23 +1,23 @@
 - name: "Where will install artifacts be stored"
   prompt:
-    prompt: "Enter your selection [{{ config_data.tmp_dir }}]: "
+    prompt: "Enter your selection [{{ config_data.tmp_dir | default(playbook_dir ~ '/../ascender_install_artifacts') }}]: "
   register: config_vars_tmp_dir
 
 - name: Save the temporary artifact directory
   vars:
-    tmp_dir_default: "{{ config_data.tmp_dir }}"
+    tmp_dir_default: "{{ config_data.tmp_dir | default(playbook_dir ~ '/../ascender_install_artifacts') }}"
     tmp_dir_value: "{{ config_vars_tmp_dir.user_input | trim | default(tmp_dir_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'tmp_dir': tmp_dir_value}, recursive=True) }}"
 
 - name: "DNS resolvable hostname for Ascender service"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ASCENDER_HOSTNAME }}]: "
+    prompt: "Enter your selection [{{ config_data.ASCENDER_HOSTNAME | default('ascender.example.com') }}]: "
   register: config_vars_ascender_hostname
 
 - name: Save the Ascender hostname
   vars:
-    ascender_hostname_default: "{{ config_data.ASCENDER_HOSTNAME }}"
+    ascender_hostname_default: "{{ config_data.ASCENDER_HOSTNAME | default('ascender.example.com') }}"
     ascender_hostname_value: "{{ config_vars_ascender_hostname.user_input | trim | default(ascender_hostname_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_HOSTNAME': ascender_hostname_value}, recursive=True) }}"
@@ -25,12 +25,12 @@
 - block:
     - name: "DNS domain for Ascender service"
       prompt:
-        prompt: "Enter your selection [{{ config_data.ASCENDER_DOMAIN }}]: "
+        prompt: "Enter your selection [{{ config_data.ASCENDER_DOMAIN | default('example.com') }}]: "
       register: config_vars_ascender_domain
 
     - name: Save the Ascender domain
       vars:
-        ascender_domain_default: "{{ config_data.ASCENDER_DOMAIN }}"
+        ascender_domain_default: "{{ config_data.ASCENDER_DOMAIN | default('example.com') }}"
         ascender_domain_value: "{{ config_vars_ascender_domain.user_input | trim | default(ascender_domain_default, true) }}"
       ansible.builtin.set_fact:
         config_data: "{{ config_data | combine({'ASCENDER_DOMAIN': ascender_domain_value}, recursive=True) }}"
@@ -38,24 +38,24 @@
 
 - name: "Namespace for Ascender Kubernetes objects"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ASCENDER_NAMESPACE }}]: "
+    prompt: "Enter your selection [{{ config_data.ASCENDER_NAMESPACE | default('ascender') }}]: "
   register: config_vars_ascender_namespace
 
 - name: Save the Ascender namespace
   vars:
-    ascender_namespace_default: "{{ config_data.ASCENDER_NAMESPACE }}"
+    ascender_namespace_default: "{{ config_data.ASCENDER_NAMESPACE | default('ascender') }}"
     ascender_namespace_value: "{{ config_vars_ascender_namespace.user_input | trim | default(ascender_namespace_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_NAMESPACE': ascender_namespace_value}, recursive=True) }}"
 
 - name: "Administrator username for Ascender"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ASCENDER_ADMIN_USER }}]: "
+    prompt: "Enter your selection [{{ config_data.ASCENDER_ADMIN_USER | default('admin') }}]: "
   register: config_vars_ascender_admin_user
 
 - name: Save the Ascender admin user
   vars:
-    ascender_admin_user_default: "{{ config_data.ASCENDER_ADMIN_USER }}"
+    ascender_admin_user_default: "{{ config_data.ASCENDER_ADMIN_USER | default('admin') }}"
     ascender_admin_user_value: "{{ config_vars_ascender_admin_user.user_input | trim | default(ascender_admin_user_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_ADMIN_USER': ascender_admin_user_value}, recursive=True) }}"
@@ -69,7 +69,7 @@
     '"' not in (
       (config_vars_ascender_admin_password.user_input | default('', true) | trim)
       if (config_vars_ascender_admin_password.user_input | default('', true) | trim) != ''
-      else (config_data.ASCENDER_ADMIN_PASSWORD | default(''))
+      else (config_data.ASCENDER_ADMIN_PASSWORD | default('myadminpassword'))
     )
   retries: "{{ config_vars_prompt_retries }}"
   delay: "{{ config_vars_prompt_delay }}"
@@ -77,7 +77,7 @@
 
 - name: Save the Ascender admin password
   vars:
-    ascender_admin_password_default: "{{ config_data.ASCENDER_ADMIN_PASSWORD }}"
+    ascender_admin_password_default: "{{ config_data.ASCENDER_ADMIN_PASSWORD | default('myadminpassword') }}"
     ascender_admin_password_value: "{{ config_vars_ascender_admin_password.user_input | trim | default(ascender_admin_password_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_ADMIN_PASSWORD': ascender_admin_password_value}, recursive=True) }}"
@@ -85,24 +85,24 @@
 
 - name: "The image tag indicating the version of Ascender you wish to install"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ASCENDER_VERSION }}]: "
+    prompt: "Enter your selection [{{ config_data.ASCENDER_VERSION | default('25.5.1') }}]: "
   register: config_vars_ascender_version
 
 - name: Save the Ascender version
   vars:
-    ascender_version_default: "{{ config_data.ASCENDER_VERSION }}"
+    ascender_version_default: "{{ config_data.ASCENDER_VERSION | default('25.5.1') }}"
     ascender_version_value: "{{ config_vars_ascender_version.user_input | trim | default(ascender_version_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_VERSION': ascender_version_value}, recursive=True) }}"
 
 - name: "The version of the AWX Operator used to install Ascender"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ASCENDER_OPERATOR_VERSION }}]: "
+    prompt: "Enter your selection [{{ config_data.ASCENDER_OPERATOR_VERSION | default('25.5.1') }}]: "
   register: config_vars_ascender_operator_version
 
 - name: Save the Ascender operator version
   vars:
-    ascender_operator_version_default: "{{ config_data.ASCENDER_OPERATOR_VERSION }}"
+    ascender_operator_version_default: "{{ config_data.ASCENDER_OPERATOR_VERSION | default('25.5.1') }}"
     ascender_operator_version_value: "{{ config_vars_ascender_operator_version.user_input | trim | default(ascender_operator_version_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_OPERATOR_VERSION': ascender_operator_version_value}, recursive=True) }}"
@@ -114,8 +114,8 @@
     config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
     config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
     config_vars_menu_target: ascender_garbage_collect_secrets
-    config_vars_menu_default_display: "{{ config_data.ascender_garbage_collect_secrets | bool | ternary('true', 'false') }}"
-    config_vars_menu_default_value: "{{ config_data.ascender_garbage_collect_secrets | bool }}"
+    config_vars_menu_default_display: "{{ config_data.ascender_garbage_collect_secrets | default(true) | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.ascender_garbage_collect_secrets | default(true) | bool }}"
 
 - name: "Boolean indicating whether to use an external PostgreSQL database for Ascender:"
   vars:
@@ -238,12 +238,12 @@
 
 - name: "Number of replicas for the Ascender web container"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ascender_replicas }}]: "
+    prompt: "Enter your selection [{{ config_data.ascender_replicas | default(1) }}]: "
   register: config_vars_ascender_replicas
 
 - name: Save the number of Ascender replicas
   vars:
-    ascender_replicas_default: "{{ config_data.ascender_replicas }}"
+    ascender_replicas_default: "{{ config_data.ascender_replicas | default(1) }}"
     ascender_replicas_value: "{{ config_vars_ascender_replicas.user_input | trim | default(ascender_replicas_default, true) | int }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ascender_replicas': ascender_replicas_value}, recursive=True) }}"
@@ -256,9 +256,9 @@
         config_vars_menu_options_display: "{{ config_vars_ascender_image_pull_policy_options }}"
         config_vars_menu_options_value: "{{ config_vars_ascender_image_pull_policy_options }}"
         config_vars_menu_target: ascender_image_pull_policy
-        config_vars_menu_default_display: "{{ config_data.ascender_image_pull_policy }}"
-        config_vars_menu_default_value: "{{ config_data.ascender_image_pull_policy }}"
-  when: not config_data.k8s_offline | bool
+        config_vars_menu_default_display: "{{ config_data.ascender_image_pull_policy | default('Always') }}"
+        config_vars_menu_default_value: "{{ config_data.ascender_image_pull_policy | default('Always') }}"
+  when: not config_data.k8s_offline | default(false) | bool
 
 - name: Prompt whether to add standard playbooks into Ascender after installation
   ansible.builtin.include_tasks: menu_choice.yml
@@ -267,5 +267,5 @@
     config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
     config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
     config_vars_menu_target: ascender_setup_playbooks
-    config_vars_menu_default_display: "{{ config_data.ascender_setup_playbooks | bool | ternary('true', 'false') }}"
-    config_vars_menu_default_value: "{{ config_data.ascender_setup_playbooks | bool }}"
+    config_vars_menu_default_display: "{{ config_data.ascender_setup_playbooks | default(true) | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.ascender_setup_playbooks | default(true) | bool }}"
