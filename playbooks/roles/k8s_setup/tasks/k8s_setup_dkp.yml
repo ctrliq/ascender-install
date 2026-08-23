@@ -49,54 +49,8 @@
   environment:
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config_dkp"
 
-- name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ ASCENDER_HOSTNAME }}"
-    line: "{{ svc_output.resources[0].status.loadBalancer.ingress[0].ip }}   {{ ASCENDER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  delegate_to: localhost
-  when: use_etc_hosts
-
-- name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ LEDGER_HOSTNAME }}"
-    line: "{{ svc_output.resources[0].status.loadBalancer.ingress[0].ip }}   {{ LEDGER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  delegate_to: localhost
-  when: 
-    - use_etc_hosts
-    - LEDGER_INSTALL
-    
-# - name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} is removed is using external DNS"
-#   ansible.builtin.lineinfile:
-#     path: /etc/hosts
-#     regexp: "{{ LEDGER_HOSTNAME }}"
-#     state: absent
-#     owner: root
-#     group: root
-#     mode: '0644'
-#   become: true
-#   delegate_to: localhost
-#   when: 
-#     - not use_etc_hosts
-#     - LEDGER_INSTALL
-
-# - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
-#   ansible.builtin.lineinfile:
-#     path: /etc/hosts
-#     regexp: "{{ ASCENDER_HOSTNAME }}"
-#     state: absent
-#     owner: root
-#     group: root
-#     mode: '0644'
-#   become: true
-#   delegate_to: localhost
-#   when: not use_etc_hosts
+- name: Maintain the /etc/hosts entries for this install
+  ansible.builtin.include_tasks: etc_hosts.yml
+  vars:
+    etc_hosts_ip: "{{ svc_output.resources[0].status.loadBalancer.ingress[0].ip }}"
+  when: use_etc_hosts | bool

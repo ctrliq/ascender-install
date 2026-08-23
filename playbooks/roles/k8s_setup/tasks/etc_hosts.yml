@@ -1,0 +1,56 @@
+# Copyright (c) 2026, Ctrl IQ, Inc. All rights reserved.
+#
+# Maintains the /etc/hosts entries that the installer owns on the Ansible controller.
+#
+# Every hostname the install publishes is written inside a single marked block, so a run
+# that changes ASCENDER_HOSTNAME, LEDGER_HOSTNAME or PROXY_HOSTNAME replaces the entries
+# of the previous run instead of adding a second set next to them. Entries written by
+# earlier versions of the installer, which appended one unmarked line per hostname, are
+# removed for the hostnames managed here so that the block remains the only place these
+# names are resolved from.
+#
+# Callers have to set:
+#   etc_hosts_ip: the address these hostnames must resolve to
+# Callers may set:
+#   etc_hosts_unsafe_writes: true where /etc/hosts cannot be replaced atomically
+
+- name: Gather the hostnames this install publishes
+  ansible.builtin.set_fact:
+    etc_hosts_marker_comment: "# managed by ascender-install"
+    etc_hosts_names: >-
+      {{ [ASCENDER_HOSTNAME]
+         + ([LEDGER_HOSTNAME] if LEDGER_INSTALL | bool else [])
+         + ([PROXY_HOSTNAME] if PROXY_INSTALL | bool else []) }}
+
+- name: Remove unmarked /etc/hosts entries for the hostnames the installer manages
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    # Matches a host entry that lists this exact hostname, but never one of the marked
+    # lines the block below owns. The hostname is escaped because an unescaped name such
+    # as ascender1.local also matches ascender1.localdomain, which made the installer
+    # treat an unrelated entry as its own.
+    regexp: >-
+      ^(?!.*{{ etc_hosts_marker_comment | regex_escape }})\s*\S+\s+(\S+\s+)*{{ item | regex_escape }}(\s|$)
+    state: absent
+    owner: root
+    group: root
+    mode: '0644'
+    unsafe_writes: "{{ etc_hosts_unsafe_writes | default(false) }}"
+  become: true
+  delegate_to: localhost
+  loop: "{{ etc_hosts_names }}"
+
+- name: "Ensure local DNS entries for {{ etc_hosts_names | join(', ') }} exist"
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ASCENDER INSTALLER MANAGED HOSTS"
+    block: |-
+      {% for name in etc_hosts_names %}
+      {{ etc_hosts_ip }}   {{ name }}   {{ etc_hosts_marker_comment }}
+      {% endfor %}
+    owner: root
+    group: root
+    mode: '0644'
+    unsafe_writes: "{{ etc_hosts_unsafe_writes | default(false) }}"
+  become: true
+  delegate_to: localhost

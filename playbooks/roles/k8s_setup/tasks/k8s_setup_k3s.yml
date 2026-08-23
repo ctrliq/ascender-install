@@ -87,54 +87,8 @@
   environment:
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
 
-- name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ ASCENDER_HOSTNAME }}"
-    line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  delegate_to: localhost
-  when: use_etc_hosts
-
-# - name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} is removed if using external DNS"
-#   ansible.builtin.lineinfile:
-#     path: /etc/hosts
-#     regexp: "{{ ASCENDER_HOSTNAME }}"
-#     state: absent
-#     owner: root
-#     group: root
-#     mode: '0644'
-#   become: true
-#   delegate_to: localhost
-#   when: not use_etc_hosts
-
-- name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ LEDGER_HOSTNAME }}"
-    line: "{{ k3s_master_node_ip }}   {{ LEDGER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  delegate_to: localhost
-  when:
-    - use_etc_hosts
-    - LEDGER_INSTALL
-
-- name: "Ensure a local DNS entry for {{ PROXY_HOSTNAME }} exists"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ PROXY_HOSTNAME }}"
-    line: "{{ k3s_master_node_ip }}   {{ PROXY_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  delegate_to: localhost
-  when:
-    - use_etc_hosts
-    - PROXY_INSTALL
+- name: Maintain the /etc/hosts entries for this install
+  ansible.builtin.include_tasks: etc_hosts.yml
+  vars:
+    etc_hosts_ip: "{{ k3s_master_node_ip }}"
+  when: use_etc_hosts | bool

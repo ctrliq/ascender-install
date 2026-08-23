@@ -283,36 +283,13 @@
     - contour_envoy_service.stdout is defined
     - contour_envoy_service.stdout | length > 0
 
-- name: Ensure a local DNS entry for Ascender exists when an ingress IP is available
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ ASCENDER_HOSTNAME }}"
-    line: "{{ tkgi_ingress_address }}   {{ ASCENDER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-    unsafe_writes: true
-  become: true
-  delegate_to: localhost
+- name: Maintain the /etc/hosts entries for this install when an ingress IP is available
+  ansible.builtin.include_tasks: etc_hosts.yml
+  vars:
+    etc_hosts_ip: "{{ tkgi_ingress_address }}"
+    etc_hosts_unsafe_writes: true
   when:
     - use_etc_hosts | bool
-    - tkgi_ingress_address is defined
-    - tkgi_ingress_address | length > 0
-
-- name: Ensure a local DNS entry for Ledger exists when an ingress IP is available
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ LEDGER_HOSTNAME }}"
-    line: "{{ tkgi_ingress_address }}   {{ LEDGER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-    unsafe_writes: true
-  become: true
-  delegate_to: localhost
-  when:
-    - use_etc_hosts | bool
-    - LEDGER_INSTALL | bool
     - tkgi_ingress_address is defined
     - tkgi_ingress_address | length > 0
 
