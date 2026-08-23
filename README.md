@@ -8,7 +8,7 @@ An Ansible-driven installer that deploys [Ascender](https://github.com/ctrliq/as
 
 ## Requirements
 
-- Control machine on Enterprise Linux 8 or 9, or Ubuntu/Debian 24, `x86_64` only
+- Control machine on Enterprise Linux 8 or 9, or Ubuntu/Debian 24 or 26, `x86_64` only
   - Enterprise Linux covers Rocky, RHEL, Alma, CentOS, and Fedora
   - EL 9 is required when `k8s_platform` is `aks`, `gke`, or `eks`
   - Ubuntu and Debian are not supported for `aks`, `gke`, or `eks`
