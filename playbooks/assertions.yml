@@ -61,8 +61,8 @@
         - name: Verify Ubuntu OS Family architecture
           ansible.builtin.assert:
             that:
-              - ansible_distribution_major_version == '24'
-            fail_msg: "K3s Server OS major version must be 24"
+              - ansible_distribution_major_version in ['24', '26']
+            fail_msg: "K3s Server OS major version must be 24 or 26"
           when: ansible_os_family == "Debian"
 
         - name: Get mount location of /var directory

@@ -22,7 +22,7 @@ If you have not done so already, be sure to follow the general prerequisites fou
   - The installer can run from any system with network access to your OCP cluster
   - Operating System
     - If the OS family is Enterprise Linux (Rocky, Fedora, Alma, RHEL, or CentOS) then the major version must be 8 or 9.
-    - If the OS family is Ubuntu/Debian then the major version must be 24
+    - If the OS family is Ubuntu/Debian then the major version must be 24 or 26
 - Minimal System Requirements for the OCP cluster:
   - CPUs: 2
   - Memory: 8GB (if installing both Ascender and Ledger)
