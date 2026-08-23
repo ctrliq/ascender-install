@@ -60,13 +60,16 @@
     state: directory
   delegate_to: localhost
 
+# A cluster built by this run writes its kubeconfig to /etc/rancher/k3s/k3s.yaml on the
+# server, so it is always fetched when kube_install is true; download_kubeconfig then only
+# covers pulling the file from a cluster that already existed.
 - name: Copy kubeconfig file from default location to the ~/.kube directory"
   ansible.builtin.fetch:
     src: /etc/rancher/k3s/k3s.yaml
     dest: ~/.kube/config
     flat: true
   become: true
-  when: download_kubeconfig
+  when: download_kubeconfig or kube_install
 
 - name: "Replace the kubeconfig cluster kube-api server IP with the public IP address, if the cluster is remote "
   ansible.builtin.replace:
@@ -76,7 +79,7 @@
   delegate_to: localhost
   when: 
     - ansible_host != "localhost"
-    - download_kubeconfig
+    - download_kubeconfig or kube_install
   
 - name: Get a list of all nodes
   kubernetes.core.k8s_info:

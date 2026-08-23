@@ -48,6 +48,7 @@ This will skip the step that tries to retrieve the kubeconfig from the target sy
 
 * This issue is common when running setup.sh against a brand-new host without any Kubernetes installation.
 * Ensure that either kube_install is enabled or a valid kubeconfig exists before setting download_kubeconfig: true.
+* When `kube_install` is `true`, the kubeconfig is retrieved from the new cluster whatever `download_kubeconfig` is set to, because that run is what creates the file.
 * The installer attempts to copy the config from /etc/rancher/k3s/k3s.yaml. If your config exists elsewhere, you may have to manually copy it over.
 * The installer will copy the config to ~/.kube/config
 
