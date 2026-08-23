@@ -1,9 +1,32 @@
 #!/bin/bash
 set -euo pipefail
 
-mc --config-dir /tmp/.mc alias set s3 '{{ s3.secret.endpoint }}' '{{ s3.secret.accesskey }}' '{{ s3.secret.secretkey }}'
+# The mc container image is a minimal image that ships without grep and awk, so the
+# most recent backup folder is selected with Bash builtins only, using the JSON
+# output of "mc ls". LC_ALL is pinned so the comparison below is byte ordered.
+export LC_ALL=C
 
-latest=$(mc --config-dir /tmp/.mc ls s3/{{ s3.secret.bucket }}/ | grep 'tower-' | sort | tail -n 1 | awk '{print $NF}')
+MC="mc --config-dir /tmp/.mc"
+
+$MC alias set s3 '{{ s3.secret.endpoint }}' '{{ s3.secret.accesskey }}' '{{ s3.secret.secretkey }}'
+
+listing=$($MC ls --json 's3/{{ s3.secret.bucket }}/')
+
+latest=""
+while IFS= read -r entry; do
+  case "$entry" in
+    *'"key":"tower-'*) ;;
+    *) continue ;;
+  esac
+
+  key=${entry#*'"key":"'}
+  key=${key%%'"'*}
+
+  if [[ "$key" > "$latest" ]]; then
+    latest="$key"
+  fi
+done <<< "$listing"
+
 if [ -z "$latest" ]; then
   echo "ERROR: No backup folders found"
   exit 1
@@ -11,4 +34,4 @@ fi
 
 echo "Downloading: $latest"
 rm -rf /backups/awx-prod
-mc --config-dir /tmp/.mc cp --recursive s3/{{ s3.secret.bucket }}/$latest /backups/awx-prod/
+$MC cp --recursive "s3/{{ s3.secret.bucket }}/$latest" /backups/awx-prod/
