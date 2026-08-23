@@ -31,6 +31,11 @@ If you have not done so already, be sure to follow the general prerequisites fou
   - The installer will not set up OCP for you - you must have an existing, accessible cluster
   - Ensure you have administrative access to the cluster via `oc` or `kubectl` commands
   - The `kube_install` variable should be set to `false` for OCP installations
+- DNS Resolution
+  - Ascender and Ledger are published as OCP Routes, so `ASCENDER_HOSTNAME` and `LEDGER_HOSTNAME`
+    must resolve through the DNS server that serves your cluster's wildcard record
+  - The installer does not write `/etc/hosts` entries on OCP, so `use_etc_hosts` has no effect on
+    this platform
 - SSL Certificate and TLS Configuration
   - OpenShift Container Platform handles SSL/TLS termination through Routes
   - If you set `k8s_lb_protocol` to `http`, the installer will configure OCP Routes to use edge

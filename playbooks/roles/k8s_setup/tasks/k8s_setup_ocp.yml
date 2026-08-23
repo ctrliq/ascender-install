@@ -2,6 +2,11 @@
   ansible.builtin.wait_for_connection:
     delay: 15
 
+# OCP publishes Ascender and Ledger through Routes, which are resolved by the
+# cluster wildcard DNS record, so no local /etc/hosts entry is ever needed here.
+# Writing one pointed the installer at the wrong address and made the final
+# "Wait until Ascender API is Up" check fail with a connection refused error.
+
 - name: Get a list of all nodes
   kubernetes.core.k8s_info:
     api_version: v1
@@ -10,29 +15,3 @@
   delegate_to: localhost
   environment:
     K8S_AUTH_KUBECONFIG: "{{ lookup('env', 'HOME') }}/.kube/config"
-
-- name: "Ensure a local DNS entry for {{ ASCENDER_HOSTNAME }} exists"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ ASCENDER_HOSTNAME }}"
-    line: "{{ k3s_master_node_ip }}   {{ ASCENDER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  delegate_to: localhost
-  when: use_etc_hosts
-
-- name: "Ensure a local DNS entry for {{ LEDGER_HOSTNAME }} exists"
-  ansible.builtin.lineinfile:
-    path: /etc/hosts
-    regexp: "{{ LEDGER_HOSTNAME }}"
-    line: "{{ k3s_master_node_ip }}   {{ LEDGER_HOSTNAME }}"
-    owner: root
-    group: root
-    mode: '0644'
-  become: true
-  delegate_to: localhost
-  when:
-    - use_etc_hosts
-    - LEDGER_INSTALL
