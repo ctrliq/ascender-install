@@ -37,6 +37,7 @@ k8s_image_pull_secret: None
 k8s_ee_pull_credentials_secret: None
 
     # Indictates whether or not the kubeconfig file needs to be downloaded to the Ansible controller
+    # This is implied when kube_install is true, as that run creates the cluster and its kubeconfig
 download_kubeconfig: false
 
     # ---k3s variables---
