@@ -156,7 +156,9 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: {{ LEDGER_PVC_STORAGE_CLASS | default(omit, true) }}
+ {% if LEDGER_PVC_STORAGE_CLASS is defined and (LEDGER_PVC_STORAGE_CLASS | trim) != '' %}
+  storageClassName: {{ LEDGER_PVC_STORAGE_CLASS }}
+ {% endif %}
   resources:
     requests:
       storage: {{ LEDGER_PVC_SIZE_GB }}Gi
