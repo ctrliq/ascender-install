@@ -5,18 +5,18 @@
     config_vars_menu_options_display: "{{ config_vars_boolean_options_display }}"
     config_vars_menu_options_value: "{{ config_vars_boolean_options_value }}"
     config_vars_menu_target: PROXY_INSTALL
-    config_vars_menu_default_display: "{{ config_data.PROXY_INSTALL | bool | ternary('true', 'false') }}"
-    config_vars_menu_default_value: "{{ config_data.PROXY_INSTALL | bool }}"
+    config_vars_menu_default_display: "{{ config_data.PROXY_INSTALL | default(false) | bool | ternary('true', 'false') }}"
+    config_vars_menu_default_value: "{{ config_data.PROXY_INSTALL | default(false) | bool }}"
 
 - block:
     - name: "DNS resolvable hostname for the Ascender Galaxy Proxy"
       prompt:
-        prompt: "Enter your selection [{{ config_data.PROXY_HOSTNAME }}]: "
+        prompt: "Enter your selection [{{ config_data.PROXY_HOSTNAME | default('galaxy-proxy.example.com') }}]: "
       register: config_vars_proxy_hostname
 
     - name: Save the proxy hostname
       vars:
-        proxy_hostname_default: "{{ config_data.PROXY_HOSTNAME }}"
+        proxy_hostname_default: "{{ config_data.PROXY_HOSTNAME | default('galaxy-proxy.example.com') }}"
         proxy_hostname_value: "{{ config_vars_proxy_hostname.user_input | trim | default(proxy_hostname_default, true) }}"
       ansible.builtin.set_fact:
         config_data: "{{ config_data | combine({'PROXY_HOSTNAME': proxy_hostname_value}, recursive=True) }}"
@@ -163,4 +163,4 @@
       ansible.builtin.set_fact:
         config_data: "{{ config_data | combine({'PROXY_CONFIG': (config_data.PROXY_CONFIG | default({})) | combine({'GALAXY_API_TOKEN': proxy_galaxy_api_token_value}, recursive=True)}, recursive=True) }}"
       no_log: true
-  when: config_data.PROXY_INSTALL | bool
+  when: config_data.PROXY_INSTALL | default(false) | bool
