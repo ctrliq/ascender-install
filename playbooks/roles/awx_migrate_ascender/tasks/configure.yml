@@ -3,14 +3,16 @@
 # Runs AFTER startup (API must be live) and BEFORE verify.
 # Ported from roles/awx_restore/tasks/restore_configure_web.yml.
 
-- name: Get Ascender route
+- name: Get Ascender hostname
   kubernetes.core.k8s_info:
-    kind: Route
+    kind: AWX
+    api_version: awx.ansible.com/v1beta1
+    name: "{{ ascender.instance }}"
     namespace: "{{ ascender.namespace }}"
     label_selectors:
       - "app.kubernetes.io/managed-by=awx-operator"
       - "app.kubernetes.io/part-of={{ ascender.instance }}"
-  register: ascender_route
+  register: ascender_hostname
 
 - name: Get Ascender web pod
   kubernetes.core.k8s_info:
@@ -42,7 +44,7 @@
 - name: Define controller auth parameters
   ansible.builtin.set_fact:
     awx_controller_auth:
-      host: "https://{{ ascender_route.resources[0].spec.host }}"
+      host: "https://{{ ascender_hostname.resources[0].spec.hostname }}"
       username: admin
       password: "{{ admin_password }}"
       verify_ssl: false

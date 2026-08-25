@@ -1,20 +1,31 @@
 ---
-- name: Get Ascender route
+- name: Get Ascender hostname
   kubernetes.core.k8s_info:
-    kind: Route
+    api_version: awx.ansible.com/v1beta1
+    kind: AWX
+    name: "{{ ascender.instance }}"
     namespace: "{{ ascender.namespace }}"
     label_selectors:
       - "app.kubernetes.io/managed-by=awx-operator"
       - "app.kubernetes.io/part-of={{ ascender.instance }}"
-  register: ascender_route
+  register: ascender_hostname
+
+- name: Validate Ascender hostname
+  ansible.builtin.assert:
+    that:
+      - ascender_hostname.resources | length == 1
+      - ascender_hostname.resources[0].spec.hostname is defined
+      - ascender_hostname.resources[0].spec.hostname | length > 0
+    fail_msg: >-
+      Ascender AWX CR {{ ascender.namespace }}/{{ ascender.instance }}
+      does not contain spec.hostname
 
 - name: Verify Ascender API is accessible
   ansible.builtin.uri:
-    url: "https://{{ ascender_route.resources[0].spec.host }}/api/v2/"
+    url: "https://{{ ascender_hostname.resources[0].spec.hostname }}/api/v2/"
     validate_certs: false
   register: api_check
   until: api_check.status == 200
   delay: 5
   retries: 5
-  when: ascender_route.resources | length > 0
-
+  when: ascender_hostname.resources | length > 0
