@@ -2,6 +2,27 @@
   ansible.builtin.set_fact:
     backup_current_dir: "{{ tmp_dir }}/backups/current"
 
+# The restore copies these three files into the backup PVC. Without them the run only
+# fails once it has already taken a fresh backup of the running deployment, so check
+# them up front and say how to put a backup in place.
+- name: Look for the local backup that is about to be restored
+  ansible.builtin.stat:
+    path: "{{ backup_current_dir }}/{{ item }}"
+  register: local_backup_files
+  loop:
+    - tower.db
+    - secrets.yml
+    - awx_object
+
+- name: Verify that the local backup is complete
+  ansible.builtin.assert:
+    that: local_backup_files.results | rejectattr('stat.exists') | list | length == 0
+    fail_msg: >-
+      No complete backup was found in {{ backup_current_dir }}; it is missing
+      {{ local_backup_files.results | rejectattr('stat.exists') | map(attribute='item') | join(', ') }}.
+      Run './setup.sh -b' to take one, or copy the tower.db, secrets.yml and awx_object files of an
+      archived backup from {{ tmp_dir }}/backups/ into {{ backup_current_dir }} before restoring.
+
 - name: Remove restore if exists
   kubernetes.core.k8s:
     state: absent

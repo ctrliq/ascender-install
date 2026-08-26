@@ -12,6 +12,7 @@ These guides will walk you through the basics of setting up Ascender for the dif
 
 # Configuration Guides
 - [Setting up Automation Mesh](configuration/automation_mesh.md)
+- [Backing Up and Restoring Ascender](configuration/backup_restore.md)
 - [Changing the Ascender or Ledger Hostname](configuration/changing_hostnames.md)
 - [Uninstalling Ascender or Ledger](configuration/uninstall.md)
 - [Upgrading Ascender or Ledger](configuration/upgrading.md)
