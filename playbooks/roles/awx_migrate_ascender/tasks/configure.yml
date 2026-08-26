@@ -9,9 +9,6 @@
     api_version: awx.ansible.com/v1beta1
     name: "{{ ascender.instance }}"
     namespace: "{{ ascender.namespace }}"
-    label_selectors:
-      - "app.kubernetes.io/managed-by=awx-operator"
-      - "app.kubernetes.io/part-of={{ ascender.instance }}"
   register: ascender_hostname
 
 - name: Get Ascender web pod
