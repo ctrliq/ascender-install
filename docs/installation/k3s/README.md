@@ -35,6 +35,15 @@ If you have not done so already, be sure to follow the general prerequisites fou
   - If `kube_install` is set to true, the installer will set up K3s on the `ascender_host`in the
     inventory file. (`ascender_host` can be localhost)
   - If `kube_install` is set to false, the installer will not perform a K3s install
+- Firewall
+  - K3s recommends that `firewalld` is turned off, so the installer stops and disables it by
+    default on the k3s server
+  - To keep `firewalld` running, set `firewalld_disable: false`. The installer then applies the
+    rules K3s [requires](https://docs.k3s.io/installation/requirements): it opens `6443/tcp` for
+    the kube-api server, `80/tcp` and `443/tcp` for the ingress that serves Ascender, and adds the
+    pod network (`10.42.0.0/16`) and the service network (`10.43.0.0/16`) to the `trusted` zone
+  - Both lists can be changed with the `k3s_firewalld_ports` and `k3s_firewalld_trusted_sources`
+    variables
 - SSL Certificate and Key
   - To enable HTTPS on your website, you need to provide the Ascender installer with an SSL
     Certificate file, and a Private Key file. While these can be self-signed certificates, it is

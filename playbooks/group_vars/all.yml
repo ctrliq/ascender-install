@@ -27,6 +27,20 @@ k8s_offline: false
 # if you need the firewall to stay enabled
 firewalld_disable: true
 
+# The ports opened on the k3s node when firewalld is left enabled: the kube-api server,
+# plus http and https for the ingress that serves Ascender, Ledger and the Galaxy Proxy
+k3s_firewalld_ports:
+  - 6443/tcp
+  - 80/tcp
+  - 443/tcp
+
+# The k3s pod and service networks, added to the trusted zone when firewalld is left
+# enabled, so that pods and services can reach each other. See
+# https://docs.k3s.io/installation/requirements
+k3s_firewalld_trusted_sources:
+  - 10.42.0.0/16
+  - 10.43.0.0/16
+
 # Whether to configure the upstream Kubernetes package repository on the installing server.
 # Set this to false when kubectl is already served by a local mirror you have configured
 add_kubernetes_repo: true
