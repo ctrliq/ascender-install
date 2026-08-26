@@ -5,9 +5,6 @@
     kind: AWX
     name: "{{ ascender.instance }}"
     namespace: "{{ ascender.namespace }}"
-    label_selectors:
-      - "app.kubernetes.io/managed-by=awx-operator"
-      - "app.kubernetes.io/part-of={{ ascender.instance }}"
   register: ascender_hostname
 
 - name: Validate Ascender hostname
