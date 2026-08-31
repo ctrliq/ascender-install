@@ -85,24 +85,24 @@
 
 - name: "The image tag indicating the version of Ascender you wish to install"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ASCENDER_VERSION | default('25.5.1') }}]: "
+    prompt: "Enter your selection [{{ config_data.ASCENDER_VERSION | default('25.6.0') }}]: "
   register: config_vars_ascender_version
 
 - name: Save the Ascender version
   vars:
-    ascender_version_default: "{{ config_data.ASCENDER_VERSION | default('25.5.1') }}"
+    ascender_version_default: "{{ config_data.ASCENDER_VERSION | default('25.6.0') }}"
     ascender_version_value: "{{ config_vars_ascender_version.user_input | trim | default(ascender_version_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_VERSION': ascender_version_value}, recursive=True) }}"
 
 - name: "The version of the AWX Operator used to install Ascender"
   prompt:
-    prompt: "Enter your selection [{{ config_data.ASCENDER_OPERATOR_VERSION | default('25.5.1') }}]: "
+    prompt: "Enter your selection [{{ config_data.ASCENDER_OPERATOR_VERSION | default('25.6.0') }}]: "
   register: config_vars_ascender_operator_version
 
 - name: Save the Ascender operator version
   vars:
-    ascender_operator_version_default: "{{ config_data.ASCENDER_OPERATOR_VERSION | default('25.5.1') }}"
+    ascender_operator_version_default: "{{ config_data.ASCENDER_OPERATOR_VERSION | default('25.6.0') }}"
     ascender_operator_version_value: "{{ config_vars_ascender_operator_version.user_input | trim | default(ascender_operator_version_default, true) }}"
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_OPERATOR_VERSION': ascender_operator_version_value}, recursive=True) }}"

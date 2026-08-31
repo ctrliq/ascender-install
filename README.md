@@ -1,7 +1,7 @@
 # Ascender Installer
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE.md)
-[![Ascender](https://img.shields.io/badge/ascender-25.5.1-blue.svg)](https://github.com/ctrliq/ascender)
+[![Ascender](https://img.shields.io/badge/ascender-25.6.0-blue.svg)](https://github.com/ctrliq/ascender)
 [![Platforms](https://img.shields.io/badge/platforms-8-blue.svg)](./docs/README.md)
 
 An Ansible-driven installer that deploys [Ascender](https://github.com/ctrliq/ascender), [Ledger](https://github.com/ctrliq/ascender-ledger), and the [Galaxy Proxy](https://github.com/ctrliq/ascender-galaxy-proxy) onto Kubernetes. You do not need an existing cluster or Kubernetes expertise. For every supported platform the installer can provision the cluster on your behalf and write the access file to `~/.kube/config`.
