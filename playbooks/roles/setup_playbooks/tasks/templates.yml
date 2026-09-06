@@ -1,5 +1,5 @@
 - name: Create Job Template - {{ template.name }}
-  awx.awx.job_template:
+  ctrliq.ascender.job_template:
     controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"

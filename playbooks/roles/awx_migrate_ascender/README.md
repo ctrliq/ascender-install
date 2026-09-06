@@ -666,7 +666,7 @@ Scales up the operator, whose fresh migration job runs `awx-manage migrate --noi
 
 **DR only. Skip this step for production migrations (`--skip-tags configure`).** This step disables schedules, notifications, jobs, and execution nodes so the restored instance cannot act like production. For a production cutover, you want these active. Omit the `configure` tag entirely.
 
-DR configuration uses the Ascender REST API via the `awx.awx` collection. Requires the API to be live (runs after startup).
+DR configuration uses the Ascender REST API via the `ctrliq.ascender` collection. Requires the API to be live (runs after startup).
 
 | Step | What | Why |
 |---|---|---|

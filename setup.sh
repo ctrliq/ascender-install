@@ -100,7 +100,7 @@ check_collections() {
   if [ $? -ne 0 ]; then
     return 0
   fi
-  ansible-doc -t module -l | grep awx.awx.settings > /dev/null
+  ansible-doc -t module -l | grep ctrliq.ascender.settings > /dev/null
   if [ $? -ne 0 ]; then
     return 0
   fi
@@ -134,7 +134,7 @@ if [ $? -ne 1 ]; then
   echo "#### INSTALLING COLLECTIONS ####"
   if [ -f "$(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz" ]; then
     ansible-galaxy collection install $(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz
-    ansible-galaxy collection install $(dirname $0)/offline/collections/awx-awx-22.3.0.tar.gz
+    ansible-galaxy collection install $(dirname $0)/offline/collections/ctrliq-ascender-25.6.1.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/community-general-8.3.0.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/kubernetes-core-2.4.0.tar.gz
   else

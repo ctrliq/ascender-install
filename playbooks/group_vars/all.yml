@@ -345,8 +345,8 @@ required_collections:
     compare: ">="
     version_type: semver
     platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
-  - name: awx.awx
-    version: "22.3.0"
+  - name: ctrliq.ascender
+    version: "25.6.1"
     compare: ">="
     version_type: semver
     platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
