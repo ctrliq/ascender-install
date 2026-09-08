@@ -47,7 +47,7 @@
       verify_ssl: false
   no_log: true
 
-- name: Define awx.awx module auth parameters
+- name: Define ctrliq.ascender module auth parameters
   ansible.builtin.set_fact:
     awx_auth: &awx_auth
       controller_host: "{{ awx_controller_auth.host }}"
@@ -66,7 +66,7 @@
 
 - name: Get list of enabled execution environment instances
   ansible.builtin.set_fact:
-    awx_instances: "{{ lookup('awx.awx.controller_api',
+    awx_instances: "{{ lookup('ctrliq.ascender.controller_api',
                         'instances/',
                         query_params={
                           'enabled': 'true'
@@ -75,7 +75,7 @@
                         **awx_controller_auth) }}"
 
 - name: Disable enabled execution environment instances
-  awx.awx.instance:
+  ctrliq.ascender.instance:
     <<: *awx_auth
     hostname: "{{ item.hostname }}"
     enabled: false
@@ -87,7 +87,7 @@
     enabled_notifications: "{{ lookup('awx_templates_with_enabled_notifications', **awx_controller_auth) }}"
 
 - name: Disable enabled notifications on job templates
-  awx.awx.job_template:
+  ctrliq.ascender.job_template:
     <<: *awx_auth
     name: "{{ item.name }}"
     notification_templates_started: []
@@ -100,7 +100,7 @@
 
 - name: Get list of jobs to cancel
   ansible.builtin.set_fact:
-    awx_jobs: "{{ lookup('awx.awx.controller_api',
+    awx_jobs: "{{ lookup('ctrliq.ascender.controller_api',
                         'jobs/',
                         query_params={
                           'status__in': 'pending,waiting,running,new'
@@ -109,7 +109,7 @@
                         **awx_controller_auth) }}"
 
 - name: Cancel running jobs
-  awx.awx.job_cancel:
+  ctrliq.ascender.job_cancel:
     <<: *awx_auth
     job_id: "{{ item.id }}"
   loop: "{{ awx_jobs }}"
@@ -123,7 +123,7 @@
 
 - name: Get list of enabled schedules
   ansible.builtin.set_fact:
-    awx_schedule_list: "{{ lookup('awx.awx.controller_api',
+    awx_schedule_list: "{{ lookup('ctrliq.ascender.controller_api',
                         'schedules/',
                         query_params={
                           'enabled': 'true',
@@ -133,7 +133,7 @@
                         **awx_controller_auth) }}"
 
 - name: Disable enabled schedules
-  awx.awx.schedule:
+  ctrliq.ascender.schedule:
     <<: *awx_auth
     name: "{{ item.id }}"
     state: present
@@ -142,7 +142,7 @@
   when: awx_schedule_list | length > 0
 
 - name: "Set LDAP Server URIs as {{ ascender.ldap_servers | join(',') }}"
-  awx.awx.settings:
+  ctrliq.ascender.settings:
     <<: *awx_auth
     name: "AUTH_LDAP_SERVER_URI"
     value: "{{ ascender.ldap_servers | join(',') }}"

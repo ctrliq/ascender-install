@@ -1,5 +1,5 @@
 - name: Create Workflow Job Template - {{ workflow_template.name }}
-  awx.awx.workflow_job_template:
+  ctrliq.ascender.workflow_job_template:
     controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"

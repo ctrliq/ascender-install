@@ -1,5 +1,5 @@
 - name: Create Project - {{ project.name }}
-  awx.awx.project:
+  ctrliq.ascender.project:
     controller_host: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}"
     controller_username: "{{ ASCENDER_ADMIN_USER }}"
     controller_password: "{{ ASCENDER_ADMIN_PASSWORD }}"
