@@ -134,7 +134,7 @@ if [ $? -ne 1 ]; then
   echo "#### INSTALLING COLLECTIONS ####"
   if [ -f "$(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz" ]; then
     ansible-galaxy collection install $(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz
-    ansible-galaxy collection install $(dirname $0)/offline/collections/ctrliq-ascender-25.6.1.tar.gz
+    ansible-galaxy collection install $(dirname $0)/offline/collections/ctrliq-ascender-25.6.2.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/community-general-8.3.0.tar.gz
     ansible-galaxy collection install $(dirname $0)/offline/collections/kubernetes-core-2.4.0.tar.gz
   else
