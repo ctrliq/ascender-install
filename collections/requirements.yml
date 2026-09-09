@@ -8,7 +8,7 @@ collections:
   - name: ansible.posix
     version: ">=1.5.4"
   - name: ctrliq.ascender
-    version: "25.6.1"
+    version: "25.6.2"
   - name: community.docker
     version: ">=3.7.0"
   - name: community.general
