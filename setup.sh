@@ -79,10 +79,10 @@ if [ -t "0" ]; then
   ANSIBLE_FORCE_COLORS=True
 fi
 
-if [ -f "$(dirname $0)/inventory.yml" ]; then
-  INVENTORY_FILE="$(dirname $0)/inventory.yml"
+if [ -f "$(dirname "$0")/inventory.yml" ]; then
+  INVENTORY_FILE="$(dirname "$0")/inventory.yml"
 else
-  INVENTORY_FILE="$(dirname $0)/inventory"
+  INVENTORY_FILE="$(dirname "$0")/inventory"
 fi
 
 echo "Using Inventory File: ${INVENTORY_FILE}"
@@ -132,11 +132,11 @@ fi
 check_collections
 if [ $? -ne 1 ]; then
   echo "#### INSTALLING COLLECTIONS ####"
-  if [ -f "$(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz" ]; then
-    ansible-galaxy collection install $(dirname $0)/offline/collections/ansible-posix-1.5.4.tar.gz
-    ansible-galaxy collection install $(dirname $0)/offline/collections/ctrliq-ascender-25.6.2.tar.gz
-    ansible-galaxy collection install $(dirname $0)/offline/collections/community-general-8.3.0.tar.gz
-    ansible-galaxy collection install $(dirname $0)/offline/collections/kubernetes-core-2.4.0.tar.gz
+  if [ -f "$(dirname "$0")/offline/collections/ansible-posix-1.5.4.tar.gz" ]; then
+    ansible-galaxy collection install "$(dirname "$0")/offline/collections/ansible-posix-1.5.4.tar.gz"
+    ansible-galaxy collection install "$(dirname "$0")/offline/collections/ctrliq-ascender-25.6.2.tar.gz"
+    ansible-galaxy collection install "$(dirname "$0")/offline/collections/community-general-8.3.0.tar.gz"
+    ansible-galaxy collection install "$(dirname "$0")/offline/collections/kubernetes-core-2.4.0.tar.gz"
   else
     ansible-galaxy install -r collections/requirements.yml
   fi
