@@ -1,0 +1,25 @@
+# {{ ansible_managed }}
+# Receptor node for this host. The node id must match CLUSTER_HOST_ID.
+---
+- node:
+    id: {{ ascender_node_name }}
+
+- log-level: info
+
+# Listener for remote execution/hop nodes to peer into (not opened in the
+# firewall; add TLS before exposing it).
+- tcp-listener:
+    port: 27199
+
+- control-service:
+    service: control
+    filename: {{ ascender_run_dir }}/receptor.sock
+    permissions: "0660"
+
+# Runs jobs handed over by the dispatcher. ansible-runner starts each job in a
+# rootless podman container from the job's execution environment image.
+- work-command:
+    worktype: local
+    command: ansible-runner
+    params: worker
+    allowruntimeparams: true

@@ -1,0 +1,11 @@
+---
+- name: restart ascender
+  ansible.builtin.systemd:
+    name: ascender
+    state: restarted
+    daemon_reload: true
+
+- name: reload nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded

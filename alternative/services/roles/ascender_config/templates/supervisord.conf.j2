@@ -1,0 +1,72 @@
+; {{ ansible_managed }}
+; One supervisord runs every Ascender process (the same programs the web, task
+; and rsyslog containers run, plus receptor), under ascender.service.
+; Logs: {{ ascender_log_dir }}/<program>.log
+
+[supervisord]
+nodaemon = true
+umask = 022
+logfile = {{ ascender_log_dir }}/supervisord.log
+logfile_maxbytes = 50MB
+logfile_backups = 5
+pidfile = {{ ascender_run_dir }}/supervisord.pid
+directory = {{ ascender_home }}
+
+{% macro program(name, command, startsecs=30) -%}
+[program:{{ name }}]
+command = {{ command }}
+directory = {{ ascender_home }}
+autorestart = true
+startsecs = {{ startsecs }}
+stopasgroup = true
+killasgroup = true
+redirect_stderr = true
+stdout_logfile = {{ ascender_log_dir }}/{{ name }}.log
+stdout_logfile_maxbytes = 50MB
+stdout_logfile_backups = 5
+{% endmacro -%}
+
+; --- web ---------------------------------------------------------------
+{{ program('uwsgi', ascender_venv ~ '/bin/uwsgi ' ~ ascender_config_dir ~ '/uwsgi.ini') }}
+{{ program('daphne', ascender_venv ~ '/bin/daphne -b 127.0.0.1 -p 8051 --websocket_timeout -1 awx.asgi:channel_layer') }}
+{{ program('ws-heartbeat', 'awx-manage run_ws_heartbeat') }}
+{{ program('awx-cache-clear', 'awx-manage run_cache_clear') }}
+; --- task --------------------------------------------------------------
+{{ program('dispatcher', 'awx-manage run_dispatcher') }}
+{{ program('wsrelay', 'awx-manage run_wsrelay') }}
+{{ program('callback-receiver', 'awx-manage run_callback_receiver') }}
+; --- receptor (runs jobs in rootless podman) -------------------------------
+{{ program('receptor', '/usr/local/bin/receptor --config /etc/receptor/receptor.conf', startsecs=5) }}
+; --- rsyslog (external log aggregation) -----------------------------------
+{{ program('awx-rsyslogd', '/usr/sbin/rsyslogd -n -i ' ~ ascender_run_dir ~ '/rsyslog.pid -f ' ~ ascender_home ~ '/rsyslog/rsyslog.conf', startsecs=0) }}
+{{ program('awx-rsyslog-configurer', 'awx-manage run_rsyslog_configurer') }}
+
+[group:tower-processes]
+programs = uwsgi,daphne,ws-heartbeat,awx-cache-clear,dispatcher,wsrelay,callback-receiver,receptor,awx-rsyslogd,awx-rsyslog-configurer
+priority = 5
+
+; Any program entering FATAL takes supervisord down so systemd restarts the unit.
+[eventlistener:superwatcher]
+command = /usr/local/bin/stop-supervisor
+events = PROCESS_STATE_FATAL
+autorestart = true
+stdout_logfile = {{ ascender_log_dir }}/superwatcher.log
+stdout_logfile_maxbytes = 10MB
+
+[eventlistener:rsyslog-4xx-recovery]
+command = /usr/local/bin/rsyslog-4xx-recovery
+buffer_size = 100
+events = PROCESS_LOG_STDERR
+priority = 0
+autorestart = true
+stderr_logfile = {{ ascender_log_dir }}/rsyslog-4xx-recovery.log
+stderr_logfile_maxbytes = 10MB
+
+[unix_http_server]
+file = {{ ascender_run_dir }}/supervisor.sock
+
+[supervisorctl]
+serverurl = unix://{{ ascender_run_dir }}/supervisor.sock
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface

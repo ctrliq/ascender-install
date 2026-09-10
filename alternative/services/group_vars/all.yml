@@ -1,0 +1,19 @@
+---
+# Defaults for every role live in roles/*/defaults/main.yml. Put site
+# overrides in the inventory or in this file. The commonly changed ones:
+#
+# ascender_hostname: ascender.example.com
+# ascender_version: 25.6.2
+# ascender_python: python3.12
+# ascender_node_name: "{{ ansible_facts['nodename'] }}"
+# ascender_admin_user: admin
+# ascender_admin_password: ""          # generated when empty
+# ascender_admin_email: admin@example.com
+# ascender_http_mode: redirect          # or insecure
+# ascender_pg_database: ascender
+# ascender_pg_user: ascender
+# ascender_pg_password: ""              # generated when empty
+# ascender_pg_version: "15"
+# ascender_pg_max_connections: 1024
+# ascender_receptor_version: 1.6.8
+# ascender_manage_firewalld: true

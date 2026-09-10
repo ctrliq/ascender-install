@@ -1,0 +1,174 @@
+---
+- name: Enable the CRB repository (build dependencies live there)
+  ansible.builtin.command: dnf config-manager --set-enabled crb
+  register: _crb
+  changed_when: false
+
+- name: Add the ansible/Rsyslog COPR (rsyslog with the omhttp module the log aggregator uses)
+  ansible.builtin.get_url:
+    url: https://copr.fedorainfracloud.org/coprs/ansible/Rsyslog/repo/epel-9/ansible-Rsyslog-epel-9.repo
+    dest: /etc/yum.repos.d/ansible-Rsyslog-epel-9.repo
+    mode: "0644"
+
+- name: Enable the nodejs 22 module (UI build)
+  ansible.builtin.command: dnf -y module enable nodejs:22
+  register: _nodejs_module
+  changed_when: "'Nothing to do' not in _nodejs_module.stdout"
+
+- name: Install runtime and build packages
+  ansible.builtin.dnf:
+    name:
+      - acl                       # lets Ansible become the awx user for file operations
+      - gcc
+      - gcc-c++
+      - gettext
+      - git-core
+      - git-lfs
+      - glibc-langpack-en
+      - krb5-devel
+      - krb5-workstation
+      - libffi-devel
+      - libpq-devel
+      - libtool-ltdl-devel
+      - make
+      - nginx
+      - nodejs
+      - npm
+      - openldap
+      - openldap-devel
+      - openssl
+      - patch
+      - podman
+      - policycoreutils-python-utils
+      - python3-psycopg2          # for the community.postgresql modules (system python)
+      - "{{ ascender_python }}"
+      - "{{ ascender_python }}-devel"
+      - rsync
+      - rsyslog
+      - slirp4netns
+      - subversion
+      - sudo
+      - swig
+      - unzip
+      - valkey                    # installed here so its group exists for the awx user
+      - xmlsec1-devel
+      - xmlsec1-openssl
+      - xmlsec1-openssl-devel
+    state: present
+
+- name: Create the {{ ascender_group }} group
+  ansible.builtin.group:
+    name: "{{ ascender_group }}"
+    system: true
+
+- name: Create the {{ ascender_user }} user
+  ansible.builtin.user:
+    name: "{{ ascender_user }}"
+    group: "{{ ascender_group }}"
+    groups: [valkey]           # access to the valkey unix socket
+    append: true
+    system: true
+    home: "{{ ascender_home }}"
+    shell: /bin/bash
+    create_home: true
+  register: _awx_user
+
+- name: Record the {{ ascender_user }} uid
+  ansible.builtin.set_fact:
+    ascender_uid: "{{ _awx_user.uid }}"
+
+- name: Home directory is traversable (nginx serves static files from it)
+  ansible.builtin.file:
+    path: "{{ ascender_home }}"
+    owner: "{{ ascender_user }}"
+    group: "{{ ascender_group }}"
+    mode: "0755"
+
+# System accounts get no subordinate id ranges by default; rootless podman
+# (which runs the jobs) needs them.
+- name: Subordinate uid range for rootless podman
+  ansible.builtin.lineinfile:
+    path: /etc/subuid
+    regexp: "^{{ ascender_user }}:"
+    line: "{{ ascender_user }}:{{ ascender_subid_start }}:{{ ascender_subid_count }}"
+    create: true
+    mode: "0644"
+  notify: podman system migrate
+
+- name: Subordinate gid range for rootless podman
+  ansible.builtin.lineinfile:
+    path: /etc/subgid
+    regexp: "^{{ ascender_user }}:"
+    line: "{{ ascender_user }}:{{ ascender_subid_start }}:{{ ascender_subid_count }}"
+    create: true
+    mode: "0644"
+  notify: podman system migrate
+
+# Gives the user a /run/user/<uid> at boot, which rootless podman uses for its
+# runtime state.
+- name: Enable systemd lingering for {{ ascender_user }}
+  ansible.builtin.command: loginctl enable-linger {{ ascender_user }}
+  args:
+    creates: "/var/lib/systemd/linger/{{ ascender_user }}"
+
+- name: Application directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ascender_user }}"
+    group: "{{ ascender_group }}"
+    mode: "0755"
+  loop:
+    - "{{ ascender_home }}/projects"
+    - "{{ ascender_home }}/job_status"
+    - "{{ ascender_home }}/rsyslog"
+    - "{{ ascender_home }}/rsyslog/conf.d"
+    - "{{ ascender_home }}/public"
+    - "{{ ascender_home }}/public/static"
+    - "{{ ascender_home }}/.local/share/containers"
+    - "{{ ascender_log_dir }}"
+    - "{{ ascender_venv_base }}"
+
+- name: Runtime directories are recreated at boot
+  ansible.builtin.copy:
+    dest: /etc/tmpfiles.d/ascender.conf
+    mode: "0644"
+    content: |
+      d {{ ascender_rsyslog_run_dir }} 0775 {{ ascender_user }} {{ ascender_group }} -
+  notify: systemd-tmpfiles create
+
+- name: Flush handlers so runtime directories exist now
+  ansible.builtin.meta: flush_handlers
+
+- name: SELinux lets nginx connect to uwsgi and daphne
+  ansible.posix.seboolean:
+    name: httpd_can_network_connect
+    state: true
+    persistent: true
+  when: ansible_facts['selinux']['status'] == 'enabled'
+
+- name: SELinux labels the static files for nginx
+  community.general.sefcontext:
+    target: "{{ ascender_home }}/public(/.*)?"
+    setype: httpd_sys_content_t
+    state: present
+  when: ansible_facts['selinux']['status'] == 'enabled'
+  notify: restorecon static
+
+- name: Firewalld state
+  ansible.builtin.systemd:
+    name: firewalld
+  register: _firewalld
+  when: ascender_manage_firewalld | bool
+
+- name: Open http and https in firewalld
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: [http, https]
+  when:
+    - ascender_manage_firewalld | bool
+    - _firewalld.status.ActiveState is defined
+    - _firewalld.status.ActiveState == 'active'

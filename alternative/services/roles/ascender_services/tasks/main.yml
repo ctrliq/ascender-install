@@ -1,0 +1,105 @@
+---
+- name: ascender.service
+  ansible.builtin.template:
+    src: ascender.service.j2
+    dest: /etc/systemd/system/ascender.service
+    mode: "0644"
+  notify: restart ascender
+
+- name: systemd daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+# Database bootstrap, idempotent, before the services start on new code.
+- name: Apply database migrations
+  ansible.builtin.command: awx-manage migrate --noinput
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _migrate
+  changed_when: "'No migrations to apply' not in _migrate.stdout"
+
+- name: Create the admin user
+  ansible.builtin.command: awx-manage createsuperuser --noinput --username {{ ascender_admin_user }} --email {{ ascender_admin_email }}
+  become: true
+  become_user: "{{ ascender_user }}"
+  environment:
+    DJANGO_SUPERUSER_PASSWORD: "{{ ascender_admin_password_effective }}"
+  register: _superuser
+  changed_when: _superuser.rc == 0
+  failed_when: _superuser.rc != 0 and 'already taken' not in _superuser.stderr
+  no_log: true
+
+- name: Admin password matches the configured one
+  ansible.builtin.command: awx-manage update_password --username {{ ascender_admin_user }} --password {{ ascender_admin_password_effective | quote }}
+  become: true
+  become_user: "{{ ascender_user }}"
+  changed_when: false
+  no_log: true
+
+- name: Preload data
+  ansible.builtin.command: awx-manage create_preload_data
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _preload
+  changed_when: "'(changed: True)' in _preload.stdout"
+
+- name: Default execution environments
+  ansible.builtin.command: awx-manage register_default_execution_environments
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _ee
+  changed_when: "'(changed: True)' in _ee.stdout"
+
+- name: Registered instances
+  ansible.builtin.command: awx-manage list_instances
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _instances
+  changed_when: false
+
+# provision_instance reports a change on every call, so only run it when the
+# instance is missing.
+- name: Register this host as a hybrid instance
+  ansible.builtin.command: awx-manage provision_instance --hostname={{ ascender_node_name }} --node_type=hybrid
+  become: true
+  become_user: "{{ ascender_user }}"
+  when: not ((_instances.stdout | regex_replace('\x1b\[[0-9;]*m', '')) is regex('(^|\s)' ~ (ascender_node_name | regex_escape) ~ '\s'))
+
+- name: Instance groups
+  ansible.builtin.command: awx-manage register_queue --queuename={{ item }} --instance_percent=100
+  become: true
+  become_user: "{{ ascender_user }}"
+  loop: [controlplane, default]
+  register: _queue
+  changed_when: "'(changed: True)' in _queue.stdout"
+
+- name: nginx is enabled and running
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Ascender is enabled and running
+  ansible.builtin.systemd:
+    name: ascender
+    enabled: true
+    state: started
+
+- name: Flush handlers (restart on changed code or configuration)
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for the API
+  ansible.builtin.uri:
+    url: https://127.0.0.1/api/v2/ping/
+    validate_certs: false
+  register: _ping
+  until: _ping.status == 200
+  retries: 60
+  delay: 5
+
+- name: Result
+  ansible.builtin.debug:
+    msg:
+      - "Ascender {{ _ping.json.version }} is up: https://{{ ascender_hostname }}/"
+      - "Instance: {{ _ping.json.instances | map(attribute='node') | join(', ') }} ({{ _ping.json.instances | map(attribute='node_type') | join(', ') }})"
+      - "Admin user: {{ ascender_admin_user }}; password in {{ ascender_secrets_dir }}/admin_password"

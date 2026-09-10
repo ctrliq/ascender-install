@@ -1,0 +1,44 @@
+# {{ ansible_managed }}
+# Ascender settings for the single-host (services) install. Loaded by
+# awx/settings/production.py after the defaults; /etc/tower/conf.d/*.py is
+# loaded after this file. Settings defined here are read-only in the UI.
+
+import os
+
+STATIC_ROOT = '{{ ascender_home }}/public/static'
+PROJECTS_ROOT = '{{ ascender_home }}/projects'
+JOBOUTPUT_ROOT = '{{ ascender_home }}/job_status'
+LOG_ROOT = '{{ ascender_log_dir }}/'
+
+with open('{{ ascender_config_dir }}/SECRET_KEY', 'rb') as _f:
+    SECRET_KEY = _f.read().strip()
+
+# nginx on this host is the only thing that reaches uwsgi.
+ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = [
+    'https://{{ ascender_hostname }}',
+    'http://{{ ascender_hostname }}',
+]
+USE_X_FORWARDED_PORT = True
+
+# Instance name registered in the database; must match the receptor node id.
+CLUSTER_HOST_ID = '{{ ascender_node_name }}'
+
+# Web and task processes share this host, so the websocket relay is idle and
+# daphne reads job events straight from valkey.
+BROADCAST_WEBSOCKET_PORT = 443
+BROADCAST_WEBSOCKET_PROTOCOL = 'https'
+BROADCAST_WEBSOCKET_VERIFY_CERT = False
+
+# Jobs run on this hybrid node in rootless podman, never as container-group pods.
+IS_K8S = False
+AWX_AUTO_DEPROVISION_INSTANCES = False
+
+RECEPTOR_LOG_LEVEL = 'info'
+{% if ascender_http_mode == 'insecure' %}
+
+# ascender_http_mode=insecure: the UI is served over plain http as well, so the
+# session and CSRF cookies cannot carry the Secure flag.
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+{% endif %}

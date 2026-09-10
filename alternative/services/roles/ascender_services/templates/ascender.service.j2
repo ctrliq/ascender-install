@@ -1,0 +1,27 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Ascender Automation Platform
+Documentation=https://docs.ascender-automation.org
+After=network-online.target postgresql.service valkey.service
+Wants=network-online.target postgresql.service valkey.service
+
+[Service]
+Type=simple
+User={{ ascender_user }}
+Group={{ ascender_group }}
+EnvironmentFile={{ ascender_config_dir }}/environment
+RuntimeDirectory={{ ascender_run_dir | basename }}
+RuntimeDirectoryMode=0755
+WorkingDirectory={{ ascender_home }}
+ExecStart={{ ascender_venv }}/bin/supervisord -n -c {{ ascender_config_dir }}/supervisord.conf
+# supervisord stops its programs on SIGTERM; give running jobs time to be cancelled.
+KillMode=mixed
+TimeoutStopSec=120
+# When any program goes FATAL the superwatcher listener shuts supervisord down
+# (exit 0); always restart so the stack comes back rather than staying dead.
+Restart=always
+RestartSec=10
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

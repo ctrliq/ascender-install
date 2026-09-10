@@ -1,0 +1,38 @@
+---
+- name: Receptor release tarball
+  ansible.builtin.get_url:
+    url: "https://github.com/ansible/receptor/releases/download/v{{ ascender_receptor_version }}/receptor_{{ ascender_receptor_version }}_linux_{{ ascender_receptor_arch }}.tar.gz"
+    dest: "/usr/local/src/receptor_{{ ascender_receptor_version }}_linux_{{ ascender_receptor_arch }}.tar.gz"
+    mode: "0644"
+
+- name: Receptor install directory
+  ansible.builtin.file:
+    path: "/usr/local/lib/receptor-{{ ascender_receptor_version }}"
+    state: directory
+    mode: "0755"
+
+- name: Unpack receptor
+  ansible.builtin.unarchive:
+    src: "/usr/local/src/receptor_{{ ascender_receptor_version }}_linux_{{ ascender_receptor_arch }}.tar.gz"
+    dest: "/usr/local/lib/receptor-{{ ascender_receptor_version }}"
+    remote_src: true
+    include: [receptor]
+    creates: "/usr/local/lib/receptor-{{ ascender_receptor_version }}/receptor"
+
+- name: Receptor on the PATH
+  ansible.builtin.file:
+    src: "/usr/local/lib/receptor-{{ ascender_receptor_version }}/receptor"
+    dest: /usr/local/bin/receptor
+    state: link
+    force: true
+  notify: restart ascender
+
+# Rootless podman needs its user-namespace state set up once for the user;
+# harmless when already done. XDG_RUNTIME_DIR exists thanks to lingering.
+- name: Initialize rootless podman for {{ ascender_user }}
+  ansible.builtin.command: podman system migrate
+  become: true
+  become_user: "{{ ascender_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ ascender_uid }}"
+  changed_when: false

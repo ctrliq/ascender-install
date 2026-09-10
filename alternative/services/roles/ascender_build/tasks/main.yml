@@ -1,0 +1,112 @@
+---
+- name: Check out the Ascender source tree ({{ ascender_version }})
+  ansible.builtin.git:
+    repo: "{{ ascender_repo }}"
+    dest: "{{ ascender_src_dir }}"
+    version: "{{ ascender_version }}"
+    force: true
+  become: true
+  become_user: "{{ ascender_user }}"
+
+- name: Commit being installed
+  ansible.builtin.command: git -C {{ ascender_src_dir }} rev-parse HEAD
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _commit
+  changed_when: false
+
+- name: Previous build stamp
+  ansible.builtin.stat:
+    path: "{{ ascender_home }}/.ascender-build"
+  register: _stamp_stat
+
+- name: Read the previous build stamp
+  ansible.builtin.slurp:
+    src: "{{ ascender_home }}/.ascender-build"
+  register: _stamp
+  when: _stamp_stat.stat.exists
+
+- name: Decide whether a build is needed
+  ansible.builtin.set_fact:
+    ascender_build_id: "{{ _commit.stdout }} {{ ascender_python }}"
+    ascender_build_needed: "{{ not _stamp_stat.stat.exists or (_stamp.content | b64decode | trim) != (_commit.stdout ~ ' ' ~ ascender_python) }}"
+
+- name: Build and install Ascender
+  when: ascender_build_needed
+  become: true
+  become_user: "{{ ascender_user }}"
+  block:
+    - name: Create the virtualenv and install the Python requirements (several minutes)
+      ansible.builtin.command:
+        cmd: make VENV_BASE={{ ascender_venv_base }} PYTHON={{ ascender_python }} requirements_awx
+        chdir: "{{ ascender_src_dir }}"
+
+    - name: Install build and supervisor into the virtualenv
+      ansible.builtin.pip:
+        name: [build, supervisor]
+        virtualenv: "{{ ascender_venv }}"
+
+    - name: Build the UI and the source distribution (several minutes)
+      ansible.builtin.command:
+        cmd: make PYTHON={{ ascender_venv }}/bin/python sdist
+        chdir: "{{ ascender_src_dir }}"
+      environment:
+        HOME: "{{ ascender_home }}"
+
+    - name: Install Ascender into the virtualenv
+      ansible.builtin.command:
+        cmd: "{{ ascender_venv }}/bin/pip install --no-deps --force-reinstall {{ ascender_src_dir }}/dist/awx.tar.gz"
+
+    # An empty settings module is enough for collectstatic and keeps it from
+    # needing the database configuration, which is written later.
+    - name: Collect static files
+      ansible.builtin.shell: |
+        set -e
+        empty=$(mktemp --suffix=.py)
+        AWX_SETTINGS_FILE=$empty SKIP_SECRET_KEY_CHECK=yes SKIP_PG_VERSION_CHECK=yes \
+          {{ ascender_venv }}/bin/awx-manage collectstatic --noinput --clear
+        rm -f $empty
+      args:
+        executable: /bin/bash
+
+    - name: Record the build stamp
+      ansible.builtin.copy:
+        dest: "{{ ascender_home }}/.ascender-build"
+        content: "{{ ascender_build_id }}\n"
+        mode: "0644"
+      notify: restart ascender
+
+# systemd (init_t) may only execute files with an executable type; pip leaves
+# the virtualenv labelled var_lib_t, which fails ExecStart with EACCES.
+- name: SELinux labels the virtualenv binaries as executables
+  community.general.sefcontext:
+    target: "{{ ascender_venv }}/bin(/.*)?"
+    setype: bin_t
+    state: present
+  when: ansible_facts['selinux']['status'] == 'enabled'
+  register: _venv_fcontext
+
+- name: Apply the virtualenv labels
+  ansible.builtin.command: restorecon -R {{ ascender_venv }}/bin
+  when: ansible_facts['selinux']['status'] == 'enabled' and (ascender_build_needed or _venv_fcontext.changed)
+  changed_when: true
+
+- name: awx-manage and awx-python on the PATH
+  ansible.builtin.file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    state: link
+    force: true
+  loop:
+    - { src: "{{ ascender_venv }}/bin/awx-manage", dest: /usr/bin/awx-manage }
+    - { src: "{{ ascender_src_dir }}/tools/scripts/awx-python", dest: /usr/bin/awx-python }
+
+- name: Supervisor helper scripts from the source tree
+  ansible.builtin.copy:
+    src: "{{ ascender_src_dir }}/{{ item.src }}"
+    dest: "/usr/local/bin/{{ item.dest }}"
+    remote_src: true
+    mode: "0755"
+  loop:
+    - { src: tools/ansible/roles/dockerfile/files/stop-supervisor, dest: stop-supervisor }
+    - { src: tools/scripts/rsyslog-4xx-recovery, dest: rsyslog-4xx-recovery }

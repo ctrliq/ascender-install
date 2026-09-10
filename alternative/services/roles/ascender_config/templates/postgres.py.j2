@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+DATABASES = {
+    'default': {
+        'ATOMIC_REQUESTS': True,
+        'ENGINE': 'awx.main.db.profiled_pg',
+        'NAME': '{{ ascender_pg_database }}',
+        'USER': '{{ ascender_pg_user }}',
+        'PASSWORD': '{{ ascender_pg_password_effective }}',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
+    }
+}
