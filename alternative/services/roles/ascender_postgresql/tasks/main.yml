@@ -78,6 +78,7 @@
     password: "{{ ascender_pg_password_effective }}"
   become: true
   become_user: postgres
+  no_log: true
 
 - name: Database
   community.postgresql.postgresql_db:

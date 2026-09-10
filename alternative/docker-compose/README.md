@@ -64,7 +64,7 @@ important ones:
 | `ASCENDER_HTTP_MODE` | `redirect` | `redirect`: port 80 only redirects to https. `insecure`: serve the UI over plain http; the session and CSRF cookies lose their Secure flag (a plain-http login otherwise fails with "CSRF cookie not set") |
 | `ASCENDER_NODE_NAME` | `ascender-task` | Instance name shown in the UI |
 | `ASCENDER_ADMIN_*` | `admin` | Admin user, password, email |
-| `ASCENDER_PGSQL_*` | bundled `postgres` | Point `ASCENDER_PGSQL_HOST` at an external database to skip the bundled one |
+| `ASCENDER_PGSQL_*` | bundled `postgres` | Point `ASCENDER_PGSQL_HOST` at an external database to use it instead of the bundled one; also clear the profile (`COMPOSE_PROFILES=`) so the bundled `postgres` service is not started |
 | `ASCENDER_SECRET_KEY` | generated | Django secret key; **do not change after install**, stored credentials are encrypted with it |
 | `ASCENDER_WEBSOCKET_SECRET` | generated | Shared secret between web nodes and the websocket relay |
 

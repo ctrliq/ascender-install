@@ -13,9 +13,10 @@ FROM ${ASCENDER_IMAGE}:${ASCENDER_VERSION}
 USER root
 
 # rpm --restore puts back the setuid bits on newuidmap/newgidmap that rootless
-# podman needs; container builds tend to lose them.
+# podman needs; container builds tend to lose them. Only the restore is optional;
+# a failed package install must fail the build.
 RUN dnf -y install podman crun fuse-overlayfs slirp4netns shadow-utils && \
-    rpm --restore shadow-utils 2>/dev/null; \
+    { rpm --restore shadow-utils 2>/dev/null || true; } && \
     dnf -y clean all
 
 COPY --from=receptor /usr/bin/receptor /usr/bin/receptor

@@ -53,6 +53,25 @@ DATABASES = {
     }
 }
 
+# valkey listens only on this unix socket (see config/valkey.conf), shared with
+# the Ascender containers through the valkey_socket volume. The defaults point at
+# /var/run/redis/redis.sock, so the broker, cache and channel layer must be
+# repointed here or they cannot connect.
+_VALKEY_SOCKET = 'unix:///var/run/valkey/valkey.sock'
+BROKER_URL = _VALKEY_SOCKET
+CACHES = {
+    'default': {
+        'BACKEND': 'ansible_base.lib.cache.redis_cache.DABRedisCache',
+        'LOCATION': f'{_VALKEY_SOCKET}?db=1',
+    }
+}
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {'hosts': [_VALKEY_SOCKET], 'capacity': 10000, 'group_expiry': 157784760},
+    }
+}
+
 # The task container's websocket relay connects to each web node's nginx over
 # the compose network, plain http on the internal port.
 BROADCAST_WEBSOCKET_SECRET = os.environ['BROADCAST_WEBSOCKET_SECRET']

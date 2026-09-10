@@ -65,12 +65,27 @@
     mode: "0640"
   loop:
     - { src: settings.py.j2, dest: settings.py }
-    - { src: postgres.py.j2, dest: conf.d/postgres.py }
-    - { src: channels.py.j2, dest: conf.d/channels.py }
     - { src: supervisord.conf.j2, dest: supervisord.conf }
     - { src: environment.j2, dest: environment }
   loop_control:
     label: "{{ item.dest }}"
+  notify: restart ascender
+
+# These render the database password / websocket secret inline, so their
+# output (e.g. --diff or a failed task) must stay hidden.
+- name: Settings with embedded secrets
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ ascender_config_dir }}/{{ item.dest }}"
+    owner: root
+    group: "{{ ascender_group }}"
+    mode: "0640"
+  loop:
+    - { src: postgres.py.j2, dest: conf.d/postgres.py }
+    - { src: channels.py.j2, dest: conf.d/channels.py }
+  loop_control:
+    label: "{{ item.dest }}"
+  no_log: true
   notify: restart ascender
 
 - name: uwsgi.ini from the source tree

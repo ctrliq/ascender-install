@@ -47,6 +47,9 @@ services:
 
   postgres:
     image: ${POSTGRES_IMAGE:-quay.io/sclorg/postgresql-15-c9s}
+    # Optional service: disabled when COMPOSE_PROFILES drops "bundled-db"
+    # (external database). bootstrap.sh waits for DATABASE_HOST regardless.
+    profiles: ["bundled-db"]
     # Logging options: https://www.postgresql.org/docs/current/runtime-config-logging.html
     command: run-postgresql -c max_connections=${POSTGRES_MAX_CONNECTIONS:-1024} -c log_destination=stderr
     environment:
@@ -114,9 +117,9 @@ services:
       - ./config/receptor.conf:/etc/receptor/receptor.conf:ro
       - valkey_socket:/var/run/valkey
     secrets: *ascender-secrets
+    # No dependency on postgres: it is optional (profile "bundled-db") and
+    # bootstrap.sh waits for DATABASE_HOST itself.
     depends_on:
-      postgres:
-        condition: service_healthy
       valkey:
         condition: service_healthy
       init:

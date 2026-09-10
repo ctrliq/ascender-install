@@ -12,7 +12,7 @@ logfile_backups = 5
 pidfile = {{ ascender_run_dir }}/supervisord.pid
 directory = {{ ascender_home }}
 
-{% macro program(name, command, startsecs=30) -%}
+{% macro program(name, command, startsecs=30, redirect_stderr=true, stderr_events=false) -%}
 [program:{{ name }}]
 command = {{ command }}
 directory = {{ ascender_home }}
@@ -20,7 +20,16 @@ autorestart = true
 startsecs = {{ startsecs }}
 stopasgroup = true
 killasgroup = true
+{% if redirect_stderr %}
 redirect_stderr = true
+{% else %}
+{% if stderr_events %}
+stderr_events_enabled = true
+{% endif %}
+stderr_logfile = {{ ascender_log_dir }}/{{ name }}.err.log
+stderr_logfile_maxbytes = 50MB
+stderr_logfile_backups = 5
+{% endif %}
 stdout_logfile = {{ ascender_log_dir }}/{{ name }}.log
 stdout_logfile_maxbytes = 50MB
 stdout_logfile_backups = 5
@@ -38,7 +47,9 @@ stdout_logfile_backups = 5
 ; --- receptor (runs jobs in rootless podman) -------------------------------
 {{ program('receptor', '/usr/local/bin/receptor --config /etc/receptor/receptor.conf', startsecs=5) }}
 ; --- rsyslog (external log aggregation) -----------------------------------
-{{ program('awx-rsyslogd', '/usr/sbin/rsyslogd -n -i ' ~ ascender_run_dir ~ '/rsyslog.pid -f ' ~ ascender_home ~ '/rsyslog/rsyslog.conf', startsecs=0) }}
+; rsyslogd keeps its own stderr and emits log events so rsyslog-4xx-recovery
+; (PROCESS_LOG_STDERR listener below) can react to omhttp 4xx errors.
+{{ program('awx-rsyslogd', '/usr/sbin/rsyslogd -n -i ' ~ ascender_run_dir ~ '/rsyslog.pid -f ' ~ ascender_home ~ '/rsyslog/rsyslog.conf', startsecs=0, redirect_stderr=false, stderr_events=true) }}
 {{ program('awx-rsyslog-configurer', 'awx-manage run_rsyslog_configurer') }}
 
 [group:tower-processes]

@@ -20,7 +20,7 @@ location ~ ^(/websocket/|/api/websocket/) {
 }
 
 location / {
-    rewrite ^(.*)$http_host(.*[^/])$ $1$http_host$2/ permanent;
+    rewrite ^(.*[^/])$ $1/ permanent;
     uwsgi_read_timeout 120s;
     uwsgi_pass uwsgi;
     include /etc/nginx/uwsgi_params;

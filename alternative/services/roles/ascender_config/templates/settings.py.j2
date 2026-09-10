@@ -24,6 +24,24 @@ USE_X_FORWARDED_PORT = True
 # Instance name registered in the database; must match the receptor node id.
 CLUSTER_HOST_ID = '{{ ascender_node_name }}'
 
+# valkey listens only on this unix socket (see the ascender_valkey role); the
+# defaults point at /var/run/redis/redis.sock, so the broker, cache and channel
+# layer must be repointed here or they cannot connect.
+_VALKEY_SOCKET = 'unix:///run/valkey/valkey.sock'
+BROKER_URL = _VALKEY_SOCKET
+CACHES = {
+    'default': {
+        'BACKEND': 'ansible_base.lib.cache.redis_cache.DABRedisCache',
+        'LOCATION': f'{_VALKEY_SOCKET}?db=1',
+    }
+}
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {'hosts': [_VALKEY_SOCKET], 'capacity': 10000, 'group_expiry': 157784760},
+    }
+}
+
 # Web and task processes share this host, so the websocket relay is idle and
 # daphne reads job events straight from valkey.
 BROADCAST_WEBSOCKET_PORT = 443

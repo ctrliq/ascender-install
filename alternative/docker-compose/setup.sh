@@ -11,6 +11,7 @@ if [ ! -f .env ]; then
     cp .env.example .env
     echo "created .env from .env.example"
 fi
+chmod 0600 .env
 
 # Fill empty secrets only.
 fill() {
@@ -38,6 +39,13 @@ if [ ! -f certs/ascender.crt ] || [ ! -f certs/ascender.key ]; then
     echo "generated self-signed certificate for ${hostname_value} in certs/"
     echo "  (replace certs/ascender.crt and certs/ascender.key with your own to use a real certificate)"
 fi
+
+# Point the http->https redirect at the published HTTPS port, not the default 443.
+https_port=$(grep -E '^ASCENDER_HTTPS_PORT=' .env | cut -d= -f2-)
+https_port=${https_port:-443}
+if [ "${https_port}" = "443" ]; then https_suffix=""; else https_suffix=":${https_port}"; fi
+sed -i -E "s#^(return 301 https://\\\$host)(:[0-9]+)?(\\\$request_uri;)#\\1${https_suffix}\\3#" \
+    config/nginx-http-redirect.conf
 
 echo
 echo "Ready. Start Ascender with:  docker compose up -d"

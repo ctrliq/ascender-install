@@ -1,4 +1,9 @@
 ---
+- name: Install the dnf config-manager plugin (provides config-manager)
+  ansible.builtin.dnf:
+    name: dnf-plugins-core
+    state: present
+
 - name: Enable the CRB repository (build dependencies live there)
   ansible.builtin.command: dnf config-manager --set-enabled crb
   register: _crb
@@ -43,6 +48,8 @@
       - python3-psycopg2          # for the community.postgresql modules (system python)
       - "{{ ascender_python }}"
       - "{{ ascender_python }}-devel"
+      - "{{ ascender_python }}-pip"          # ensurepip/venv bootstrap; separate package on EL9
+      - "{{ ascender_python }}-setuptools"
       - rsync
       - rsyslog
       - slirp4netns
@@ -159,6 +166,9 @@
   ansible.builtin.systemd:
     name: firewalld
   register: _firewalld
+  # firewalld is optional: a missing unit must not fail the play (the next task
+  # guards on _firewalld.status.ActiveState being defined and active).
+  failed_when: false
   when: ascender_manage_firewalld | bool
 
 - name: Open http and https in firewalld

@@ -366,6 +366,11 @@ run_task() {
 
 run_web() {
     remove_if_exists ascender-web
+    # Redirect users to the published HTTPS port, not the internal 8053/default 443.
+    local https_suffix=""
+    [[ "${ASCENDER_HTTPS_PORT}" != "443" ]] && https_suffix=":${ASCENDER_HTTPS_PORT}"
+    sed -i -E "s#^(return 301 https://\\\$host)(:[0-9]+)?(\\\$request_uri;)#\\1${https_suffix}\\3#" \
+        "${ASCENDER_CONFIG_DIR}/nginx-http-redirect.conf"
     local envfile status=0
     envfile="$(mk_secret_env_file \
         "DATABASE_PASSWORD=${ASCENDER_PGSQL_PWD}" \
