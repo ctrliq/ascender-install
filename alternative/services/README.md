@@ -38,7 +38,7 @@ to do it by hand: `ansible-galaxy collection install -r requirements.yml`.
 ## Install
 
 ```bash
-cd install/services
+cd alternative/services
 cp inventory.example inventory      # set the host, ascender_hostname, ascender_version
 ./setup.sh                          # checks ansible + collections + inventory, runs install.yml
 ```

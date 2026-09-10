@@ -36,7 +36,7 @@ privileged. Nothing else is.
 ## Quick start
 
 ```bash
-cd install/docker-compose
+cd alternative/docker-compose
 ./setup.sh                  # writes .env with generated secrets, self-signed cert in certs/
 docker compose up -d        # pulls the images, builds the receptor sidecar, starts everything
 docker compose logs -f migrate task   # watch the first-run migrations (a few minutes)
