@@ -1,0 +1,158 @@
+---
+- name: Configuration directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: "{{ item.group | default(ascender_group) }}"
+    mode: "{{ item.mode | default('0750') }}"
+  loop:
+    - { path: "{{ ascender_config_dir }}" }
+    - { path: "{{ ascender_config_dir }}/conf.d" }
+    - { path: "{{ ascender_secrets_dir }}", group: root, mode: "0700" }
+    - { path: "{{ ascender_cert_dir }}", group: root, mode: "0755" }
+    - { path: /etc/receptor, group: root, mode: "0755" }
+
+# Generated once, kept forever: written only when the file does not exist.
+- name: Generated secrets
+  ansible.builtin.copy:
+    dest: "{{ ascender_secrets_dir }}/{{ item.name }}"
+    content: "{{ item.value if item.value else lookup('community.general.random_string', length=item.length, special=false) }}"
+    force: "{{ item.value != '' }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop:
+    - { name: secret_key, value: "", length: 64 }
+    - { name: websocket_secret, value: "", length: 32 }
+    - { name: admin_password, value: "{{ ascender_admin_password }}", length: 24 }
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true
+
+- name: Read the secrets
+  ansible.builtin.slurp:
+    src: "{{ ascender_secrets_dir }}/{{ item }}"
+  loop: [secret_key, websocket_secret, admin_password]
+  register: _secrets
+  no_log: true
+
+- name: Effective secrets
+  ansible.builtin.set_fact:
+    ascender_secret_key_effective: "{{ (_secrets.results | selectattr('item', 'equalto', 'secret_key') | first).content | b64decode | trim }}"
+    ascender_websocket_secret_effective: "{{ (_secrets.results | selectattr('item', 'equalto', 'websocket_secret') | first).content | b64decode | trim }}"
+    ascender_admin_password_effective: "{{ (_secrets.results | selectattr('item', 'equalto', 'admin_password') | first).content | b64decode | trim }}"
+  no_log: true
+
+# awx/settings/defaults.py reads this file and derives the channel layer
+# encryption key from it; settings.py reads it for SECRET_KEY.
+- name: SECRET_KEY file
+  ansible.builtin.copy:
+    dest: "{{ ascender_config_dir }}/SECRET_KEY"
+    content: "{{ ascender_secret_key_effective }}"
+    owner: root
+    group: "{{ ascender_group }}"
+    mode: "0640"
+  no_log: true
+  notify: restart ascender
+
+- name: Settings
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ ascender_config_dir }}/{{ item.dest }}"
+    owner: root
+    group: "{{ ascender_group }}"
+    mode: "0640"
+  loop:
+    - { src: settings.py.j2, dest: settings.py }
+    - { src: supervisord.conf.j2, dest: supervisord.conf }
+    - { src: environment.j2, dest: environment }
+  loop_control:
+    label: "{{ item.dest }}"
+  notify: restart ascender
+
+# These render the database password / websocket secret inline, so their
+# output (e.g. --diff or a failed task) must stay hidden.
+- name: Settings with embedded secrets
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ ascender_config_dir }}/{{ item.dest }}"
+    owner: root
+    group: "{{ ascender_group }}"
+    mode: "0640"
+  loop:
+    - { src: postgres.py.j2, dest: conf.d/postgres.py }
+    - { src: channels.py.j2, dest: conf.d/channels.py }
+  loop_control:
+    label: "{{ item.dest }}"
+  no_log: true
+  notify: restart ascender
+
+- name: uwsgi.ini from the source tree
+  ansible.builtin.copy:
+    src: "{{ ascender_src_dir }}/tools/ansible/roles/dockerfile/files/uwsgi.ini"
+    dest: "{{ ascender_config_dir }}/uwsgi.ini"
+    remote_src: true
+    owner: root
+    group: "{{ ascender_group }}"
+    mode: "0640"
+  notify: restart ascender
+
+- name: Receptor configuration
+  ansible.builtin.template:
+    src: receptor.conf.j2
+    dest: /etc/receptor/receptor.conf
+    owner: root
+    group: "{{ ascender_group }}"
+    mode: "0640"
+  notify: restart ascender
+
+# Rewritten by the rsyslog configurer, but rsyslogd needs a file to start.
+- name: Initial rsyslog configuration
+  ansible.builtin.copy:
+    dest: "{{ ascender_home }}/rsyslog/rsyslog.conf"
+    content: |
+      action(type="omfile" file="/dev/null")
+    force: false
+    owner: "{{ ascender_user }}"
+    group: "{{ ascender_group }}"
+    mode: "0644"
+
+- name: Self-signed certificate for {{ ascender_hostname }} (replace with your own)
+  ansible.builtin.command: >
+    openssl req -x509 -nodes -newkey rsa:2048 -days 825
+    -keyout {{ ascender_cert_dir }}/ascender.key -out {{ ascender_cert_dir }}/ascender.crt
+    -subj "/CN={{ ascender_hostname }}"
+    -addext "subjectAltName=DNS:{{ ascender_hostname }},DNS:localhost,IP:127.0.0.1"
+  args:
+    creates: "{{ ascender_cert_dir }}/ascender.crt"
+  notify: reload nginx
+
+- name: Certificate permissions
+  ansible.builtin.file:
+    path: "{{ ascender_cert_dir }}/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { name: ascender.crt, mode: "0644" }
+    - { name: ascender.key, mode: "0600" }
+
+- name: nginx locations
+  ansible.builtin.template:
+    src: nginx-locations.conf.j2
+    dest: /etc/nginx/ascender-locations.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload nginx
+
+- name: nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: nginx -t -c %s
+  notify: reload nginx

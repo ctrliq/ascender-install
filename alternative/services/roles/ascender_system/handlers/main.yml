@@ -1,0 +1,16 @@
+---
+- name: systemd-tmpfiles create
+  ansible.builtin.command: systemd-tmpfiles --create /etc/tmpfiles.d/ascender.conf
+  changed_when: true
+
+- name: restorecon static
+  ansible.builtin.command: restorecon -R {{ ascender_home }}/public
+  changed_when: true
+
+- name: podman system migrate
+  ansible.builtin.command: podman system migrate
+  become: true
+  become_user: "{{ ascender_user }}"
+  changed_when: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ _awx_user.uid | default(omit) }}"

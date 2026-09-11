@@ -1,0 +1,58 @@
+# {{ ansible_managed }}
+# Ascender settings for the single-host (services) install. Loaded by
+# awx/settings/production.py after the defaults; /etc/tower/conf.d/*.py is
+# loaded after this file. Settings defined here are read-only in the UI.
+
+import os
+
+STATIC_ROOT = '{{ ascender_home }}/public/static'
+PROJECTS_ROOT = '{{ ascender_home }}/projects'
+JOBOUTPUT_ROOT = '{{ ascender_home }}/job_status'
+LOG_ROOT = '{{ ascender_log_dir }}/'
+
+with open('{{ ascender_config_dir }}/SECRET_KEY', 'rb') as _f:
+    SECRET_KEY = _f.read().strip()
+
+# Accept any Host header, as the Kubernetes install and upstream AWX do: the
+# UI is commonly reached by IP address or a name other than ascender_hostname,
+# and a strict list turned every such request into a 400. Trade-off: Django's
+# host-header validation is off. Names users reach the UI with, other than
+# ascender_hostname, go in ascender_allowed_hosts for the CSRF trusted origins.
+ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = [
+{% for h in ([ascender_hostname] + (ascender_allowed_hosts | default([]))) | unique %}
+    'https://{{ h }}',
+    'http://{{ h }}',
+{% endfor %}
+]
+USE_X_FORWARDED_PORT = True
+
+# Instance name registered in the database; must match the receptor node id.
+CLUSTER_HOST_ID = {{ ascender_node_name | to_json }}
+
+# valkey listens only on the unix socket /run/valkey/valkey.sock (see the
+# ascender_valkey role). Ascender's defaults (awx/settings/defaults.py) already
+# point the broker, the cache (awx.main.cache.AWXValkeyCache) and the channel
+# layer (channels_valkey) at unix:///var/run/valkey/valkey.sock, which is the
+# same file because /var/run is a symlink to /run on EL9, so nothing is
+# overridden here. Do not copy upstream AWX's ansible_base / channels_redis
+# backends into this file: the tree installs neither package.
+
+# Web and task processes share this host, so the websocket relay is idle and
+# daphne reads job events straight from valkey.
+BROADCAST_WEBSOCKET_PORT = 443
+BROADCAST_WEBSOCKET_PROTOCOL = 'https'
+BROADCAST_WEBSOCKET_VERIFY_CERT = False
+
+# Jobs run on this hybrid node in rootless podman, never as container-group pods.
+IS_K8S = False
+AWX_AUTO_DEPROVISION_INSTANCES = False
+
+RECEPTOR_LOG_LEVEL = 'info'
+{% if ascender_http_mode == 'insecure' %}
+
+# ascender_http_mode=insecure: the UI is served over plain http as well, so the
+# session and CSRF cookies cannot carry the Secure flag.
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+{% endif %}

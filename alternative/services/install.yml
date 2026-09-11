@@ -1,0 +1,16 @@
+---
+# Ascender on a single Rocky 9 host, services installed directly (no
+# containers except the podman ones that run jobs). Idempotent: re-run it to
+# upgrade (change ascender_version) or to converge configuration.
+- name: Install Ascender
+  hosts: ascender
+  become: true
+  roles:
+    - ascender_defaults
+    - ascender_system
+    - ascender_postgresql
+    - ascender_valkey
+    - ascender_build
+    - ascender_config
+    - ascender_receptor
+    - ascender_services

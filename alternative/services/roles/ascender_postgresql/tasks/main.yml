@@ -1,0 +1,92 @@
+---
+- name: Enable the postgresql:{{ ascender_pg_version }} module
+  ansible.builtin.command: dnf -y module enable postgresql:{{ ascender_pg_version }}
+  register: _pg_module
+  changed_when: "'Nothing to do' not in _pg_module.stdout"
+
+- name: Install PostgreSQL server
+  ansible.builtin.dnf:
+    name: [postgresql-server, postgresql-contrib]
+    state: present
+
+- name: Initialize the database cluster
+  ansible.builtin.command: postgresql-setup --initdb
+  args:
+    creates: /var/lib/pgsql/data/PG_VERSION
+
+- name: PostgreSQL settings
+  ansible.builtin.lineinfile:
+    path: /var/lib/pgsql/data/postgresql.conf
+    regexp: "^#?{{ item.key }}\\s*="
+    line: "{{ item.key }} = {{ item.value }}"
+  loop:
+    - { key: listen_addresses, value: "'127.0.0.1'" }
+    - { key: max_connections, value: "{{ ascender_pg_max_connections }}" }
+    - { key: password_encryption, value: scram-sha-256 }
+  notify: restart postgresql
+
+- name: Local TCP connections authenticate with passwords
+  ansible.builtin.lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    regexp: '^host\s+all\s+all\s+{{ item }}\s+'
+    line: "host    all             all             {{ item }}            scram-sha-256"
+  loop:
+    - 127.0.0.1/32
+    - ::1/128
+  notify: restart postgresql
+
+- name: PostgreSQL is enabled and running
+  ansible.builtin.systemd:
+    name: postgresql
+    enabled: true
+    state: started
+
+- name: Flush handlers so settings apply before the database is created
+  ansible.builtin.meta: flush_handlers
+
+# Generate-once secrets: written only when the file does not exist, then read
+# back, so re-runs and upgrades keep the same values.
+- name: Secrets directory
+  ansible.builtin.file:
+    path: "{{ ascender_secrets_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Database password file
+  ansible.builtin.copy:
+    dest: "{{ ascender_secrets_dir }}/pg_password"
+    content: "{{ ascender_pg_password if ascender_pg_password else lookup('community.general.random_string', length=32, special=false) }}"
+    force: "{{ ascender_pg_password != '' }}"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Read the database password
+  ansible.builtin.slurp:
+    src: "{{ ascender_secrets_dir }}/pg_password"
+  register: _pg_password_file
+  no_log: true
+
+- name: Set the effective database password
+  ansible.builtin.set_fact:
+    ascender_pg_password_effective: "{{ _pg_password_file.content | b64decode | trim }}"
+  no_log: true
+
+- name: Database role
+  community.postgresql.postgresql_user:
+    name: "{{ ascender_pg_user }}"
+    password: "{{ ascender_pg_password_effective }}"
+  become: true
+  become_user: postgres
+  no_log: true
+
+- name: Database
+  community.postgresql.postgresql_db:
+    name: "{{ ascender_pg_database }}"
+    owner: "{{ ascender_pg_user }}"
+    encoding: UTF-8
+  become: true
+  become_user: postgres

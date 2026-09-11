@@ -1,0 +1,157 @@
+---
+- name: ascender.service
+  ansible.builtin.template:
+    src: ascender.service.j2
+    dest: /etc/systemd/system/ascender.service
+    mode: "0644"
+  notify: restart ascender
+
+- name: systemd daemon-reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+# The schema must not change under running processes. On an upgrade the build
+# role has already stopped the service; this also covers a re-run after an
+# interrupted play, where the code is new but its migrations are not applied yet.
+# migrate --check exits 1 when migrations are pending.
+- name: Pending database migrations
+  ansible.builtin.command: awx-manage migrate --check --noinput
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _pending
+  changed_when: false
+  failed_when: _pending.rc not in [0, 1]
+
+- name: Ascender service state
+  ansible.builtin.command: systemctl is-active ascender.service
+  register: _ascender_active
+  changed_when: false
+  failed_when: false
+  when: _pending.rc != 0
+
+- name: Stop Ascender while the schema changes
+  ansible.builtin.systemd:
+    name: ascender
+    state: stopped
+  register: _ascender_stop
+  when: _pending.rc != 0 and (_ascender_active.rc | default(1)) == 0
+
+- name: Remember that Ascender was stopped for the upgrade
+  ansible.builtin.set_fact:
+    ascender_stopped_for_upgrade: "{{ (ascender_stopped_for_upgrade | default(false)) or (_ascender_stop is not skipped) }}"
+
+# Database bootstrap, idempotent, before the services start on new code.
+- name: Apply database migrations
+  ansible.builtin.command: awx-manage migrate --noinput
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _migrate
+  changed_when: "'No migrations to apply' not in _migrate.stdout"
+
+- name: Create the admin user
+  ansible.builtin.command: awx-manage createsuperuser --noinput --username {{ ascender_admin_user }} --email {{ ascender_admin_email }}
+  become: true
+  become_user: "{{ ascender_user }}"
+  environment:
+    DJANGO_SUPERUSER_PASSWORD: "{{ ascender_admin_password_effective }}"
+  register: _superuser
+  changed_when: _superuser.rc == 0
+  failed_when: _superuser.rc != 0 and 'already taken' not in _superuser.stderr
+  no_log: true
+
+# Same logic as `awx-manage update_password`, which only takes the password on
+# the command line, where every local user can read it in /proc while it runs.
+# Here it travels in the environment, readable only by the awx user and root.
+- name: Admin password matches the configured one
+  ansible.builtin.command:
+    cmd: awx-manage shell -c {{ _set_password | quote }}
+  vars:
+    _set_password: |
+      import os
+      from django.contrib.auth.models import User
+      u = User.objects.get(username=os.environ['ASCENDER_ADMIN_USER'])
+      p = os.environ['ASCENDER_ADMIN_PASSWORD']
+      if u.check_password(p):
+          print('Password not updated')
+      else:
+          u.set_password(p)
+          u.save()
+          print('Password updated')
+  environment:
+    ASCENDER_ADMIN_USER: "{{ ascender_admin_user }}"
+    ASCENDER_ADMIN_PASSWORD: "{{ ascender_admin_password_effective }}"
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _password
+  changed_when: "'Password updated' in _password.stdout"
+  no_log: true
+
+- name: Preload data
+  ansible.builtin.command: awx-manage create_preload_data
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _preload
+  changed_when: "'(changed: True)' in _preload.stdout"
+
+- name: Default execution environments
+  ansible.builtin.command: awx-manage register_default_execution_environments
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _ee
+  changed_when: "'(changed: True)' in _ee.stdout"
+
+- name: Registered instances
+  ansible.builtin.command: awx-manage list_instances
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _instances
+  changed_when: false
+
+# provision_instance reports a change on every call, so only run it when the
+# instance is missing.
+- name: Register this host as a hybrid instance
+  ansible.builtin.command: awx-manage provision_instance --hostname={{ ascender_node_name }} --node_type=hybrid
+  become: true
+  become_user: "{{ ascender_user }}"
+  when: not ((_instances.stdout | regex_replace('\x1b\[[0-9;]*m', '')) is regex('(^|\s)' ~ (ascender_node_name | regex_escape) ~ '\s'))
+
+- name: Instance groups
+  ansible.builtin.command: awx-manage register_queue --queuename={{ item }} --instance_percent=100
+  become: true
+  become_user: "{{ ascender_user }}"
+  loop: [controlplane, default]
+  register: _queue
+  changed_when: "'(changed: True)' in _queue.stdout"
+
+- name: nginx is enabled and running
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: true
+    state: started
+
+# Starts the service on the new code when it was stopped above; the restart
+# handler is then redundant and skips itself.
+- name: Ascender is enabled and running
+  ansible.builtin.systemd:
+    name: ascender
+    enabled: true
+    state: started
+
+- name: Flush handlers (restart on changed code or configuration)
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for the API
+  ansible.builtin.uri:
+    url: https://127.0.0.1/api/v2/ping/
+    validate_certs: false
+  register: _ping
+  until: _ping.status == 200
+  retries: 60
+  delay: 5
+
+- name: Result
+  ansible.builtin.debug:
+    msg:
+      - "Ascender {{ _ping.json.version }} is up: https://{{ ascender_hostname }}/"
+      - "Instance: {{ _ping.json.instances | map(attribute='node') | join(', ') }} ({{ _ping.json.instances | map(attribute='node_type') | join(', ') }})"
+      - "Admin user: {{ ascender_admin_user }}; password in {{ ascender_secrets_dir }}/admin_password"

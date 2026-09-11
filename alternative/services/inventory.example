@@ -1,0 +1,15 @@
+# Copy to "inventory" and edit. One host: everything runs on it.
+[ascender]
+localhost ansible_user=root ansible_connection=local
+
+[ascender:vars]
+# Name users reach the UI with; used for the certificate and CSRF trusted origins.
+ascender_hostname=ascender.example.com
+# Git ref of https://github.com/ctrliq/ascender to install (tag, branch or commit).
+ascender_version=25.6.2
+# Python the tree targets: python3.12 for the 25.x releases, python3.14 for main.
+ascender_python=python3.12
+# Admin password; generated into /etc/tower/.secrets/admin_password when unset.
+#ascender_admin_password=
+# redirect (default): port 80 redirects to https. insecure: serve the UI over plain http too.
+#ascender_http_mode=redirect

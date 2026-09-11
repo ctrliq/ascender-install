@@ -1,0 +1,21 @@
+[Unit]
+Description=Ascender Automation Platform (Podman native)
+Documentation=https://docs.ascender-automation.org
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/ascender/manage-containers.sh up
+ExecStop=/usr/libexec/ascender/manage-containers.sh down
+# First start pulls ~1 GB of images, builds the receptor sidecar and runs the
+# database migrations; cap it so a wedged runtime cannot leave the unit
+# activating forever.
+TimeoutStartSec=3600
+# Teardown waits for running jobs to be cancelled by the dispatcher and gives
+# PostgreSQL 60s to flush; keep this above the sum of the per-container stops.
+TimeoutStopSec=300
+
+[Install]
+WantedBy=multi-user.target

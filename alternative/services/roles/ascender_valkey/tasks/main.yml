@@ -1,0 +1,28 @@
+---
+- name: Install valkey
+  ansible.builtin.dnf:
+    name: valkey
+    state: present
+
+# Unix socket only, shared with the awx user through the valkey group. The
+# application expects the socket at /var/run/valkey/valkey.sock.
+- name: Valkey settings
+  ansible.builtin.lineinfile:
+    path: /etc/valkey/valkey.conf
+    regexp: "^#?\\s*{{ item.key }}\\s"
+    line: "{{ item.key }} {{ item.value }}"
+  loop:
+    - { key: port, value: "0" }
+    - { key: bind, value: "127.0.0.1" }
+    - { key: unixsocket, value: /run/valkey/valkey.sock }
+    - { key: unixsocketperm, value: "770" }
+  notify: restart valkey
+
+- name: Valkey is enabled and running
+  ansible.builtin.systemd:
+    name: valkey
+    enabled: true
+    state: started
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
