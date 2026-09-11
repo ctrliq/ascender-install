@@ -3,9 +3,10 @@ DATABASES = {
     'default': {
         'ATOMIC_REQUESTS': True,
         'ENGINE': 'awx.main.db.profiled_pg',
-        'NAME': '{{ ascender_pg_database }}',
-        'USER': '{{ ascender_pg_user }}',
-        'PASSWORD': '{{ ascender_pg_password_effective }}',
+        # to_json: valid Python string literals whatever the values contain
+        'NAME': {{ ascender_pg_database | to_json }},
+        'USER': {{ ascender_pg_user | to_json }},
+        'PASSWORD': {{ ascender_pg_password_effective | to_json }},
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }

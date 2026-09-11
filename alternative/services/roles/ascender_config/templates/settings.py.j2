@@ -29,7 +29,7 @@ CSRF_TRUSTED_ORIGINS = [
 USE_X_FORWARDED_PORT = True
 
 # Instance name registered in the database; must match the receptor node id.
-CLUSTER_HOST_ID = '{{ ascender_node_name }}'
+CLUSTER_HOST_ID = {{ ascender_node_name | to_json }}
 
 # valkey listens only on the unix socket /run/valkey/valkey.sock (see the
 # ascender_valkey role). Ascender's defaults (awx/settings/defaults.py) already

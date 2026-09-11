@@ -1,2 +1,2 @@
 # {{ ansible_managed }}
-BROADCAST_WEBSOCKET_SECRET = '{{ ascender_websocket_secret_effective }}'
+BROADCAST_WEBSOCKET_SECRET = {{ ascender_websocket_secret_effective | to_json }}
