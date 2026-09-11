@@ -62,15 +62,18 @@
     owner: root
     group: root
     mode: "0600"
+  no_log: true
 
 - name: Read the database password
   ansible.builtin.slurp:
     src: "{{ ascender_secrets_dir }}/pg_password"
   register: _pg_password_file
+  no_log: true
 
 - name: Set the effective database password
   ansible.builtin.set_fact:
     ascender_pg_password_effective: "{{ _pg_password_file.content | b64decode | trim }}"
+  no_log: true
 
 - name: Database role
   community.postgresql.postgresql_user:

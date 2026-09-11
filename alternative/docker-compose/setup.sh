@@ -60,6 +60,13 @@ if [ "${https_port}" = "443" ]; then https_suffix=""; else https_suffix=":${http
 sed -i -E "s#^(return 301 https://\\\$host)(:[0-9]+)?(\\\$request_uri;)#\\1${https_suffix}\\3#" \
     config/nginx-http-redirect.conf
 
+# Under sudo, hand the files written here back to the invoking user so their
+# later `docker compose` commands can read .env (0600) and they can still edit
+# the certificate and config. The private key stays root:0 on purpose.
+if [ "$(id -u)" = "0" ] && [ -n "${SUDO_UID:-}" ] && [ "${SUDO_UID}" != "0" ]; then
+    chown "${SUDO_UID}:${SUDO_GID:-${SUDO_UID}}" .env certs/ascender.crt config/nginx-http-redirect.conf
+fi
+
 echo
 echo "Ready. Start Ascender with:  docker compose up -d"
 echo "Admin user: $(grep -E '^ASCENDER_ADMIN_USER=' .env | cut -d= -f2-)"

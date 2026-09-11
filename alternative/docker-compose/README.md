@@ -42,6 +42,12 @@ docker compose up -d        # pulls the images, builds the receptor sidecar, sta
 docker compose logs -f migrate task   # watch the first-run migrations (a few minutes)
 ```
 
+`setup.sh` runs as root only to make the TLS key readable by the web
+container and nobody else; under `sudo` it hands `.env` (mode `0600`) and the
+other files it writes back to you, so `docker compose` runs as your own user.
+If you run it as root directly, run the compose commands as root too: `.env`
+is only readable by its owner.
+
 Then open `https://<host>/` (or `http://<host>/`) and log in with
 `ASCENDER_ADMIN_USER` / `ASCENDER_ADMIN_PASSWORD` from `.env`. The first job
 takes a few extra minutes while podman pulls the execution environment image.
