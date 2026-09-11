@@ -1,0 +1,110 @@
+---
+# Subordinate uid/gid range for rootless podman, which runs the jobs.
+#
+# The awx account is a system user, so useradd allocates it no range. Writing a
+# fixed one is unsafe: useradd gives every regular user 65536 ids starting at
+# SUB_UID_MIN (100000 on EL9), so the first interactive account on the host
+# usually owns 100000-165535 already, and two accounts sharing a range share
+# host uids, which defeats the user namespace isolation between them.
+#
+# Rules, in order:
+#   1. an entry the awx user already has is kept (changing it would orphan its
+#      podman storage);
+#   2. ascender_subid_start, when set, is used as-is but the play fails if it
+#      overlaps another account's range;
+#   3. otherwise the range starts right after the highest range in either file,
+#      and never below ascender_subid_min.
+# Both files get the same range.
+
+- name: Read the subordinate id files
+  ansible.builtin.shell: "cat {{ item }} 2>/dev/null || true"
+  loop:
+    - "{{ _subuid_file }}"
+    - "{{ _subgid_file }}"
+  register: _subid_raw
+  changed_when: false
+  check_mode: false
+
+- name: Parse the subordinate id entries
+  ansible.builtin.set_fact:
+    # each entry: [name-or-uid, start, count], as strings
+    _subuid_entries: "{{ _subid_raw.results[0].stdout_lines | map('trim') | select('match', _subid_line) | map('split', ':') | list }}"
+    _subgid_entries: "{{ _subid_raw.results[1].stdout_lines | map('trim') | select('match', _subid_line) | map('split', ':') | list }}"
+  vars:
+    _subid_line: '^[^#:]+:[0-9]+:[0-9]+$'
+
+- name: Split the entries into the awx user's and everyone else's
+  ansible.builtin.set_fact:
+    _subuid_own: "{{ _subuid_entries | selectattr('0', 'in', _subid_names) | list }}"
+    _subgid_own: "{{ _subgid_entries | selectattr('0', 'in', _subid_names) | list }}"
+    _subid_others: "{{ (_subuid_entries + _subgid_entries) | rejectattr('0', 'in', _subid_names) | list }}"
+  vars:
+    # entries may name the account or give its numeric uid
+    _subid_names: "{{ [ascender_user, ascender_uid | default('') | string] }}"
+
+- name: Choose the subordinate id range
+  ansible.builtin.set_fact:
+    _subid_start: >-
+      {%- if _subuid_own | length > 0 -%}
+        {{ _subuid_own[0][1] }}
+      {%- elif _subgid_own | length > 0 -%}
+        {{ _subgid_own[0][1] }}
+      {%- elif ascender_subid_start | default('') | string | length > 0 -%}
+        {{ ascender_subid_start }}
+      {%- else -%}
+        {%- set ends = [ascender_subid_min | int] -%}
+        {%- for e in _subid_others -%}
+          {%- set _ = ends.append(e[1] | int + e[2] | int) -%}
+        {%- endfor -%}
+        {{ ends | max }}
+      {%- endif -%}
+    _subid_count: >-
+      {%- if _subuid_own | length > 0 -%}
+        {{ _subuid_own[0][2] }}
+      {%- elif _subgid_own | length > 0 -%}
+        {{ _subgid_own[0][2] }}
+      {%- else -%}
+        {{ ascender_subid_count }}
+      {%- endif -%}
+
+- name: Find other accounts whose range overlaps the chosen one
+  ansible.builtin.set_fact:
+    _subid_overlap: >-
+      {%- set ns = namespace(hits=[]) -%}
+      {%- set start = _subid_start | int -%}
+      {%- set end = start + (_subid_count | int) -%}
+      {%- for e in _subid_others -%}
+        {%- if (e[1] | int) < end and start < (e[1] | int) + (e[2] | int) -%}
+          {%- set ns.hits = ns.hits + [e | join(':')] -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ ns.hits }}
+
+- name: The chosen subordinate id range is free
+  ansible.builtin.assert:
+    that: _subid_overlap | length == 0
+    fail_msg: >-
+      The subordinate id range {{ _subid_start }}:{{ _subid_count }} for {{ ascender_user }}
+      overlaps {{ _subid_overlap | unique | join(', ') }} in {{ _subuid_file }} or {{ _subgid_file }}.
+      Unset ascender_subid_start to let the role pick a free range, or set it to one
+      that no other account uses.
+    quiet: true
+  when: _subuid_own | length == 0 and _subgid_own | length == 0
+
+- name: Subordinate uid range for rootless podman
+  ansible.builtin.lineinfile:
+    path: "{{ _subuid_file }}"
+    regexp: "^({{ ascender_user }}|{{ ascender_uid | default('') }}):"
+    line: "{{ ascender_user }}:{{ _subid_start }}:{{ _subid_count }}"
+    create: true
+    mode: "0644"
+  notify: podman system migrate
+
+- name: Subordinate gid range for rootless podman
+  ansible.builtin.lineinfile:
+    path: "{{ _subgid_file }}"
+    regexp: "^({{ ascender_user }}|{{ ascender_uid | default('') }}):"
+    line: "{{ ascender_user }}:{{ _subid_start }}:{{ _subid_count }}"
+    create: true
+    mode: "0644"
+  notify: podman system migrate

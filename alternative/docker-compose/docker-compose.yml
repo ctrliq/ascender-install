@@ -173,6 +173,9 @@ services:
       <<: *ascender-env
       # awx-manage reload/restart helpers call supervisorctl with this config.
       SUPERVISOR_CONFIG_PATH: /etc/supervisord_task.conf
+      # Convenience for `docker compose exec task receptorctl status`. The
+      # dispatcher itself reads the socket path from receptor.conf.
+      RECEPTORCTL_SOCKET: /var/run/awx-receptor/receptor.sock
     volumes:
       - ./scripts:/opt/ascender:ro
       - ./config/settings.py:/etc/tower/settings.py:ro

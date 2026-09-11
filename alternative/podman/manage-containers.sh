@@ -352,6 +352,7 @@ run_task() {
         --restart on-failure \
         --env-file "${envfile}" "${COMMON_ENV[@]}" \
         -e SUPERVISOR_CONFIG_PATH=/etc/supervisord_task.conf \
+        -e RECEPTORCTL_SOCKET=/var/run/awx-receptor/receptor.sock \
         "${COMMON_MOUNTS[@]}" "${SECRET_MOUNT[@]}" \
         -v "${SCRIPTS_DIR}:/opt/ascender:ro,z" \
         -v "${VOL_PROJECTS}:/var/lib/awx/projects" \

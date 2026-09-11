@@ -37,7 +37,7 @@ privileged. Nothing else is.
 
 ```bash
 cd alternative/docker-compose
-./setup.sh                  # writes .env with generated secrets, self-signed cert in certs/
+sudo ./setup.sh             # writes .env with generated secrets, self-signed cert in certs/
 docker compose up -d        # pulls the images, builds the receptor sidecar, starts everything
 docker compose logs -f migrate task   # watch the first-run migrations (a few minutes)
 ```
@@ -80,8 +80,12 @@ need no editing for a standard install:
 - `config/valkey.conf`: unix-socket-only valkey
 
 TLS: `setup.sh` generates a self-signed certificate for `ASCENDER_HOSTNAME`.
-Replace `certs/ascender.crt` and `certs/ascender.key` with your own and run
-`docker compose up -d web` (or `docker compose restart web`).
+Replace `certs/ascender.crt` and `certs/ascender.key` with your own, re-run
+`sudo ./setup.sh` to fix the permissions, then `docker compose up -d web` (or
+`docker compose restart web`). `certs/` is bind-mounted into the web
+container, where nginx runs as uid 1000, gid 0, so `setup.sh` leaves the key
+as `root:0` mode `0640`: readable by that process and not by other local
+users. That is why it should run as root.
 
 ## Upgrading
 

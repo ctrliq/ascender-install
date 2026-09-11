@@ -38,5 +38,12 @@ ascender_cert_dir: /etc/tower/certs
 ascender_log_dir: /var/log/tower
 ascender_run_dir: /run/ascender     # supervisord socket, receptor socket, pids
 ascender_rsyslog_run_dir: /run/awx-rsyslog   # path is hard-coded in the app's logging config
-ascender_subid_start: 100000                 # subordinate uid/gid range for rootless podman
+# Subordinate uid/gid range for rootless podman (the jobs run in it). The awx
+# account is a system user, so useradd gives it none; the role picks the first
+# free range above every entry already in /etc/subuid and /etc/subgid, never
+# below ascender_subid_min. Set ascender_subid_start to pin the start: the play
+# then fails if that range overlaps another account's. An existing awx entry is
+# always kept.
+ascender_subid_min: 100000
 ascender_subid_count: 65536
+# ascender_subid_start: 300000

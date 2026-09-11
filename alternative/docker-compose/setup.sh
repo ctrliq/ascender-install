@@ -34,10 +34,23 @@ if [ ! -f certs/ascender.crt ] || [ ! -f certs/ascender.key ]; then
         -keyout certs/ascender.key -out certs/ascender.crt \
         -subj "/CN=${hostname_value}" \
         -addext "subjectAltName=DNS:${hostname_value},DNS:localhost,IP:127.0.0.1" 2>/dev/null
-    # nginx runs as uid 1000 inside the container; it needs to read the key.
-    chmod 644 certs/ascender.crt certs/ascender.key
     echo "generated self-signed certificate for ${hostname_value} in certs/"
     echo "  (replace certs/ascender.crt and certs/ascender.key with your own to use a real certificate)"
+fi
+
+# certs/ is bind-mounted read-only into the web container, so host permissions
+# decide who can read the key. nginx runs there as uid 1000, gid 0: give the
+# group (0) read access and keep the private key away from other local users.
+# Only root can hand a file to group 0, hence the fallback.
+chmod 0644 certs/ascender.crt
+if [ "$(id -u)" = "0" ]; then
+    chown root:0 certs/ascender.key
+    chmod 0640 certs/ascender.key
+else
+    chmod 0600 certs/ascender.key
+    echo "WARNING: not running as root, so certs/ascender.key stays $(id -un)-only (0600)."
+    echo "  nginx in the web container (uid 1000, gid 0) cannot read it unless your uid is 1000."
+    echo "  Re-run ./setup.sh as root to make the key root:0 0640."
 fi
 
 # Point the http->https redirect at the published HTTPS port, not the default 443.

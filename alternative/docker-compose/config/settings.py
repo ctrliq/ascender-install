@@ -72,11 +72,14 @@ CHANNEL_LAYERS = {
     }
 }
 
-# The task container's websocket relay connects to each web node's nginx over
-# the compose network, plain http on the internal port.
+# The web and task containers share one hostname, so the task's websocket
+# relay skips the local web node and daphne reads job events straight from
+# valkey. Should a web node ever run under another hostname, the relay dials
+# its nginx here: the https port, because in ASCENDER_HTTP_MODE=redirect the
+# plain-http port only answers 301 and a websocket handshake cannot follow it.
 BROADCAST_WEBSOCKET_SECRET = os.environ['BROADCAST_WEBSOCKET_SECRET']
-BROADCAST_WEBSOCKET_PORT = 8052
-BROADCAST_WEBSOCKET_PROTOCOL = 'http'
+BROADCAST_WEBSOCKET_PORT = 8053
+BROADCAST_WEBSOCKET_PROTOCOL = 'https'
 BROADCAST_WEBSOCKET_VERIFY_CERT = False
 
 # Not Kubernetes: jobs run on the hybrid node (in podman, inside the receptor
@@ -84,6 +87,7 @@ BROADCAST_WEBSOCKET_VERIFY_CERT = False
 IS_K8S = False
 AWX_AUTO_DEPROVISION_INSTANCES = False
 
-# Where the receptor sidecar keeps its control socket; shared with the task
-# container through the receptor_socket volume (see /etc/receptor/receptor.conf).
+# The receptor control socket path is not a setting: the task container reads
+# it from the control-service entry of /etc/receptor/receptor.conf, which is
+# mounted into it, and reaches the socket through the shared receptor volume.
 RECEPTOR_LOG_LEVEL = os.environ.get('RECEPTOR_LOG_LEVEL', 'info')

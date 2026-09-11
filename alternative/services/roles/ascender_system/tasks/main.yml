@@ -92,24 +92,13 @@
     mode: "0755"
 
 # System accounts get no subordinate id ranges by default; rootless podman
-# (which runs the jobs) needs them.
-- name: Subordinate uid range for rootless podman
-  ansible.builtin.lineinfile:
-    path: /etc/subuid
-    regexp: "^{{ ascender_user }}:"
-    line: "{{ ascender_user }}:{{ ascender_subid_start }}:{{ ascender_subid_count }}"
-    create: true
-    mode: "0644"
-  notify: podman system migrate
-
-- name: Subordinate gid range for rootless podman
-  ansible.builtin.lineinfile:
-    path: /etc/subgid
-    regexp: "^{{ ascender_user }}:"
-    line: "{{ ascender_user }}:{{ ascender_subid_start }}:{{ ascender_subid_count }}"
-    create: true
-    mode: "0644"
-  notify: podman system migrate
+# (which runs the jobs) needs them. subids.yml picks a range that no other
+# account on the host uses.
+- name: Subordinate id ranges for rootless podman
+  ansible.builtin.include_tasks: subids.yml
+  vars:
+    _subuid_file: /etc/subuid
+    _subgid_file: /etc/subgid
 
 # Gives the user a /run/user/<uid> at boot, which rootless podman uses for its
 # runtime state.
