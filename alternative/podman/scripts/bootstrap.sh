@@ -23,7 +23,17 @@ if DJANGO_SUPERUSER_PASSWORD="${ASCENDER_ADMIN_PASSWORD}" \
     echo "bootstrap: created admin user"
 else
     # Already exists: make the password match .env, like the operator does.
-    awx-manage update_password --username "${ASCENDER_ADMIN_USER}" --password "${ASCENDER_ADMIN_PASSWORD}" >/dev/null
+    # Not `awx-manage update_password`: it takes the password on the command
+    # line, visible in /proc; the environment is not.
+    awx-manage shell -c '
+import os
+from django.contrib.auth.models import User
+u = User.objects.get(username=os.environ["ASCENDER_ADMIN_USER"])
+p = os.environ["ASCENDER_ADMIN_PASSWORD"]
+if not u.check_password(p):
+    u.set_password(p)
+    u.save()
+' >/dev/null
     echo "bootstrap: admin user exists, password synced from .env"
 fi
 

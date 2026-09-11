@@ -59,11 +59,31 @@
   failed_when: _superuser.rc != 0 and 'already taken' not in _superuser.stderr
   no_log: true
 
+# Same logic as `awx-manage update_password`, which only takes the password on
+# the command line, where every local user can read it in /proc while it runs.
+# Here it travels in the environment, readable only by the awx user and root.
 - name: Admin password matches the configured one
-  ansible.builtin.command: awx-manage update_password --username {{ ascender_admin_user }} --password {{ ascender_admin_password_effective | quote }}
+  ansible.builtin.command:
+    cmd: awx-manage shell -c {{ _set_password | quote }}
+  vars:
+    _set_password: |
+      import os
+      from django.contrib.auth.models import User
+      u = User.objects.get(username=os.environ['ASCENDER_ADMIN_USER'])
+      p = os.environ['ASCENDER_ADMIN_PASSWORD']
+      if u.check_password(p):
+          print('Password not updated')
+      else:
+          u.set_password(p)
+          u.save()
+          print('Password updated')
+  environment:
+    ASCENDER_ADMIN_USER: "{{ ascender_admin_user }}"
+    ASCENDER_ADMIN_PASSWORD: "{{ ascender_admin_password_effective }}"
   become: true
   become_user: "{{ ascender_user }}"
-  changed_when: false
+  register: _password
+  changed_when: "'Password updated' in _password.stdout"
   no_log: true
 
 - name: Preload data
