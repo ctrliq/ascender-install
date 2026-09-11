@@ -20,17 +20,16 @@ _hostname = os.environ.get('ASCENDER_HOSTNAME', 'localhost')
 _http_port = os.environ.get('ASCENDER_HTTP_PORT', '80')
 _https_port = os.environ.get('ASCENDER_HTTPS_PORT', '443')
 # Other names users reach the UI with (comma-separated), e.g. an IP address or
-# a second DNS name. Every name here is also a CSRF trusted origin.
+# a second DNS name; each becomes a CSRF trusted origin alongside ASCENDER_HOSTNAME.
 _extra_hosts = [h.strip() for h in os.environ.get('ASCENDER_ALLOWED_HOSTS', '').split(',') if h.strip()]
 
-# Django rejects requests whose Host header is not listed here (400). nginx
-# forwards the client's Host unchanged, so the wildcard upstream AWX uses in
-# development would let any name through and, for example, let the first
-# request seen set TOWER_URL_BASE (the base of links in notifications) to an
-# attacker-chosen host. The loopback names are for the container health check.
-# A websocket relay from another web node would connect with that node's
-# address as Host: add it to ASCENDER_ALLOWED_HOSTS if you ever add one.
-ALLOWED_HOSTS = list(dict.fromkeys([_hostname, 'localhost', '127.0.0.1', '[::1]'] + _extra_hosts))
+# Accept any Host header, as the Kubernetes install and upstream AWX do: the
+# UI is commonly reached by IP address or a name other than ASCENDER_HOSTNAME,
+# and a strict list turned every such request into a 400. Trade-off: Django's
+# host-header validation is off, so the first request seen can set
+# TOWER_URL_BASE (the base of links in notifications) to whatever Host it
+# carried; set ASCENDER_HOSTNAME and TOWER_URL_BASE in the UI to the real name.
+ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = []
 for _h in dict.fromkeys([_hostname] + _extra_hosts):

@@ -13,13 +13,12 @@ LOG_ROOT = '{{ ascender_log_dir }}/'
 with open('{{ ascender_config_dir }}/SECRET_KEY', 'rb') as _f:
     SECRET_KEY = _f.read().strip()
 
-# Django rejects requests whose Host header is not listed here (400). nginx
-# forwards the client's Host unchanged, so the wildcard upstream AWX uses in
-# development would let any name through and, for example, let the first
-# request seen set TOWER_URL_BASE (the base of links in notifications) to an
-# attacker-chosen host. The loopback names are for the health check; other
-# names users reach the UI with go in ascender_allowed_hosts.
-ALLOWED_HOSTS = {{ ([ascender_hostname, 'localhost', '127.0.0.1', '[::1]'] + (ascender_allowed_hosts | default([]))) | unique | list | to_json }}
+# Accept any Host header, as the Kubernetes install and upstream AWX do: the
+# UI is commonly reached by IP address or a name other than ascender_hostname,
+# and a strict list turned every such request into a 400. Trade-off: Django's
+# host-header validation is off. Names users reach the UI with, other than
+# ascender_hostname, go in ascender_allowed_hosts for the CSRF trusted origins.
+ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
 {% for h in ([ascender_hostname] + (ascender_allowed_hosts | default([]))) | unique %}
     'https://{{ h }}',

@@ -63,7 +63,7 @@ the inventory or `group_vars/all.yml`.
 | `ascender_version` | `25.6.2` | git tag, branch or commit of `ascender_repo` to install |
 | `ascender_python` | `python3.12` | interpreter the tree targets: `python3.12` for the 25.x releases, `python3.14` for `main`. Rocky 9 ships both as AppStream packages (`python3.<x>` and `python3.<x>-devel`), installed by the system role |
 | `ascender_hostname` | host FQDN | name users reach the UI with (certificate, CSRF trusted origins) |
-| `ascender_allowed_hosts` | `[]` | other names users reach the UI with (an IP address, an alias); requests with any other Host header get a 400 |
+| `ascender_allowed_hosts` | `[]` | other names users reach the UI with (an IP address, an alias); added to the CSRF trusted origins |
 | `ascender_node_name` | host nodename | Instance name in the UI and receptor node id |
 | `ascender_http_mode` | `redirect` | `redirect`: port 80 redirects to https. `insecure`: serve over plain http too, cookies lose the Secure flag |
 | `ascender_admin_user` / `_password` / `_email` | `admin` / generated | admin account; the password is re-applied on every run |
