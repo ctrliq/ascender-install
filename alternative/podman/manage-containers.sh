@@ -151,6 +151,16 @@ check_config() {
     for f in init.sh bootstrap.sh launch_task.sh; do
         [[ -r "${SCRIPTS_DIR}/${f}" ]] || { echo "ERROR: missing ${SCRIPTS_DIR}/${f}" >&2; return 1; }
     done
+    # -r above ran as root; nginx opens the key as uid 1000, gid 0. Catch a key
+    # copied in as root:root 0600 here rather than as a crash-looping web container.
+    local key="${ASCENDER_CONFIG_DIR}/certs/ascender.key" perm owner group
+    read -r perm owner group < <(stat -c '%a %u %g' "${key}")
+    perm=$(( 8#${perm} & 8#777 ))
+    if ! { (( perm & 8#004 )) || { [[ "${group}" == 0 ]] && (( perm & 8#040 )); } || { [[ "${owner}" == 1000 ]] && (( perm & 8#400 )); }; }; then
+        echo "ERROR: ${key} is not readable by the web container (uid 1000, gid 0): owner ${owner} group ${group} mode $(printf '%04o' "${perm}")." >&2
+        echo "  Fix: chown root:0 ${key} && chmod 0640 ${key}   (install.sh does this)" >&2
+        return 1
+    fi
     if ! is_true "${ENABLE_POSTGRES}" && [[ -z "${ASCENDER_PGSQL_HOST}" ]]; then
         echo "ERROR: ENABLE_POSTGRES=false requires ASCENDER_PGSQL_HOST to point at an external database" >&2
         return 1

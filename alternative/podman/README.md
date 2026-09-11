@@ -54,7 +54,7 @@ edit `/etc/ascender/ascender.conf`, then `systemctl start ascender`.
 | ---- | ------- |
 | `/etc/ascender/ascender.conf` | all settings and secrets (0600); see `ascender.conf.example` |
 | `/etc/ascender/settings.py`, `nginx.conf`, `nginx-locations.conf`, `receptor.conf`, `valkey.conf` | config files mounted read-only into the containers |
-| `/etc/ascender/certs/` | `ascender.crt` / `ascender.key`; replace with your own and `systemctl restart ascender` |
+| `/etc/ascender/certs/` | `ascender.crt` / `ascender.key`; replace with your own, re-run `install.sh` (it makes the key `root:0` `0640`, which nginx in the web container needs; `systemctl start` refuses a key it cannot read) and `systemctl restart ascender` |
 | `/usr/libexec/ascender/manage-containers.sh` | creates/starts/stops the containers (`up`, `down`, `restart`, `status`, `destroy --yes`) |
 | `/usr/libexec/ascender/scripts/` | `init.sh`, `bootstrap.sh`, `launch_task.sh` mounted into the one-shots and the task container |
 | `/usr/libexec/ascender/receptor/` | build context for the receptor sidecar image |

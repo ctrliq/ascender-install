@@ -64,14 +64,17 @@ if [[ ! -f "${CONFDIR}/certs/ascender.crt" || ! -f "${CONFDIR}/certs/ascender.ke
         -keyout "${CONFDIR}/certs/ascender.key" -out "${CONFDIR}/certs/ascender.crt" \
         -subj "/CN=${hostname_value}" \
         -addext "subjectAltName=DNS:${hostname_value},DNS:localhost,IP:127.0.0.1" 2>/dev/null
-    # nginx runs as uid 1000, gid 0 inside the container: give the group (0)
-    # read access and keep the private key out of reach of other local users.
-    chmod 0644 "${CONFDIR}/certs/ascender.crt"
-    chown root:0 "${CONFDIR}/certs/ascender.key"
-    chmod 0640 "${CONFDIR}/certs/ascender.key"
     echo "generated self-signed certificate for ${hostname_value} in ${CONFDIR}/certs/"
-    echo "  (replace ascender.crt / ascender.key with your own for a real certificate)"
+    echo "  (replace ascender.crt / ascender.key with your own for a real certificate, then re-run install.sh)"
 fi
+# Always, so a certificate the operator copied in gets the same treatment as a
+# generated one: nginx runs as uid 1000, gid 0 inside the container, so the
+# group (0) gets read access while the private key stays out of reach of other
+# local users. A copied key typically arrives root:root 0600, which nginx
+# cannot open.
+chmod 0644 "${CONFDIR}/certs/ascender.crt"
+chown root:0 "${CONFDIR}/certs/ascender.key"
+chmod 0640 "${CONFDIR}/certs/ascender.key"
 
 echo "installing ${UNIT}"
 install -m 0644 "${SRC_DIR}/ascender.service" "${UNIT}"
