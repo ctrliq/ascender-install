@@ -1,3 +1,4 @@
 .env
 certs/*
 !certs/.gitkeep
+config/__pycache__

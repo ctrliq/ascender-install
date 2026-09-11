@@ -24,23 +24,13 @@ USE_X_FORWARDED_PORT = True
 # Instance name registered in the database; must match the receptor node id.
 CLUSTER_HOST_ID = '{{ ascender_node_name }}'
 
-# valkey listens only on this unix socket (see the ascender_valkey role); the
-# defaults point at /var/run/redis/redis.sock, so the broker, cache and channel
-# layer must be repointed here or they cannot connect.
-_VALKEY_SOCKET = 'unix:///run/valkey/valkey.sock'
-BROKER_URL = _VALKEY_SOCKET
-CACHES = {
-    'default': {
-        'BACKEND': 'ansible_base.lib.cache.redis_cache.DABRedisCache',
-        'LOCATION': f'{_VALKEY_SOCKET}?db=1',
-    }
-}
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [_VALKEY_SOCKET], 'capacity': 10000, 'group_expiry': 157784760},
-    }
-}
+# valkey listens only on the unix socket /run/valkey/valkey.sock (see the
+# ascender_valkey role). Ascender's defaults (awx/settings/defaults.py) already
+# point the broker, the cache (awx.main.cache.AWXValkeyCache) and the channel
+# layer (channels_valkey) at unix:///var/run/valkey/valkey.sock, which is the
+# same file because /var/run is a symlink to /run on EL9, so nothing is
+# overridden here. Do not copy upstream AWX's ansible_base / channels_redis
+# backends into this file: the tree installs neither package.
 
 # Web and task processes share this host, so the websocket relay is idle and
 # daphne reads job events straight from valkey.

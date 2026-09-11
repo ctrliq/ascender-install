@@ -69,7 +69,7 @@ the inventory or `group_vars/all.yml`.
 | `ascender_pg_*` | bundled, generated password | database name, user, password, version, `max_connections` |
 | `ascender_receptor_version` | `1.6.8` | receptor release to download |
 | `ascender_manage_firewalld` | `true` | open http/https when firewalld is running |
-| `ascender_subid_start` / `_count` / `_min` | free range / `65536` / `100000` | subordinate uid/gid range of the `awx` user for rootless podman. By default the role picks the first free range above every entry already in `/etc/subuid` and `/etc/subgid`; set `ascender_subid_start` to pin it (the play fails if it overlaps another account). An existing `awx` entry is kept |
+| `ascender_subid_start` / `_count` / `_min` | free range / `65536` / `100000` | subordinate uid/gid range of the `awx` user for rootless podman. By default the role picks the first free range above every entry already in `/etc/subuid` and `/etc/subgid`; set `ascender_subid_start` to pin it. An existing `awx` entry is kept. Either way the play fails if the range overlaps another account's, and says how to move it |
 
 ## Upgrade
 

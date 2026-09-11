@@ -459,12 +459,14 @@ wait_for_running() {
 }
 
 up() {
+    # Preflight before anything is touched: a config error must not stop a
+    # stack that is already running (the rollback trap below would).
+    check_config
+
     # systemd does not run ExecStop when ExecStart fails: roll back ourselves so
     # a failed start never leaves half the stack running.
     up_succeeded=""
     trap '[[ -n "${up_succeeded}" ]] || down' EXIT
-
-    check_config
 
     # Containers must be gone before the pod, network or secret can be replaced.
     for c in ascender-web ascender-task ascender-rsyslog ascender-receptor ascender-valkey; do

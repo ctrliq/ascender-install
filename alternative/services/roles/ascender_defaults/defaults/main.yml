@@ -41,9 +41,9 @@ ascender_rsyslog_run_dir: /run/awx-rsyslog   # path is hard-coded in the app's l
 # Subordinate uid/gid range for rootless podman (the jobs run in it). The awx
 # account is a system user, so useradd gives it none; the role picks the first
 # free range above every entry already in /etc/subuid and /etc/subgid, never
-# below ascender_subid_min. Set ascender_subid_start to pin the start: the play
-# then fails if that range overlaps another account's. An existing awx entry is
-# always kept.
+# below ascender_subid_min. Set ascender_subid_start to pin the start. An
+# existing awx entry is kept. Either way the play fails, with instructions, if
+# the range overlaps another account's.
 ascender_subid_min: 100000
 ascender_subid_count: 65536
 # ascender_subid_start: 300000
