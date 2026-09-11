@@ -10,6 +10,36 @@
   ansible.builtin.systemd:
     daemon_reload: true
 
+# The schema must not change under running processes. On an upgrade the build
+# role has already stopped the service; this also covers a re-run after an
+# interrupted play, where the code is new but its migrations are not applied yet.
+# migrate --check exits 1 when migrations are pending.
+- name: Pending database migrations
+  ansible.builtin.command: awx-manage migrate --check --noinput
+  become: true
+  become_user: "{{ ascender_user }}"
+  register: _pending
+  changed_when: false
+  failed_when: _pending.rc not in [0, 1]
+
+- name: Ascender service state
+  ansible.builtin.command: systemctl is-active ascender.service
+  register: _ascender_active
+  changed_when: false
+  failed_when: false
+  when: _pending.rc != 0
+
+- name: Stop Ascender while the schema changes
+  ansible.builtin.systemd:
+    name: ascender
+    state: stopped
+  register: _ascender_stop
+  when: _pending.rc != 0 and (_ascender_active.rc | default(1)) == 0
+
+- name: Remember that Ascender was stopped for the upgrade
+  ansible.builtin.set_fact:
+    ascender_stopped_for_upgrade: "{{ (ascender_stopped_for_upgrade | default(false)) or (_ascender_stop is not skipped) }}"
+
 # Database bootstrap, idempotent, before the services start on new code.
 - name: Apply database migrations
   ansible.builtin.command: awx-manage migrate --noinput
@@ -79,6 +109,8 @@
     enabled: true
     state: started
 
+# Starts the service on the new code when it was stopped above; the restart
+# handler is then redundant and skips itself.
 - name: Ascender is enabled and running
   ansible.builtin.systemd:
     name: ascender

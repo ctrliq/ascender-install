@@ -31,6 +31,28 @@
     ascender_build_id: "{{ _commit.stdout }} {{ ascender_python }}"
     ascender_build_needed: "{{ not _stamp_stat.stat.exists or (_stamp.content | b64decode | trim) != (_commit.stdout ~ ' ' ~ ascender_python) }}"
 
+# On an upgrade the build below reinstalls into the live virtualenv and clears
+# the static tree, so the running services must stop first; they are started on
+# the new code at the end of the play. On a first install the unit does not
+# exist yet (is-active exits 3) and nothing is stopped.
+- name: Ascender service state
+  ansible.builtin.command: systemctl is-active ascender.service
+  register: _ascender_active
+  changed_when: false
+  failed_when: false
+  when: ascender_build_needed
+
+- name: Stop Ascender before the installation is replaced
+  ansible.builtin.systemd:
+    name: ascender
+    state: stopped
+  register: _ascender_stop
+  when: ascender_build_needed and (_ascender_active.rc | default(1)) == 0
+
+- name: Remember that Ascender was stopped for the upgrade
+  ansible.builtin.set_fact:
+    ascender_stopped_for_upgrade: "{{ (ascender_stopped_for_upgrade | default(false)) or (_ascender_stop is not skipped) }}"
+
 - name: Build and install Ascender
   when: ascender_build_needed
   become: true

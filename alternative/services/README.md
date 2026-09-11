@@ -63,6 +63,7 @@ the inventory or `group_vars/all.yml`.
 | `ascender_version` | `25.6.2` | git tag, branch or commit of `ascender_repo` to install |
 | `ascender_python` | `python3.12` | interpreter the tree targets: `python3.12` for the 25.x releases, `python3.14` for `main`. Rocky 9 ships both as AppStream packages (`python3.<x>` and `python3.<x>-devel`), installed by the system role |
 | `ascender_hostname` | host FQDN | name users reach the UI with (certificate, CSRF trusted origins) |
+| `ascender_allowed_hosts` | `[]` | other names users reach the UI with (an IP address, an alias); requests with any other Host header get a 400 |
 | `ascender_node_name` | host nodename | Instance name in the UI and receptor node id |
 | `ascender_http_mode` | `redirect` | `redirect`: port 80 redirects to https. `insecure`: serve over plain http too, cookies lose the Secure flag |
 | `ascender_admin_user` / `_password` / `_email` | `admin` / generated | admin account; the password is re-applied on every run |
@@ -75,10 +76,12 @@ the inventory or `group_vars/all.yml`.
 
 Set `ascender_version` to the new tag and re-run the playbook. The build role
 compares the checked-out commit (and Python version) with the stamp from the
-last build in `/var/lib/awx/.ascender-build`, rebuilds only when it changed,
-then the services role runs the migrations before `ascender.service` is
-restarted. Take a `pg_dump -U ascender ascender` first; migrations are
-forward-only.
+last build in `/var/lib/awx/.ascender-build` and rebuilds only when it changed.
+An upgrade means downtime: `ascender.service` is stopped before the virtualenv
+is replaced (and, on a re-run, before any still-pending migrations), the
+services role then runs the migrations and starts it again on the new code.
+A run that changes nothing but configuration restarts the service instead.
+Take a `pg_dump -U ascender ascender` first; migrations are forward-only.
 
 ## Operations
 

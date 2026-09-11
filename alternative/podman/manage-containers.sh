@@ -51,6 +51,7 @@ fi
 : "${POSTGRES_IMAGE:=quay.io/sclorg/postgresql-15-c9s}"
 : "${VALKEY_IMAGE:=ghcr.io/valkey-io/valkey:9-alpine}"
 : "${ASCENDER_HOSTNAME:=localhost}"
+: "${ASCENDER_ALLOWED_HOSTS:=}"
 : "${ASCENDER_HTTP_PORT:=80}"
 : "${ASCENDER_HTTPS_PORT:=443}"
 : "${ASCENDER_HTTP_MODE:=redirect}"
@@ -59,7 +60,10 @@ fi
 : "${ASCENDER_ADMIN_PASSWORD:=}"
 : "${ASCENDER_ADMIN_EMAIL:=admin@example.com}"
 : "${ENABLE_POSTGRES:=true}"
-: "${ASCENDER_PGSQL_HOST:=postgres}"
+# No default: the bundled database is reached on the pod loopback, and for an
+# external one check_config must see an empty value (ascender.conf ships
+# ASCENDER_PGSQL_HOST=) rather than a placeholder the bootstrap waits on forever.
+: "${ASCENDER_PGSQL_HOST:=}"
 : "${ASCENDER_PGSQL_PORT:=5432}"
 : "${ASCENDER_PGSQL_DB:=ascender}"
 : "${ASCENDER_PGSQL_USER:=ascender}"
@@ -109,6 +113,7 @@ SECRET_MOUNT=(--secret "${SECRET},type=mount,target=/etc/tower/SECRET_KEY,uid=10
 COMMON_ENV=(
     -e AWX_LOGGING_MODE=stdout
     -e ASCENDER_HOSTNAME="${ASCENDER_HOSTNAME}"
+    -e ASCENDER_ALLOWED_HOSTS="${ASCENDER_ALLOWED_HOSTS}"
     -e ASCENDER_HTTP_PORT="${ASCENDER_HTTP_PORT}"
     -e ASCENDER_HTTPS_PORT="${ASCENDER_HTTPS_PORT}"
     -e ASCENDER_HTTP_MODE="${ASCENDER_HTTP_MODE}"

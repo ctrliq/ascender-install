@@ -11,6 +11,7 @@ ascender_receptor_arch: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64
 
 # --- Access -----------------------------------------------------------------
 ascender_hostname: "{{ ansible_facts['fqdn'] }}"
+ascender_allowed_hosts: []           # other names users reach the UI with (IP, aliases); also CSRF trusted origins
 ascender_http_mode: redirect        # redirect | insecure
 ascender_node_name: "{{ ansible_facts['nodename'] }}"   # Instance name and receptor node id
 ascender_admin_user: admin

@@ -13,11 +13,18 @@ LOG_ROOT = '{{ ascender_log_dir }}/'
 with open('{{ ascender_config_dir }}/SECRET_KEY', 'rb') as _f:
     SECRET_KEY = _f.read().strip()
 
-# nginx on this host is the only thing that reaches uwsgi.
-ALLOWED_HOSTS = ['*']
+# Django rejects requests whose Host header is not listed here (400). nginx
+# forwards the client's Host unchanged, so the wildcard upstream AWX uses in
+# development would let any name through and, for example, let the first
+# request seen set TOWER_URL_BASE (the base of links in notifications) to an
+# attacker-chosen host. The loopback names are for the health check; other
+# names users reach the UI with go in ascender_allowed_hosts.
+ALLOWED_HOSTS = {{ ([ascender_hostname, 'localhost', '127.0.0.1', '[::1]'] + (ascender_allowed_hosts | default([]))) | unique | list | to_json }}
 CSRF_TRUSTED_ORIGINS = [
-    'https://{{ ascender_hostname }}',
-    'http://{{ ascender_hostname }}',
+{% for h in ([ascender_hostname] + (ascender_allowed_hosts | default([]))) | unique %}
+    'https://{{ h }}',
+    'http://{{ h }}',
+{% endfor %}
 ]
 USE_X_FORWARDED_PORT = True
 

@@ -16,18 +16,30 @@ JOBOUTPUT_ROOT = '/var/lib/awx/job_status'
 with open('/etc/tower/SECRET_KEY', 'rb') as _f:
     SECRET_KEY = _f.read().strip()
 
-# nginx in the web container is the only thing that can reach uwsgi.
-ALLOWED_HOSTS = ['*']
-
 _hostname = os.environ.get('ASCENDER_HOSTNAME', 'localhost')
 _http_port = os.environ.get('ASCENDER_HTTP_PORT', '80')
 _https_port = os.environ.get('ASCENDER_HTTPS_PORT', '443')
-CSRF_TRUSTED_ORIGINS = [
-    f'http://{_hostname}',
-    f'https://{_hostname}',
-    f'http://{_hostname}:{_http_port}',
-    f'https://{_hostname}:{_https_port}',
-]
+# Other names users reach the UI with (comma-separated), e.g. an IP address or
+# a second DNS name. Every name here is also a CSRF trusted origin.
+_extra_hosts = [h.strip() for h in os.environ.get('ASCENDER_ALLOWED_HOSTS', '').split(',') if h.strip()]
+
+# Django rejects requests whose Host header is not listed here (400). nginx
+# forwards the client's Host unchanged, so the wildcard upstream AWX uses in
+# development would let any name through and, for example, let the first
+# request seen set TOWER_URL_BASE (the base of links in notifications) to an
+# attacker-chosen host. The loopback names are for the container health check.
+# A websocket relay from another web node would connect with that node's
+# address as Host: add it to ASCENDER_ALLOWED_HOSTS if you ever add one.
+ALLOWED_HOSTS = list(dict.fromkeys([_hostname, 'localhost', '127.0.0.1', '[::1]'] + _extra_hosts))
+
+CSRF_TRUSTED_ORIGINS = []
+for _h in dict.fromkeys([_hostname] + _extra_hosts):
+    CSRF_TRUSTED_ORIGINS += [
+        f'http://{_h}',
+        f'https://{_h}',
+        f'http://{_h}:{_http_port}',
+        f'https://{_h}:{_https_port}',
+    ]
 USE_X_FORWARDED_PORT = True
 
 # The session and CSRF cookies carry the Secure flag by default, so browsers

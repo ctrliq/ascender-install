@@ -59,7 +59,8 @@ important ones:
 | Variable | Default | Purpose |
 | -------- | ------- | ------- |
 | `ASCENDER_VERSION` | `latest` | Tag of `ghcr.io/ctrliq/ascender` to run (e.g. `25.6.2`) |
-| `ASCENDER_HOSTNAME` | `localhost` | Name users reach the UI with; used for CSRF trusted origins and the generated certificate |
+| `ASCENDER_HOSTNAME` | `localhost` | Name users reach the UI with; Host header allowlist, CSRF trusted origins and the generated certificate |
+| `ASCENDER_ALLOWED_HOSTS` | empty | Other names users reach the UI with, comma-separated (an IP address, an alias). Requests with any other Host header get a 400 |
 | `ASCENDER_HTTP_PORT` / `ASCENDER_HTTPS_PORT` | `80` / `443` | Host ports |
 | `ASCENDER_HTTP_MODE` | `redirect` | `redirect`: port 80 only redirects to https. `insecure`: serve the UI over plain http; the session and CSRF cookies lose their Secure flag (a plain-http login otherwise fails with "CSRF cookie not set") |
 | `ASCENDER_NODE_NAME` | `ascender-task` | Instance name shown in the UI |

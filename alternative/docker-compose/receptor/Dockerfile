@@ -21,11 +21,20 @@ RUN dnf -y install podman crun fuse-overlayfs slirp4netns shadow-utils && \
 
 COPY --from=receptor /usr/bin/receptor /usr/bin/receptor
 
-# Fuse storage for nested podman, same tweaks as the development image.
+# Fuse storage for nested podman, same tweaks as the development image. The
+# sed relies on the stock storage.conf layout (an uncommented, two-line
+# additionalimagestores array); the parse afterwards fails the build, instead
+# of the first job, if a containers-common update ever changes that.
 RUN sed -i -e 's|^#mount_program|mount_program|g' \
            -e '/additionalimage.*/a "/var/lib/shared",' \
            -e 's|^mountopt[[:space:]]*=.*$|mountopt = "nodev,fsync=0"|g' \
            /etc/containers/storage.conf && \
+    /var/lib/awx/venv/awx/bin/python3 -c "import tomllib; \
+o = tomllib.load(open('/etc/containers/storage.conf', 'rb'))['storage']['options']; \
+assert o['additionalimagestores'] == ['/var/lib/shared'], o.get('additionalimagestores'); \
+assert o['overlay']['mount_program'] == '/usr/bin/fuse-overlayfs', o['overlay'].get('mount_program'); \
+assert o['overlay']['mountopt'] == 'nodev,fsync=0', o['overlay'].get('mountopt'); \
+print('storage.conf ok:', o['additionalimagestores'], o['overlay']['mount_program'], o['overlay']['mountopt'])" && \
     mkdir -p /etc/containers/registries.conf.d && \
     echo 'unqualified-search-registries = []' > /etc/containers/registries.conf.d/force-fully-qualified-images.conf
 
