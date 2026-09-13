@@ -2,7 +2,7 @@
 # Environment for ascender.service (supervisord and everything it runs).
 PATH={{ ascender_venv }}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 HOME={{ ascender_home }}
-# awx-manage reload helpers call supervisorctl with this config.
+# ascender-manage reload helpers call supervisorctl with this config.
 SUPERVISOR_CONFIG_PATH={{ ascender_config_dir }}/supervisord.conf
 RECEPTORCTL_SOCKET={{ ascender_run_dir }}/receptor.sock
 # Rootless podman (job containers) keeps its runtime state here; systemd

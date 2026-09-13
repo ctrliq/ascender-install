@@ -70,7 +70,7 @@ DATABASES = {
 # (awx.main.cache.AWXValkeyCache) and the channel layer (channels_valkey) at
 # unix:///var/run/valkey/valkey.sock, so nothing is overridden here. Do not copy
 # upstream AWX's ansible_base / channels_redis backends into this file: the
-# image ships neither package and every awx-manage call fails at startup.
+# image ships neither package and every ascender-manage call fails at startup.
 
 # The web and task containers share one hostname, so the task's websocket
 # relay skips the local web node and daphne reads job events straight from

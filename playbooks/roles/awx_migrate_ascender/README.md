@@ -98,7 +98,7 @@ Verified by comparing all secrets between source AWX and destination Ascender na
 
 AWX and Ascender are Python web applications built on [Django](https://www.djangoproject.com/), a web framework. Django manages database schema changes through **migrations**. These are Python files that describe how to modify tables, columns, indexes, and constraints. Each migration is a small, versioned step. For example, `0180_add_hostmetric_fields` adds a unique constraint to the `main_hostmetric` table. Migrations are applied in order, and Django tracks which ones have been applied in a table called `django_migrations`. Each row contains an app name, migration name, and applied timestamp.
 
-When `awx-manage migrate` runs, Django compares the migration files on disk against the rows in `django_migrations`. If a migration file exists but has no matching row, Django tries to apply it by running the SQL to alter the schema. If a row exists, Django skips it because the schema change was already made.
+When `ascender-manage migrate` runs, Django compares the migration files on disk against the rows in `django_migrations`. If a migration file exists but has no matching row, Django tries to apply it by running the SQL to alter the schema. If a row exists, Django skips it because the schema change was already made.
 
 **"Faking" a migration** means inserting a row into `django_migrations` without actually running the migration's SQL. This tells Django "this migration was already applied, skip it."
 
@@ -180,7 +180,7 @@ These exist only in AWX. Their `django_migrations` records are deleted by the `D
 <details open>
 <summary><strong>dab_resource_registry (0005-0007).</strong> Separate app, applied after main.</summary>
 
-The `dab_resource_registry` app (from `django-ansible-base`) has its own migration chain. AWX 24.6.1 has 0001-0004 applied. Ascender 25.3.5 ships with migrations through 0007. All three are applied natively by `awx-manage migrate dab_resource_registry --noinput`.
+The `dab_resource_registry` app (from `django-ansible-base`) has its own migration chain. AWX 24.6.1 has 0001-0004 applied. Ascender 25.3.5 ships with migrations through 0007. All three are applied natively by `ascender-manage migrate dab_resource_registry --noinput`.
 
 | # | Migration | What it does |
 |---|---|---|
@@ -194,9 +194,9 @@ After pg_restore loads AWX's database, the `django_migrations` table contains AW
 
 #### How we handle it
 
-We take full control of migrations BEFORE the operator starts. The web deployment is temporarily scaled up so we can exec `awx-manage migrate` in the web pod. There is no reverse-engineered SQL and no manual INSERT statements. The migration script is a data-driven loop over `migration_steps` defined in `vars/main.yml`. Each step specifies a target migration and an action (fake or apply). Django processes all migrations between the last applied and the target. Upgrading Ascender versions means updating the step list, not the script.
+We take full control of migrations BEFORE the operator starts. The web deployment is temporarily scaled up so we can exec `ascender-manage migrate` in the web pod. There is no reverse-engineered SQL and no manual INSERT statements. The migration script is a data-driven loop over `migration_steps` defined in `vars/main.yml`. Each step specifies a target migration and an action (fake or apply). Django processes all migrations between the last applied and the target. Upgrading Ascender versions means updating the step list, not the script.
 
-CIQ's upstream `ascender_migrate` role ([Issue #177](https://github.com/ctrliq/ascender-install/issues/177), [PR #182](https://github.com/ctrliq/ascender-install/pull/182)) solves this same problem by deleting all 018x/019x records and running `awx-manage migrate --fake` with `ignore_errors: yes`. We follow the same strategy but are more precise and fail loud on unexpected issues.
+CIQ's upstream `ascender_migrate` role ([Issue #177](https://github.com/ctrliq/ascender-install/issues/177), [PR #182](https://github.com/ctrliq/ascender-install/pull/182)) solves this same problem by deleting all 018x/019x records and running `ascender-manage migrate --fake` with `ignore_errors: yes`. We follow the same strategy but are more precise and fail loud on unexpected issues.
 
 **Step 1: Delete old migration job (prep phase)**
 
@@ -212,9 +212,9 @@ DELETE FROM django_migrations WHERE app = 'main' AND name >= '0183';
 
 After this, django_migrations has only: 0180, 0181, 0182. All shared and identical between AWX and Ascender.
 
-**Step 3: Run awx-manage migrate in the web pod (migrate phase)**
+**Step 3: Run ascender-manage migrate in the web pod (migrate phase)**
 
-The web deployment is temporarily scaled to 1 replica. We exec `awx-manage migrate` in the web pod, which already has the correct image, volume mounts, and PATH configured. The migration script is a loop over `migration_steps` defined in `vars/main.yml`:
+The web deployment is temporarily scaled to 1 replica. We exec `ascender-manage migrate` in the web pod, which already has the correct image, volume mounts, and PATH configured. The migration script is a loop over `migration_steps` defined in `vars/main.yml`:
 
 ```yaml
 migration_steps:
@@ -247,7 +247,7 @@ migration_steps:
     # Ascender-only: applies 0191 through 0194 (all remaining)
 ```
 
-Each step calls `awx-manage migrate main <target> [--fake] --noinput`. A key Django behavior: when you specify a target, Django does not just process that one migration. It processes **every unapplied migration between the last applied and the target**, walking the dependency chain. This is how one step can handle multiple migrations:
+Each step calls `ascender-manage migrate main <target> [--fake] --noinput`. A key Django behavior: when you specify a target, Django does not just process that one migration. It processes **every unapplied migration between the last applied and the target**, walking the dependency chain. This is how one step can handle multiple migrations:
 
 | Step | Target | Action | Last applied before step | Migrations processed |
 |------|--------|--------|--------------------------|----------------------|
@@ -262,15 +262,15 @@ Each step calls `awx-manage migrate main <target> [--fake] --noinput`. A key Dja
 
 Total: 8 steps process all migrations. The last step applies everything remaining after 0190, so the same `migration_steps` list works for any Ascender version from 25.2.0 onward. Fake steps record shared migrations whose schema AWX already applied. Apply steps let Django run the actual Python/SQL for Ascender-only migrations.
 
-**Why not just one `awx-manage migrate` command?** The `--fake` flag is all-or-nothing per invocation. We cannot fake some migrations and apply others in a single call. Shared migrations (0183_pre, 0184_django_indexes, 0185, 0186, 0187, 0188, 0189, 0190) **must be faked** because AWX already created those tables, columns, and indexes. Running them for real would fail with errors like "column already exists" or "relation already exists." Ascender-only migrations (0183_auto, 0184_alter, 0186a, 0187a, 0191, 0191a, 0192, 0193, 0194) **must be applied** because their schema and data changes do not exist in the restored database yet. 8 steps is the minimum because that is how many times the action alternates between fake and apply.
+**Why not just one `ascender-manage migrate` command?** The `--fake` flag is all-or-nothing per invocation. We cannot fake some migrations and apply others in a single call. Shared migrations (0183_pre, 0184_django_indexes, 0185, 0186, 0187, 0188, 0189, 0190) **must be faked** because AWX already created those tables, columns, and indexes. Running them for real would fail with errors like "column already exists" or "relation already exists." Ascender-only migrations (0183_auto, 0184_alter, 0186a, 0187a, 0191, 0191a, 0192, 0193, 0194) **must be applied** because their schema and data changes do not exist in the restored database yet. 8 steps is the minimum because that is how many times the action alternates between fake and apply.
 
-After the main app, `awx-manage migrate dab_resource_registry --noinput` applies migrations 0005-0007 (AWX 24.6.1 stops at 0004). Then `awx-manage migrate dab_rbac --noinput` applies migrations 0004-0008 against the now-empty `dab_rbac` tables (AWX 24.6.1 stops at 0003, data cleared by `migration_fix.sh.j2`).
+After the main app, `ascender-manage migrate dab_resource_registry --noinput` applies migrations 0005-0007 (AWX 24.6.1 stops at 0004). Then `ascender-manage migrate dab_rbac --noinput` applies migrations 0004-0008 against the now-empty `dab_rbac` tables (AWX 24.6.1 stops at 0003, data cleared by `migration_fix.sh.j2`).
 
 When upgrading Ascender versions, update `migration_steps` in `vars/main.yml`. The template itself never changes.
 
 **Step 4: Operator validates (startup phase)**
 
-The operator is scaled up and creates a new migration job that runs `awx-manage migrate --noinput`. Django validates the full dependency chain, finds every migration already applied, and exits with nothing to do.
+The operator is scaled up and creates a new migration job that runs `ascender-manage migrate --noinput`. Django validates the full dependency chain, finds every migration already applied, and exits with nothing to do.
 
 ### DAB RBAC: the shadow permission system
 
@@ -325,7 +325,7 @@ obj={... 'content_type_id': 29, 'new_content_type_id': None, 'api_slug': ''}
 
 DAB PR #851 (commit `48005cd`) added `cleanup_orphaned_permissions` to handle exactly this scenario ("an app might enable RBAC but register no models and then fail to upgrade"). However, it only deletes permissions NOT referenced by any `RoleDefinition`. AWX's 49 permissions ARE referenced by the 41 role definitions, so they survive cleanup and crash the migration.
 
-The role handles this automatically. The `migration_fix.sh.j2` template clears all `dab_rbac` data tables (in FK-safe order) alongside the `django_migrations` cleanup. The `awx_migrate.sh.j2` template then runs `awx-manage migrate dab_rbac --noinput` which applies 0004-0008 against empty tables. The old RBAC tables (`main_rbac_*`) are completely separate and untouched.
+The role handles this automatically. The `migration_fix.sh.j2` template clears all `dab_rbac` data tables (in FK-safe order) alongside the `django_migrations` cleanup. The `awx_migrate.sh.j2` template then runs `ascender-manage migrate dab_rbac --noinput` which applies 0004-0008 against empty tables. The old RBAC tables (`main_rbac_*`) are completely separate and untouched.
 
 ## Flow
 
@@ -479,7 +479,7 @@ ansible-playbook playbooks/awx/awx_migrate_ascender.yml --list-tags
 | `k8s_secret_path` | *(set in vars)* | Vault path for K8s service account token |
 | `source_awx_instance` | *(set in vars)* | Source AWX CR instance name. Used in `secret_patches` to build receptor secret lookup keys (`<source>-receptor-ca`, `<source>-receptor-work-signing`). |
 | `secret_patches` | *(see vars/main.yml)* | List of `{ src_key, dest_name, optional }` mappings from AWX backup secrets to K8s secrets. Add or remove entries to control what transfers. |
-| `migration_steps` | *(see vars/main.yml)* | Ordered list of `{ target, action }` steps for awx-manage migrate. Update when changing AWX source or Ascender target version. |
+| `migration_steps` | *(see vars/main.yml)* | Ordered list of `{ target, action }` steps for ascender-manage migrate. Update when changing AWX source or Ascender target version. |
 | `cr_patch` | *(see vars/main.yml)* | List of `{ field, value }` entries for CR patching. Omit `value` to copy from backup. |
 | `ascender_environment` | `dr` | Environment name for LDAP server URI mapping (`dr` or `prod`) |
 | `restore_poll_interval` | `30` | Seconds between pg_restore progress logs (DB size + active queries) |
@@ -531,7 +531,7 @@ migration_steps:
   - {                                                       action: apply }
 ```
 
-Consumed by `templates/awx_migrate.sh.j2` which loops over the list and calls `awx-manage migrate main <target> [--fake] --noinput` for each step. Update this list when changing AWX source or Ascender target version.
+Consumed by `templates/awx_migrate.sh.j2` which loops over the list and calls `ascender-manage migrate main <target> [--fake] --noinput` for each step. Update this list when changing AWX source or Ascender target version.
 
 ### cr_patch
 
@@ -602,7 +602,7 @@ Reads secrets from the backup while the worker pod still has the PVC mounted. Pa
 
 ### Step 4: pg_restore.yml
 
-Mounts the restore PVC on the postgres StatefulSet (already scaled down from prep), scales up, and runs pg_restore. After restore, cleans up AWX-only and conflicting migration records to prepare for awx-manage migrate in the next step.
+Mounts the restore PVC on the postgres StatefulSet (already scaled down from prep), scales up, and runs pg_restore. After restore, cleans up AWX-only and conflicting migration records to prepare for ascender-manage migrate in the next step.
 
 | Step | What | Why |
 |---|---|---|
@@ -617,15 +617,15 @@ Mounts the restore PVC on the postgres StatefulSet (already scaled down from pre
 
 ### Step 5: migrate.yml
 
-Temporarily scales the web deployment to 1 replica and execs `awx-manage migrate` in the web pod. The web pod already has the correct image, volume mounts, and PATH. Uses `--fake` for all migrations where AWX already applied the schema (shared and same-name), and applies Ascender-only migrations natively. Scales back down when done.
+Temporarily scales the web deployment to 1 replica and execs `ascender-manage migrate` in the web pod. The web pod already has the correct image, volume mounts, and PATH. Uses `--fake` for all migrations where AWX already applied the schema (shared and same-name), and applies Ascender-only migrations natively. Scales back down when done.
 
 | Step | What | Why |
 |---|---|---|
 | 1 | **Scale up web deployment** | 1 replica, wait for pod Running |
 | 2 | **Run migration steps** | Loop over `migration_steps` from `vars/main.yml`. Each step fakes or applies migrations up to a target. |
-| 3 | **Apply dab_resource_registry** | `awx-manage migrate dab_resource_registry` applies 0005-0007 (AWX 24.6.1 stops at 0004) |
-| 4 | **Apply dab_rbac** | `awx-manage migrate dab_rbac` applies 0004-0008 against empty tables (data cleared in pg_restore phase) |
-| 5 | **Update admin password** | `awx-manage update_password` syncs the DB hash with the K8s admin-password secret |
+| 3 | **Apply dab_resource_registry** | `ascender-manage migrate dab_resource_registry` applies 0005-0007 (AWX 24.6.1 stops at 0004) |
+| 4 | **Apply dab_rbac** | `ascender-manage migrate dab_rbac` applies 0004-0008 against empty tables (data cleared in pg_restore phase) |
+| 5 | **Update admin password** | `ascender-manage update_password` syncs the DB hash with the K8s admin-password secret |
 | 6 | **Scale down web deployment** | 0 replicas, cleanup before operator startup |
 
 ### Step 6: cleanup.yml
@@ -652,7 +652,7 @@ Patches the Ascender AWX CR with selected fields from the AWX backup and explici
 
 ### Step 8: startup.yml
 
-Scales up the operator, whose fresh migration job runs `awx-manage migrate --noinput`. All Ascender migrations were already applied or faked in the migrate phase. The operator's migration job validates the dependency chain, finds nothing to apply, and exits cleanly. The operator then reconciles the AWX CR and brings up web + task pods.
+Scales up the operator, whose fresh migration job runs `ascender-manage migrate --noinput`. All Ascender migrations were already applied or faked in the migrate phase. The operator's migration job validates the dependency chain, finds nothing to apply, and exits cleanly. The operator then reconciles the AWX CR and brings up web + task pods.
 
 | Step | What | Timeout |
 |---|---|---|
@@ -725,7 +725,7 @@ To reduce restore time, run `cleanup_jobs --days=30` on AWX prod before backup t
 | Secret handling | AWXRestore applies all secrets from backup | Patch 5 K8s Secrets directly (secret_key, admin, receptor, LDAP) | Instance name mapping via survey vars |
 | AWX CR spec | AWXRestore applies entire `awx_object` spec to CR | Patch selected fields from `awx_object` (ee_images, ldap_cacert, image_pull_secrets, postgres args/storage) | Only transfer fields the operator needs; skip name-mapped secrets and dest-specific values |
 | Postgres tuning | None | `ALTER SYSTEM SET` before restore | Speeds up index rebuilds |
-| Migration approach | Delete all 018x/019x records, `awx-manage migrate` with `ignore_errors: yes`, fake 0183_pre + 0187_hop | Delete all from 0183, data-driven `migration_steps` in `vars/main.yml` (ordered fake/apply list), template is a generic loop | No ignore_errors, data-driven, upgrade Ascender by editing one variable |
+| Migration approach | Delete all 018x/019x records, `ascender-manage migrate` with `ignore_errors: yes`, fake 0183_pre + 0187_hop | Delete all from 0183, data-driven `migration_steps` in `vars/main.yml` (ordered fake/apply list), template is a generic loop | No ignore_errors, data-driven, upgrade Ascender by editing one variable |
 
 ## AWX CR spec: awx_object and what the operator does with it
 
@@ -838,7 +838,7 @@ roles/awx_migrate_ascender/
     secrets.yml           read secrets + awx_object from worker pod, patch K8s secrets, delete worker
     pg_restore.yml        mount PVC on postgres, pg_restore, clean migration records
     pg_restore_poll.yml   recursive pg_restore progress poll (db size, active queries, last operation)
-    migrate.yml           scale up web pod, run awx-manage migrate, scale down
+    migrate.yml           scale up web pod, run ascender-manage migrate, scale down
     cleanup.yml           reset postgres tuning + remove restore PVC from StatefulSet
     patch_cr.yml          patch AWX CR with selected fields from awx_object backup
     startup.yml           scale up operator + wait for migration job + pods
@@ -880,7 +880,7 @@ Postgres PVC too small. Set `POSTGRES_PVC_SIZE_GB: 100` in ascender-install `cus
 ### Migration errors
 Migrations are handled in two places: `migration_fix.sh.j2` (postgres pod, deletes all main records from 0183 onward) and `awx_migrate.sh.j2` (web pod, loops over `migration_steps` from `vars/main.yml` to fake shared and apply Ascender-only migrations).
 
-If `awx-manage migrate` fails with `InconsistentMigrationHistory`, the migration_fix step did not run or did not delete enough records. Re-run from Step 4 (pg_restore) to re-apply the DELETE. If `awx-manage migrate` fails for other reasons, check the Ansible task output. Common causes: the Ascender web image changed and has new migrations not in `migration_steps`. Update the list in `vars/main.yml` to match the new Ascender version's migration files.
+If `ascender-manage migrate` fails with `InconsistentMigrationHistory`, the migration_fix step did not run or did not delete enough records. Re-run from Step 4 (pg_restore) to re-apply the DELETE. If `ascender-manage migrate` fails for other reasons, check the Ansible task output. Common causes: the Ascender web image changed and has new migrations not in `migration_steps`. Update the list in `vars/main.yml` to match the new Ascender version's migration files.
 
 If the operator's migration job fails after startup, it means the migrate phase didn't fully complete. Rerun with `--tags migrate,patch_cr,startup,verify`.
 

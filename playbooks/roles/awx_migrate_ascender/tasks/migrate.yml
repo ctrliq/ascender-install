@@ -1,5 +1,5 @@
 ---
-# Run Ascender migrations natively via awx-manage in the web pod.
+# Run Ascender migrations natively via ascender-manage in the web pod.
 # Must run AFTER pg_restore (DB restored + AWX-only records deleted)
 # and BEFORE startup (operator must find nothing to apply).
 
@@ -28,7 +28,7 @@
   ansible.builtin.set_fact:
     web_pod: "{{ web_pods.resources[0].metadata.name }}"
 
-- name: Run Ascender migrations via awx-manage
+- name: Run Ascender migrations via ascender-manage
   kubernetes.core.k8s_exec:
     namespace: "{{ ascender.namespace }}"
     pod: "{{ web_pod }}"
@@ -59,7 +59,7 @@
     namespace: "{{ ascender.namespace }}"
     pod: "{{ web_pod }}"
     container: "{{ ascender.instance }}-web"
-    command: "awx-manage update_password --username=admin --password={{ admin_password | quote }}"
+    command: "ascender-manage update_password --username=admin --password={{ admin_password | quote }}"
   register: admin_pw_result
 
 - name: Show password update result
