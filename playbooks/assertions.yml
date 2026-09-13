@@ -58,25 +58,18 @@
             fail_msg: "K3s Server OS major version must be 8 or 9"
           when: ansible_os_family == "RedHat"
 
-        # upstream compared ansible_distribution_major_version as a STRING,
-        # so Debian 12/13 evaluated '12' >= '24' -> False and failed the assertion.
-        # Compare numerically and branch per distribution instead.
-        - name: Verify Debian OS Family version
+        - name: Verify Ubuntu OS Family architecture
           ansible.builtin.assert:
             that:
-              - (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version | int >= 24)
-                or (ansible_distribution == 'Debian' and ansible_distribution_major_version | int >= 12)
-            fail_msg: >-
-              K3s server OS version unsupported: detected
-              {{ ansible_distribution }} {{ ansible_distribution_major_version }}.
-              Ubuntu must be >= 24, Debian must be >= 12.
+              - ansible_distribution_major_version in ['24', '26']
+            fail_msg: "K3s Server OS major version must be 24 or 26"
           when: ansible_os_family == "Debian"
 
         - name: Get mount location of /var directory
           ansible.builtin.command: df -h /var
           register: mount_location
 
-        # - name: Print mount location
+        # - name: Print mount location 
         #   ansible.builtin.debug:
         #     var: mount_location.stdout_lines[1].split()[0]
 
@@ -89,7 +82,7 @@
           ansible.builtin.assert:
             that: item.size_available >= 32212254720
             fail_msg: "Free disk space for /var must be at least 30GB"
-          when:
+          when: 
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
             - k8s_offline
@@ -101,7 +94,7 @@
           ansible.builtin.assert:
             that: item.size_available >= 21474836480
             fail_msg: "Free disk space for /var must be at least 20GB"
-          when:
+          when: 
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
             - not SKIP_DISK_CHECK
