@@ -110,7 +110,7 @@ docker compose up -d
 ```bash
 docker compose ps                         # state and health
 docker compose logs -f task               # dispatcher / job lifecycle
-docker compose exec task awx-manage <cmd> # any awx-manage command
+docker compose exec task ascender-manage <cmd> # any ascender-manage command
 docker compose exec receptor podman images     # EE images cached by podman
 docker compose down                       # stop, keep data
 docker compose down -v                    # stop and DELETE the database, projects, EE cache
@@ -158,7 +158,7 @@ will pull it instead.
 The receptor node listens on 27199 inside the compose network. To peer remote
 execution or hop nodes into it, publish that port (commented out in
 `docker-compose.yml`), add TLS to `config/receptor.conf`, register the address
-and peers with `awx-manage add_receptor_address` / `register_peers` in the
+and peers with `ascender-manage add_receptor_address` / `register_peers` in the
 `task` container, and set the remote node's `tcp-peer` to this host.
 
 ## Known limitations

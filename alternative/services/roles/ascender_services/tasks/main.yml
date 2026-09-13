@@ -15,7 +15,7 @@
 # interrupted play, where the code is new but its migrations are not applied yet.
 # migrate --check exits 1 when migrations are pending.
 - name: Pending database migrations
-  ansible.builtin.command: awx-manage migrate --check --noinput
+  ansible.builtin.command: ascender-manage migrate --check --noinput
   become: true
   become_user: "{{ ascender_user }}"
   register: _pending
@@ -42,14 +42,14 @@
 
 # Database bootstrap, idempotent, before the services start on new code.
 - name: Apply database migrations
-  ansible.builtin.command: awx-manage migrate --noinput
+  ansible.builtin.command: ascender-manage migrate --noinput
   become: true
   become_user: "{{ ascender_user }}"
   register: _migrate
   changed_when: "'No migrations to apply' not in _migrate.stdout"
 
 - name: Create the admin user
-  ansible.builtin.command: awx-manage createsuperuser --noinput --username {{ ascender_admin_user }} --email {{ ascender_admin_email }}
+  ansible.builtin.command: ascender-manage createsuperuser --noinput --username {{ ascender_admin_user }} --email {{ ascender_admin_email }}
   become: true
   become_user: "{{ ascender_user }}"
   environment:
@@ -59,12 +59,12 @@
   failed_when: _superuser.rc != 0 and 'already taken' not in _superuser.stderr
   no_log: true
 
-# Same logic as `awx-manage update_password`, which only takes the password on
+# Same logic as `ascender-manage update_password`, which only takes the password on
 # the command line, where every local user can read it in /proc while it runs.
 # Here it travels in the environment, readable only by the awx user and root.
 - name: Admin password matches the configured one
   ansible.builtin.command:
-    cmd: awx-manage shell -c {{ _set_password | quote }}
+    cmd: ascender-manage shell -c {{ _set_password | quote }}
   vars:
     _set_password: |
       import os
@@ -87,21 +87,21 @@
   no_log: true
 
 - name: Preload data
-  ansible.builtin.command: awx-manage create_preload_data
+  ansible.builtin.command: ascender-manage create_preload_data
   become: true
   become_user: "{{ ascender_user }}"
   register: _preload
   changed_when: "'(changed: True)' in _preload.stdout"
 
 - name: Default execution environments
-  ansible.builtin.command: awx-manage register_default_execution_environments
+  ansible.builtin.command: ascender-manage register_default_execution_environments
   become: true
   become_user: "{{ ascender_user }}"
   register: _ee
   changed_when: "'(changed: True)' in _ee.stdout"
 
 - name: Registered instances
-  ansible.builtin.command: awx-manage list_instances
+  ansible.builtin.command: ascender-manage list_instances
   become: true
   become_user: "{{ ascender_user }}"
   register: _instances
@@ -110,13 +110,13 @@
 # provision_instance reports a change on every call, so only run it when the
 # instance is missing.
 - name: Register this host as a hybrid instance
-  ansible.builtin.command: awx-manage provision_instance --hostname={{ ascender_node_name }} --node_type=hybrid
+  ansible.builtin.command: ascender-manage provision_instance --hostname={{ ascender_node_name }} --node_type=hybrid
   become: true
   become_user: "{{ ascender_user }}"
   when: not ((_instances.stdout | regex_replace('\x1b\[[0-9;]*m', '')) is regex('(^|\s)' ~ (ascender_node_name | regex_escape) ~ '\s'))
 
 - name: Instance groups
-  ansible.builtin.command: awx-manage register_queue --queuename={{ item }} --instance_percent=100
+  ansible.builtin.command: ascender-manage register_queue --queuename={{ item }} --instance_percent=100
   become: true
   become_user: "{{ ascender_user }}"
   loop: [controlplane, default]

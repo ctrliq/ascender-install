@@ -38,19 +38,19 @@ stdout_logfile_backups = 5
 ; --- web ---------------------------------------------------------------
 {{ program('uwsgi', ascender_venv ~ '/bin/uwsgi ' ~ ascender_config_dir ~ '/uwsgi.ini') }}
 {{ program('daphne', ascender_venv ~ '/bin/daphne -b 127.0.0.1 -p 8051 --websocket_timeout -1 awx.asgi:channel_layer') }}
-{{ program('ws-heartbeat', 'awx-manage run_ws_heartbeat') }}
-{{ program('awx-cache-clear', 'awx-manage run_cache_clear') }}
+{{ program('ws-heartbeat', 'ascender-manage run_ws_heartbeat') }}
+{{ program('awx-cache-clear', 'ascender-manage run_cache_clear') }}
 ; --- task --------------------------------------------------------------
-{{ program('dispatcher', 'awx-manage run_dispatcher') }}
-{{ program('wsrelay', 'awx-manage run_wsrelay') }}
-{{ program('callback-receiver', 'awx-manage run_callback_receiver') }}
+{{ program('dispatcher', 'ascender-manage run_dispatcher') }}
+{{ program('wsrelay', 'ascender-manage run_wsrelay') }}
+{{ program('callback-receiver', 'ascender-manage run_callback_receiver') }}
 ; --- receptor (runs jobs in rootless podman) -------------------------------
 {{ program('receptor', '/usr/local/bin/receptor --config /etc/receptor/receptor.conf', startsecs=5) }}
 ; --- rsyslog (external log aggregation) -----------------------------------
 ; rsyslogd keeps its own stderr and emits log events so rsyslog-4xx-recovery
 ; (PROCESS_LOG_STDERR listener below) can react to omhttp 4xx errors.
 {{ program('awx-rsyslogd', '/usr/sbin/rsyslogd -n -i ' ~ ascender_run_dir ~ '/rsyslog.pid -f ' ~ ascender_home ~ '/rsyslog/rsyslog.conf', startsecs=0, redirect_stderr=false, stderr_events=true) }}
-{{ program('awx-rsyslog-configurer', 'awx-manage run_rsyslog_configurer') }}
+{{ program('awx-rsyslog-configurer', 'ascender-manage run_rsyslog_configurer') }}
 
 [group:tower-processes]
 programs = uwsgi,daphne,ws-heartbeat,awx-cache-clear,dispatcher,wsrelay,callback-receiver,receptor,awx-rsyslogd,awx-rsyslog-configurer

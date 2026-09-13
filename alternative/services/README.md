@@ -89,7 +89,7 @@ Take a `pg_dump -U ascender ascender` first; migrations are forward-only.
 systemctl status ascender nginx postgresql valkey
 sudo -u awx supervisorctl -c /etc/tower/supervisord.conf status   # per-process state
 tail -f /var/log/tower/dispatcher.log                             # job lifecycle
-sudo -u awx awx-manage <command>
+sudo -u awx ascender-manage <command>
 sudo -u awx XDG_RUNTIME_DIR=/run/user/$(id -u awx) podman images   # cached EE images
 systemctl restart ascender                                        # after editing /etc/tower
 ```
@@ -102,7 +102,7 @@ Replace `/etc/tower/certs/ascender.crt` and `.key` with a real certificate and
 | Container installs | Here |
 | ------------------ | ---- |
 | `/etc/tower/SECRET_KEY` secret shared by all containers | one file read by every process |
-| web/task/rsyslog containers | supervisord programs in one `ascender.service`, so `awx-manage` reload helpers (`supervisorctl`) keep working |
+| web/task/rsyslog containers | supervisord programs in one `ascender.service`, so `ascender-manage` reload helpers (`supervisorctl`) keep working |
 | receptor sidecar with nested podman | receptor as a supervisord program; jobs in rootless podman of the `awx` user (subordinate ids, systemd lingering for `/run/user/<uid>`) |
 | `init` container fixing volume ownership | directories created by the playbook |
 | `migrate` one-shot | migration tasks in the services role, run on every play |
@@ -113,7 +113,7 @@ Replace `/etc/tower/certs/ascender.crt` and `.key` with a real certificate and
 
 - Single host, single hybrid node. Adding execution nodes means peering to
   the receptor listener on 27199 (add TLS, open the firewall, register the
-  address and peers with `awx-manage`).
+  address and peers with `ascender-manage`).
 - The periodic `cleanup_images_and_files` task prunes podman images as the
   `awx` user every 3 hours; that is the intended behaviour here, unlike the
   container installs where it only logs an error.

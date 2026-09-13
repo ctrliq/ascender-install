@@ -322,7 +322,7 @@
     namespace: "{{ ASCENDER_NAMESPACE }}"
     pod: "{{ web_pod }}"
     container: "ascender-app-web"
-    command: "/usr/bin/awx-manage migrate"
+    command: "/usr/bin/ascender-manage migrate"
     verify_ssl: false
   ignore_errors: yes
 
@@ -331,7 +331,7 @@
     namespace: "{{ ASCENDER_NAMESPACE }}"
     pod: "{{ web_pod }}"
     container: "ascender-app-web"
-    command: /bin/bash -c "awx-manage migrate main {{ item }} --fake; awx-manage migrate --noinput;"
+    command: /bin/bash -c "ascender-manage migrate main {{ item }} --fake; ascender-manage migrate --noinput;"
     verify_ssl: false
   ignore_errors: yes
   loop:

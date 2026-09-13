@@ -332,7 +332,7 @@
 #     namespace: "{{ ASCENDER_NAMESPACE }}"
 #     pod: "{{ web_pod }}"
 #     container: "ascender-app-web"
-#     command: "/usr/bin/awx-manage migrate"
+#     command: "/usr/bin/ascender-manage migrate"
 #     verify_ssl: false
 #   ignore_errors: yes
 
