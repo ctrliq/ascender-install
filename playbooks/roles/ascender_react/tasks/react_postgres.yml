@@ -1,0 +1,217 @@
+---
+# It decides which PostgreSQL instance Ascender React
+# uses, so that React can share Ascender's database server or point at one of its own.
+#
+#   REACT_PGSQL_MODE: managed   (default) the EDA Operator deploys and owns
+#                               ascender-react-postgres-15 inside REACT_NAMESPACE
+#   REACT_PGSQL_MODE: ascender  React uses the same PostgreSQL instance as Ascender,
+#                               in its own database and with its own role
+#   REACT_PGSQL_MODE: external  React uses an instance you run yourself
+#                               (REACT_PGSQL_HOST and friends)
+#
+# "managed" needs nothing from this file. The other two do, because:
+#   * the EDA Operator decides managed-versus-external purely from the 'type' key of
+#     the PostgreSQL configuration secret it finds in REACT_NAMESPACE
+#     (roles/postgres/tasks/set_variables.yml in the operator), and
+#   * with an external database it refuses to deploy at all unless an event-stream
+#     database secret is supplied as well (roles/postgres/tasks/main.yml), because it
+#     can only create that user by itself on a database it manages.
+# So this file builds both secrets, and - for the 'ascender' mode, where the instance
+# is reachable and we hold superuser access - creates the role and database first.
+
+- name: Work out which PostgreSQL instance Ascender React should use
+  ansible.builtin.set_fact:
+    react_pg_mode: >-
+      {{ (REACT_PGSQL_MODE | default('external' if REACT_PGSQL_HOST is defined else 'managed')) | lower }}
+
+- name: Confirm the React database mode is one this role knows
+  ansible.builtin.assert:
+    that:
+      - react_pg_mode in ['managed', 'ascender', 'external']
+    fail_msg: >-
+      REACT_PGSQL_MODE must be one of 'managed', 'ascender' or 'external';
+      got '{{ react_pg_mode }}'.
+
+- name: Let the EDA Operator deploy and own the React database
+  ansible.builtin.set_fact:
+    react_pg_external: false
+  when: react_pg_mode == 'managed'
+
+- name: Point Ascender React at the PostgreSQL instance Ascender uses
+  when: react_pg_mode == 'ascender'
+  block:
+
+    - name: Read Ascender's PostgreSQL configuration secret
+      kubernetes.core.k8s_info:
+        kind: Secret
+        name: "{{ react_pg_ascender_secret }}"
+        namespace: "{{ ASCENDER_NAMESPACE }}"
+        verify_ssl: false
+      register: react_ascender_pg_secret
+      until: react_ascender_pg_secret is not failed
+      retries: 10
+      delay: 5
+      no_log: true
+
+    - name: Fail when Ascender's PostgreSQL configuration cannot be found
+      ansible.builtin.fail:
+        msg: >-
+          REACT_PGSQL_MODE is 'ascender', but the secret {{ react_pg_ascender_secret }}
+          does not exist in the {{ ASCENDER_NAMESPACE }} namespace. Install Ascender
+          before React, or set REACT_PGSQL_MODE to 'managed' or 'external'.
+      when: react_ascender_pg_secret.resources | default([]) | length == 0
+
+    - name: Take the connection details from Ascender's PostgreSQL configuration
+      ansible.builtin.set_fact:
+        react_pg_external: true
+        react_pg_port: "{{ react_ascender_pg_secret.resources[0].data.port | b64decode }}"
+        react_pg_ascender_managed: "{{ (react_ascender_pg_secret.resources[0].data.type | default('' | b64encode) | b64decode) == 'managed' }}"
+        # A managed instance publishes a Service name that only resolves inside
+        # ASCENDER_NAMESPACE, and React's pods look it up from REACT_NAMESPACE, so the
+        # name has to be qualified. A host Ascender was given by the operator of an
+        # external server is already fully qualified and is used as it stands.
+        react_pg_host: >-
+          {{ (react_ascender_pg_secret.resources[0].data.host | b64decode) ~ '.' ~ ASCENDER_NAMESPACE ~ '.svc.cluster.local'
+             if ((react_ascender_pg_secret.resources[0].data.type | default('' | b64encode) | b64decode) == 'managed'
+                 and '.' not in (react_ascender_pg_secret.resources[0].data.host | b64decode))
+             else (react_ascender_pg_secret.resources[0].data.host | b64decode) }}
+      no_log: true
+
+    - name: Note the namespace the shared PostgreSQL runs in
+      ansible.builtin.set_fact:
+        react_pg_namespace: "{{ ASCENDER_NAMESPACE }}"
+      when: react_pg_ascender_managed | bool
+
+    # Everything below runs inside the Ascender PostgreSQL pod, where psql connects as
+    # the superuser. The EDA Operator creates neither the database nor the roles when
+    # it does not manage the instance, so the installer has to. Each step is split into
+    # a check and an action rather than wrapped in a DO block, so that a failure names
+    # the object it was working on.
+    - name: Create the React database and roles in Ascender's PostgreSQL
+      when: react_pg_ascender_managed | bool
+      block:
+
+        - name: Check whether the React database role exists
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -tAc "SELECT 1 FROM pg_roles WHERE rolname = '{{ react_pg_user }}'"
+          register: react_pg_role_check
+
+        - name: Create the React database role
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -c "CREATE ROLE \"{{ react_pg_user }}\" WITH LOGIN PASSWORD '{{ react_pg_password }}';"
+          when: react_pg_role_check.stdout | default('') | trim != '1'
+          no_log: true
+
+        - name: Update the React database role password
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -c "ALTER ROLE \"{{ react_pg_user }}\" WITH LOGIN PASSWORD '{{ react_pg_password }}';"
+          when: react_pg_role_check.stdout | default('') | trim == '1'
+          no_log: true
+
+        - name: Check whether the React database exists
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -tAc "SELECT 1 FROM pg_database WHERE datname = '{{ react_pg_database }}'"
+          register: react_pg_database_check
+
+        - name: Create the React database
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -c "CREATE DATABASE \"{{ react_pg_database }}\" OWNER \"{{ react_pg_user }}\";"
+          when: react_pg_database_check.stdout | default('') | trim != '1'
+
+        - name: Check whether the React event-stream role exists
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -tAc "SELECT 1 FROM pg_roles WHERE rolname = '{{ react_pg_event_stream_user }}'"
+          register: react_pg_event_stream_check
+
+        - name: Create the React event-stream role
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -c "CREATE ROLE \"{{ react_pg_event_stream_user }}\" WITH LOGIN PASSWORD '{{ react_pg_event_stream_password }}';"
+          when: react_pg_event_stream_check.stdout | default('') | trim != '1'
+          no_log: true
+
+        - name: Update the React event-stream role password
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -c "ALTER ROLE \"{{ react_pg_event_stream_user }}\" WITH LOGIN PASSWORD '{{ react_pg_event_stream_password }}';"
+          when: react_pg_event_stream_check.stdout | default('') | trim == '1'
+          no_log: true
+
+        - name: Grant the event-stream role access to the React database
+          kubernetes.core.k8s_exec:
+            namespace: "{{ ASCENDER_NAMESPACE }}"
+            pod: "{{ react_pg_ascender_pod }}"
+            container: postgres
+            command: >-
+              psql -c "GRANT CONNECT ON DATABASE \"{{ react_pg_database }}\" TO \"{{ react_pg_event_stream_user }}\";"
+
+- name: Point Ascender React at an external PostgreSQL instance
+  when: react_pg_mode == 'external'
+  block:
+
+    - name: Confirm the external PostgreSQL connection details are complete
+      ansible.builtin.assert:
+        that:
+          - REACT_PGSQL_HOST is defined
+          - REACT_PGSQL_HOST | length > 0
+        fail_msg: >-
+          REACT_PGSQL_MODE is 'external', so REACT_PGSQL_HOST has to be set. The
+          database {{ react_pg_database }}, the role {{ react_pg_user }} and the
+          event-stream role {{ react_pg_event_stream_user }} must already exist on that
+          server - the EDA Operator only creates those on a database it manages.
+
+    - name: Set the React database connection to the external instance
+      ansible.builtin.set_fact:
+        react_pg_external: true
+        react_pg_host: "{{ REACT_PGSQL_HOST }}"
+        react_pg_port: "{{ REACT_PGSQL_PORT | default(5432) }}"
+
+- name: Hand the EDA Operator the database configuration it must not manage
+  when: react_pg_external | default(false) | bool
+  block:
+
+    - name: Create the React PostgreSQL configuration secrets
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('ansible.builtin.template', 'react-postgres/react-postgres-secrets.yml') }}"
+        verify_ssl: false
+      register: react_pg_secrets
+      until: react_pg_secrets is not failed
+      retries: 30
+      delay: 10
+      no_log: true
+
+    - ansible.builtin.debug:
+        msg: >-
+          Ascender React will use the {{ react_pg_mode }} PostgreSQL instance at
+          {{ react_pg_host }}:{{ react_pg_port }}, database {{ react_pg_database }}.
