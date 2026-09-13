@@ -58,18 +58,25 @@
             fail_msg: "K3s Server OS major version must be 8 or 9"
           when: ansible_os_family == "RedHat"
 
-        - name: Verify Ubuntu OS Family architecture
+        # upstream compared ansible_distribution_major_version as a STRING,
+        # so Debian 12/13 evaluated '12' >= '24' -> False and failed the assertion.
+        # Compare numerically and branch per distribution instead.
+        - name: Verify Debian OS Family version
           ansible.builtin.assert:
             that:
-              - ansible_distribution_major_version in ['24', '26']
-            fail_msg: "K3s Server OS major version must be 24 or 26"
+              - (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version | int >= 24)
+                or (ansible_distribution == 'Debian' and ansible_distribution_major_version | int >= 12)
+            fail_msg: >-
+              K3s server OS version unsupported: detected
+              {{ ansible_distribution }} {{ ansible_distribution_major_version }}.
+              Ubuntu must be >= 24, Debian must be >= 12.
           when: ansible_os_family == "Debian"
 
         - name: Get mount location of /var directory
           ansible.builtin.command: df -h /var
           register: mount_location
 
-        # - name: Print mount location 
+        # - name: Print mount location
         #   ansible.builtin.debug:
         #     var: mount_location.stdout_lines[1].split()[0]
 
@@ -82,7 +89,7 @@
           ansible.builtin.assert:
             that: item.size_available >= 32212254720
             fail_msg: "Free disk space for /var must be at least 30GB"
-          when: 
+          when:
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
             - k8s_offline
@@ -94,7 +101,7 @@
           ansible.builtin.assert:
             that: item.size_available >= 21474836480
             fail_msg: "Free disk space for /var must be at least 20GB"
-          when: 
+          when:
             - item.device is match(mount_location.stdout_lines[1].split()[0])
             - item.mount == "/"
             - not SKIP_DISK_CHECK
@@ -103,11 +110,23 @@
       when: k8s_platform == "k3s"
 
 
+    # the message this used to print ("not installed or the incorrect version")
+    # named neither the version that was found nor a command that puts the collection
+    # where ansible.cfg looks for it, which sent people round in circles installing
+    # collections into ~/.ansible/collections - a directory the repository's
+    # collections_path does not include. Report both, and name the working command.
     - name: Verify Collections
       ansible.builtin.assert:
         that:
           - (lookup('community.general.collection_version', item.name) | default('0.0.0', true)) is version(item.version, item.compare, version_type=item.version_type)
-        fail_msg: "{{ item.name }} Collection is not installed or the incorrect version.  Please run 'ansible-galaxy install -r collections/requirements.yml'"
+        fail_msg: >-
+          {{ item.name }} {{ item.compare }} {{ item.version }} is required, but this
+          controller resolves
+          {{ lookup('community.general.collection_version', item.name) | default('no installed copy', true) }}.
+          Run 'ansible-galaxy collection install -r collections/requirements.yml' from
+          the root of this repository - ansible.cfg puts ./collections first on the
+          collections path, so that is where the installer reads them from.
+        success_msg: "{{ item.name }} {{ lookup('community.general.collection_version', item.name) }} satisfies {{ item.compare }} {{ item.version }}"
       when: item.platform is undefined or k8s_platform in item.platform
       loop: "{{ required_collections }}"
       loop_control:

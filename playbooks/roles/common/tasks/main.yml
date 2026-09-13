@@ -33,7 +33,7 @@
     - name: Add the Kubernetes yum repository
       ansible.builtin.copy:
         dest: /etc/yum.repos.d/kubernetes.repo
-        content: | 
+        content: |
           [kubernetes]
           name=Kubernetes
           baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
@@ -65,24 +65,56 @@
 - when: ansible_os_family == "Debian"
   name: Ensure necessary packages for Ubuntu/Debian
   block:
+    # the keyring below is built with `curl | gpg`, but curl and gnupg are in
+    # common_packages, and that list can only be installed at the END of this block -
+    # it contains kubectl, which does not exist until the repository these tasks add
+    # is in place. On a Debian cloud or netinst image, which ships neither curl nor
+    # gnupg, the keyring task therefore failed with "/bin/sh: 1: gpg: not found"
+    # before anything had had a chance to install gnupg, no matter what the package
+    # list said. Install the few packages the repository setup itself needs, first.
+    - name: Ensure the packages the Kubernetes apt repository setup needs
+      ansible.builtin.apt:
+        name: "{{ common_packages[ansible_os_family][ansible_distribution_major_version | int] | default([]) }}"
+        state: present
+        update_cache: true
+      become: true
+      when: not k8s_offline
+
+    # these three used to be gated on add_kubernetes_repo alone, while the task
+    # that adds the repository itself is also gated on `not k8s_offline`. An offline
+    # install therefore still tried to fetch the signing key over the internet, for a
+    # repository it was never going to add.
     - name: Ensure apt keyrings directory exists
       ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
         mode: '0755'
       become: true
-      when: add_kubernetes_repo
+      when:
+        - not k8s_offline
+        - add_kubernetes_repo
 
     - name: Check for repo key
       ansible.builtin.stat:
         path: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       register: k8s_keyring
-      when: add_kubernetes_repo
+      when:
+        - not k8s_offline
+        - add_kubernetes_repo
 
     - name: Get the K8s repo key
-      ansible.builtin.shell: curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      # without pipefail the exit status is gpg's, so a curl that 404s or is
+      # refused by a proxy left an empty keyring behind and the failure only surfaced
+      # later, as an unsigned-repository error from apt.
+      ansible.builtin.shell:
+        cmd: >-
+          set -o pipefail &&
+          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key
+          | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        executable: /bin/bash
       become: true
       when:
+        - not k8s_offline
         - add_kubernetes_repo
         - not k8s_keyring.stat.exists
 
@@ -120,4 +152,3 @@
 - name: Install EKS Packages
   ansible.builtin.include_tasks: eks_packages.yml
   when: k8s_platform == "eks"
-
