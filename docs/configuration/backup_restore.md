@@ -2,7 +2,7 @@
 
 ## Overview
 
-`setup.sh` takes a backup with `-b` and restores one with `-r`. Both options drive the AWX operator's backup and
+`setup.sh` takes a backup with `-b` and restores one with `-r`. Both options drive the Ascender Operator's backup and
 restore objects, so they work the same way on every platform the installer supports, k3s included, and neither one
 needs the cluster to be reachable in any way other than the kubeconfig the installer already uses.
 

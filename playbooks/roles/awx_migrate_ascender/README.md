@@ -56,7 +56,7 @@ This role takes an AWX database backup in native AWXBackup format (`tower.db`, `
 
 ### Why not use AWXRestore CR
 
-The AWX operator's AWXRestore CR pipes the dump through `cat tower.db | pg_restore`. This is single-threaded because the `-j` flag is not possible with stdin. A 56GB database with 37,000+ indexes across 6,600+ partitions takes ~45 minutes this way. By running `pg_restore --verbose -j 16 --clean --if-exists` directly from a file, we parallelize data loading and index creation for a ~5x speedup. We handle secrets and operator reconciliation ourselves.
+The Ascender Operator's AWXRestore CR pipes the dump through `cat tower.db | pg_restore`. This is single-threaded because the `-j` flag is not possible with stdin. A 56GB database with 37,000+ indexes across 6,600+ partitions takes ~45 minutes this way. By running `pg_restore --verbose -j 16 --clean --if-exists` directly from a file, we parallelize data loading and index creation for a ~5x speedup. We handle secrets and operator reconciliation ourselves.
 
 ### Secrets: what we patch, what we skip, and why
 
@@ -336,7 +336,7 @@ sequenceDiagram
     participant S3 as S3 Storage
     participant A as Ansible Role
     participant K as Kubernetes
-    participant O as AWX Operator
+    participant O as Ascender Operator
     participant P as PostgreSQL
 
     rect rgb(45, 80, 22)
