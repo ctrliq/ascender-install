@@ -31,7 +31,7 @@ fi
 
 if [[ "$OS_FAMILY" == *"rhel"* || "$OS_FAMILY" == *"fedora"* || "$OS_FAMILY" == *"centos"* ]]; then
   OS="rhel"
-else
+else 
   if [[ "$OS_FAMILY" == *"debian"* || "$OS_FAMILY" == *"ubuntu"* ]]; then
     OS="debian"
   else
@@ -64,14 +64,14 @@ fi
 if [[ $LINUX_ARCH != "x86_64" ]]; then
   echo "CPU architecture must be x86_64.";
   exit 1;
-fi
+fi 
 
 if [[ "$OS" == "rhel" ]]; then
   # Verify that the Operating System major version of the local machine is either 8 or 9
   if [[ $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
     echo "Linux major version must be 8 or 9.";
     exit 1;
-  fi
+  fi 
 fi
 
 # COLORIZE THE ANSIBLE SHELL
@@ -95,48 +95,6 @@ check_python_kubernetes() {
   python3 -c "import kubernetes" > /dev/null 2>&1
 }
 
-# "sudo ./setup.sh" resets PATH via sudo's secure_path, which
-# silently drops an activated virtualenv. Ansible then resolves to the system
-# install, which on these boxes carries a pre-3.0 Jinja2, and every single
-# ansible invocation below fails with the same opaque error. Diagnose it once,
-# up front, instead of five times in a row.
-check_controller_jinja() {
-  python3 - <<'PY' 2>/dev/null
-import sys
-try:
-    import jinja2
-except ImportError:
-    sys.exit(1)
-sys.exit(0 if int(jinja2.__version__.split('.')[0]) >= 3 else 1)
-PY
-}
-
-preflight() {
-  type -p ansible-playbook > /dev/null || return 0
-
-  if check_controller_jinja; then
-    return 0
-  fi
-
-  echo "ERROR: the ansible on PATH cannot run - Jinja2 is missing or older than 3.0."
-  echo "       ansible-playbook: $(type -p ansible-playbook)"
-  echo "       python3:          $(type -p python3)"
-  if [ -n "${SUDO_USER:-}" ]; then
-    echo
-    echo "  You are running under sudo. sudo resets PATH, so an activated"
-    echo "  virtualenv is not visible here. Either run the installer as an"
-    echo "  unprivileged user with passwordless sudo (recommended - every task"
-    echo "  that needs root escalates on its own):"
-    echo
-    echo "      source ~/ansible-venv/bin/activate && ./setup.sh"
-    echo
-    echo "  or keep the environment when escalating:"
-    echo
-    echo "      sudo -E env \"PATH=\$PATH\" ./setup.sh"
-  fi
-  exit 1
-}
-
 check_collections() {
   ansible-doc -t module -l | grep ansible.posix.selinux > /dev/null
   if [ $? -ne 0 ]; then
@@ -155,7 +113,7 @@ check_collections() {
     return 0
   fi
 
-  return 1
+  return 1 
 }
 
 # ------------------------- #
@@ -170,8 +128,6 @@ if [ $? -ne 0 ]; then
     sudo dnf install -y ansible-core
   fi
 fi
-
-preflight
 
 check_collections
 if [ $? -ne 1 ]; then
@@ -191,44 +147,15 @@ if [ $? -ne 0 ]; then
   echo "#### INSTALLING PYTHON KUBERNETES CLIENT ####"
   # We are going to attempt to install the kubernetes client
   # but we don't want this failing to stop us if we are in offline mode
-
-  # prefer the distro package. Debian marks its Python
-  # install as externally managed (PEP 668), so the old
-  # "python3 -m pip install --user" line below is rejected outright, and
-  # "--user" is additionally invalid inside a virtualenv. Try apt/dnf first,
-  # then fall back to pip with the right flags for whichever env we are in.
-  if [[ "$OS" == "debian" ]]; then
-    sudo apt-get update -y && sudo apt-get install -y python3-kubernetes || true
-  fi
-  if [[ "$OS" == "rhel" ]]; then
-    sudo dnf install -y python3-kubernetes || true
-  fi
-
-  if ! check_python_kubernetes; then
-    if ! python3 -m pip --version > /dev/null 2>&1; then
-      if [[ "$OS" == "debian" ]]; then
-        sudo apt-get update -y && sudo apt-get install -y python3-pip || true
-      fi
-      if [[ "$OS" == "rhel" ]]; then
-        sudo dnf install -y python3-pip || true
-      fi
+  if ! python3 -m pip --version > /dev/null 2>&1; then
+    if [[ "$OS" == "debian" ]]; then
+      sudo apt-get update -y && sudo apt-get install -y python3-pip || true
     fi
-
-    if [ -n "${VIRTUAL_ENV:-}" ]; then
-      # Inside a venv: no --user, and PEP 668 does not apply.
-      python3 -m pip install -U kubernetes || true
-    else
-      python3 -m pip install --user -U kubernetes 2>/dev/null \
-        || python3 -m pip install --user --break-system-packages -U kubernetes \
-        || true
+    if [[ "$OS" == "rhel" ]]; then
+      sudo dnf install -y python3-pip || true
     fi
   fi
-
-  if ! check_python_kubernetes; then
-    echo "WARNING: the python kubernetes client is still not importable by $(type -p python3)."
-    echo "         The playbooks install python3-kubernetes on the target as well, so this"
-    echo "         is only fatal if it is still missing when kubernetes.core tasks run."
-  fi
+  python3 -m pip install --user kubernetes || true
 fi
 
 PASSED_ARG=$@
@@ -239,7 +166,7 @@ then
     case $ARG in
 
       p)
-
+      
         printf "\nCREATE CLOUD PERMISSIONS ARTIFACTS\n"
 
         ansible-playbook -i "${INVENTORY_FILE}" playbooks/apply_cloud_permissions.yml
@@ -247,7 +174,7 @@ then
         printf "\n\nNOTE: Check the ./ascender_install_artifacts directory for cloud permissions files.\n\n"
         ;;
       b)
-
+      
         printf "\nBACKUP\n"
 
         ansible-playbook -i "${INVENTORY_FILE}" playbooks/backup.yml
@@ -258,7 +185,7 @@ then
 
         ansible-playbook -i "${INVENTORY_FILE}" playbooks/restore.yml
         ;;
-      \?)
+      \?) 
 
         exit
         ;;
