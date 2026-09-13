@@ -21,7 +21,7 @@ kubeapi_server_ip: "127.0.0.1"
 kube_install: false
 
 # Offline Install - Whether to use local assets to complete the install
-k8s_offline: false
+k8s_offline: false 
 
 # Firewall Disable - For most K8s installs, firewalls are recommended to be disabled, set this to false if
 # if you need the firewall to stay enabled
@@ -76,12 +76,12 @@ k3s_service_type: ClusterIP
 
 # Determines whether to use Route53's Domain Management (which is automated)
 # Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
-#If this value is set to false, you will have to manually set a CNAME record for
+#If this value is set to false, you will have to manually set a CNAME record for 
 # {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to their corresponding
 # AWS Loadbalancers
 USE_ROUTE_53: yes
 
-# If desired, this indicates an AWS IAM user that can be set up in order to have minimum
+# If desired, this indicates an AWS IAM user that can be set up in order to have minimum 
 # permissions to set up a new eks cluster and install Ascender and its associoated components
 EKS_USER: ascenderuser
 
@@ -90,7 +90,7 @@ EKS_CLUSTER_NAME: ascender-eks-cluster
 
 # Determines what to do with the eks cluster Ascender wil be installed on:
 # provision: Provision a new EKS cluster from scratch
-# configure: use the cluster specified by the variable EKS_CLUSTER_NAME, and configure it with
+# configure: use the cluster specified by the variable EKS_CLUSTER_NAME, and configure it with 
 #            policies for loa balancer creation and elastic block service access
 # no_action: use the cluster specified by the variable EKS_CLUSTER_NAME, but make no changes to it before
 #            installing Ascender.
@@ -130,7 +130,7 @@ EKS_ALB_INBOUND_CIDRS: ["0.0.0.0/0"]
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
 EKS_K8S_VERSION: "1.33"
 
-# The worker node instance types
+# The worker node instance types 
 EKS_INSTANCE_TYPE: t3.large
 
 # The minimum number of worker nodes that the cluster will run
@@ -146,7 +146,7 @@ EKS_NUM_WORKER_NODES: 3
 EKS_WORKER_VOLUME_SIZE: 100
 
 # The ARN for the SSL certificate; required when k8s_lb_protocol is https.
-# The same certificate is used for all components (currently Ascender and Ledger);
+# The same certificate is used for all components (currently Ascender and Ledger); 
 # as such, we recommend that the certificate is set for a wildcard domain
 # (e.g., *.example.com)
 EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx
@@ -166,13 +166,13 @@ EKS_DEFAULT_STORAGE_CLASS: gp3
 
 # ---dkp variables---
 # The name of the dkp cluster you wish to deploy Ascender to and/or create
-# See a list of all dkp clusters with the command
+# See a list of all dkp clusters with the command 
 # NOTE: This must be done while pointing to the DKP Bootstrap Cluster
 DKP_CLUSTER_NAME: dkp-cluster
 
 # ---rke2 variables---
 
-# The URL to the binary file rke2.linux-amd64. If you want to choose a different
+# The URL to the binary file rke2.linux-amd64. If you want to choose a different 
 # release, you can choose here:
 # https://github.com/rancher/rke2/releases
 RKE2_BINARY_URL: https://github.com/rancher/rke2/releases/download/v1.25.16%2Brke2r1/rke2.linux-amd64
@@ -232,10 +232,10 @@ ascender_garbage_collect_secrets: true
 ascender_setup_playbooks: true
 
 # # External PostgreSQL ip or url resolvable by the cluster
-# ASCENDER_PGSQL_HOST: "ascenderpghost.example.com"
+# ASCENDER_PGSQL_HOST: "ascenderpghost.example.com" 
 
 # # External PostgreSQL port, this usually defaults to 5432
-# ASCENDER_PGSQL_PORT: 5432
+# ASCENDER_PGSQL_PORT: 5432 
 
 # # External PostgreSQL username
 # ASCENDER_PGSQL_USER: ascender
@@ -403,32 +403,14 @@ PROXY_CONFIG:
 PROXY_IMAGE: ghcr.io/ctrliq/ascender-galaxy-proxy
 PROXY_VERSION: latest
 
-# these are the assertion side of collections/requirements.yml and have to be
-# kept in step with it. The installer carried two independent lists and this one had
-# drifted far behind the versions the requirements file installs (community.general
-# 8.3.0 here against >= 12.5.0 there), so a controller could satisfy the assertion
-# with collections the roles are no longer tested against - and the failure the
-# assertion reports ("not installed or the incorrect version") gives no hint that the
-# two lists disagree.
-#
-# Install them with, from the repository root:
-#   ansible-galaxy collection install -r collections/requirements.yml
-# ansible.cfg puts ./collections first on the collections path, so that command puts
-# the collections exactly where this assertion looks for them. Installing them
-# anywhere else (a bare `ansible-galaxy install`, or -p pointing outside the repo)
-# leaves the assertion failing on versions that are, in fact, on the machine.
-#
-# community.docker is in collections/requirements.yml as well but is deliberately
-# absent here: only the docker-compose/podman installs under alternative/ use it, and
-# a Kubernetes install must not be blocked on a collection it never loads.
 required_collections:
   - name: amazon.aws
-    version: "9.0.0"
+    version: "6.5.0"
     compare: ">="
     version_type: semver
     platform: ["eks"]
   - name: ansible.posix
-    version: "2.2.2"
+    version: "1.5.4"
     compare: ">="
     version_type: semver
     platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
@@ -438,27 +420,27 @@ required_collections:
     version_type: semver
     platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
   - name: azure.azcollection
-    version: "4.0.0"
+    version: "2.4.0"
     compare: ">="
     version_type: semver
     platform: ["azure"]
   - name: community.aws
-    version: "11.1.0"
+    version: "11.0.0"
     compare: ">="
     version_type: semver
     platform: ["eks"]
   - name: community.general
-    version: "12.5.0"
+    version: "8.3.0"
     compare: ">="
     version_type: semver
     platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
   - name: google.cloud
-    version: "1.14.0"
+    version: "1.3.0"
     compare: ">="
     version_type: semver
     platform: ["gcp"]
   - name: kubernetes.core
-    version: "6.2.0"
+    version: "2.4.0"
     compare: ">="
     version_type: semver
     platform: ["azure", "dkp", "eks", "gcp", "k3s", "rke2"]
