@@ -43,6 +43,9 @@ templates:
     survey_file: surveys/selinux.json
     ask_credential_on_launch: true
     diff_mode: true
+    # Debian has no SELinux (AppArmor instead), so this template is meaningless
+    # there - and its playbook lives in a RHEL-oriented project.
+    os_family: RedHat
 
   - name: Gather System Facts
     description: ""
