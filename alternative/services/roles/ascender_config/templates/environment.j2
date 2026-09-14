@@ -8,4 +8,4 @@ RECEPTORCTL_SOCKET={{ ascender_run_dir }}/receptor.sock
 # Rootless podman (job containers) keeps its runtime state here; systemd
 # lingering for the user creates the directory at boot.
 XDG_RUNTIME_DIR=/run/user/{{ ascender_uid }}
-AWX_LOGGING_MODE=stdout
+ASCENDER_LOGGING_MODE=stdout
