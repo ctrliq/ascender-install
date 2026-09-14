@@ -85,12 +85,12 @@
     kubeconfig: "{{ kubeconfig_path }}"
     verify_ssl: false
 
-- name: Generate manifest to install AWX Operator
+- name: Generate manifest to install Ascender Operator
   ansible.builtin.template:
     src: templates/ascender-operator/kustomization.j2
     dest: "{{ tmp_dir }}/kustomization.yml"
 
-- name: Generate manifest to install AWX Operator with timestamp attached, for purposes of operator deletion later
+- name: Generate manifest to install Ascender Operator with timestamp attached, for purposes of operator deletion later
   ansible.builtin.template:
     src: templates/ascender-operator/kustomization.j2
     dest: "{{ tmp_dir }}/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
@@ -103,7 +103,7 @@
   when:
     - k8s_offline
 
-- name: Install AWX Operator with Kustomize
+- name: Install Ascender Operator with Kustomize
   ansible.builtin.command:
     argv:
       - kubectl
@@ -168,12 +168,12 @@
     - postgres_statefulset.rc == 0
     - postgres_statefulset.stdout == "docker.io/postgres:13" or postgres_statefulset.stdout == "docker.io/postgres:15"
 
-- name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
+- name: Generate manifest to install ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: "ascender-deployment/ascender-deployment-tkgi.yml"
     dest: "{{ tmp_dir }}/ascender-deployment-tkgi.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
-- name: Apply AWX ascender-app manifest for tkgi
+- name: Apply ascender-app manifest for tkgi
   ansible.builtin.command:
     argv:
       - kubectl

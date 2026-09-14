@@ -15,7 +15,7 @@ If you have not done so already, follow the general prerequisites in the
 - You need a working `kubectl` installation on the machine running the installer.
 - You need a valid kubeconfig for the target TKGI cluster.
 - You need cluster permissions that allow namespace creation plus the creation of the resources
-  required by the AWX Operator and Ascender manifests.
+  required by the Ascender Operator and Ascender manifests.
 - You need at least one usable StorageClass for PostgreSQL persistence.
 - You need a working ingress controller. TKGI environments commonly use Contour, and the installer
   will try to detect that automatically.

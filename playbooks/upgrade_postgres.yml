@@ -93,18 +93,18 @@
         verify_ssl: false
         wait: true
 
-    - name: "Apply AWX ascender-app manifest for {{ k8s_platform }}"
+    - name: "Apply ascender-app manifest for {{ k8s_platform }}"
       kubernetes.core.k8s:
         state: present
         definition: "{{ lookup('ansible.builtin.template', 'roles/ascender_install/templates/ascender-deployment/ascender-deployment-k3s.yml') }}"
         verify_ssl: false
 
-    - name: Generate manifest to install AWX Operator
+    - name: Generate manifest to install Ascender Operator
       ansible.builtin.template:
         src: roles/ascender_install/templates/ascender-operator/kustomization.j2
         dest: "{{ tmp_dir }}/kustomization.yml"
 
-    - name: Install AWX Operator with Kustomize
+    - name: Install Ascender Operator with Kustomize
       kubernetes.core.k8s:
         definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir) }}"
         verify_ssl: false
