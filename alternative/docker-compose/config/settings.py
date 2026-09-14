@@ -85,7 +85,7 @@ BROADCAST_WEBSOCKET_VERIFY_CERT = False
 # Not Kubernetes: jobs run on the hybrid node (in podman, inside the receptor
 # sidecar), never as container-group pods.
 IS_K8S = False
-AWX_AUTO_DEPROVISION_INSTANCES = False
+ASCENDER_AUTO_DEPROVISION_INSTANCES = False
 
 # The receptor control socket path is not a setting: the task container reads
 # it from the control-service entry of /etc/receptor/receptor.conf, which is
