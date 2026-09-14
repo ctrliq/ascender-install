@@ -15,6 +15,35 @@
   retries: 20
   delay: 5
 
+# the module's returned id is not always the project's id, so it cannot be used
+# to address the project. On the path where the module has to CREATE the project it
+# waits for the SCM update AWX fires automatically, and the wait helper finishes by
+# copying the polled object's fields over its own return value - wait_output() in
+# module_utils/controller_api.py sets json_output['id'] from the project UPDATE it was
+# watching. A run that creates the project therefore returns the id of a project_update
+# (1 on a fresh install, alongside the giveaway status/started/finished/elapsed keys),
+# while a run that finds the project unchanged returns the project's own id. Building
+# the URLs below from that value is what made a first install spend ten minutes polling
+# /api/v2/projects/1/ for "No Project matches the given query". Ask the API for the id
+# by name instead: correct on both paths, and still correct if the module is fixed.
+- name: Look up the id of {{ project.name }}
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/?name={{ project.name | urlencode }}"
+    user: "{{ ASCENDER_ADMIN_USER }}"
+    password: "{{ ASCENDER_ADMIN_PASSWORD }}"
+    force_basic_auth: true
+    validate_certs: false
+  register: project_lookup
+  until:
+    - project_lookup is not failed
+    - project_lookup.json.results | default([]) | length > 0
+  retries: 12
+  delay: 5
+
+- name: Remember the id of {{ project.name }}
+  ansible.builtin.set_fact:
+    project_id: "{{ project_lookup.json.results[0].id }}"
+
 # A job template is rejected with "Playbook not found for project" until the project's
 # SCM update has finished and the playbooks it published are readable through the API.
 # The project module only waits for the update when the response it gets back already
@@ -22,7 +51,7 @@
 # retry against a project that is not ready.
 - name: Wait for the SCM update of {{ project.name }} to finish
   ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/{{ result.id }}/"
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/{{ project_id }}/"
     user: "{{ ASCENDER_ADMIN_USER }}"
     password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     force_basic_auth: true
@@ -35,7 +64,7 @@
 
 - name: Wait for the playbooks of {{ project.name }} to be published
   ansible.builtin.uri:
-    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/{{ result.id }}/playbooks/"
+    url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/{{ project_id }}/playbooks/"
     user: "{{ ASCENDER_ADMIN_USER }}"
     password: "{{ ASCENDER_ADMIN_PASSWORD }}"
     force_basic_auth: true
@@ -52,4 +81,11 @@
     that:
       - project_update.json.status | default('unknown') == 'successful'
       - project_playbooks.json | default([]) | length > 0
-    fail_msg: "The project {{ project.name }} is not ready: its SCM update ended as '{{ project_update.json.status | default('unknown') }}' and it published {{ project_playbooks.json | default([]) | length }} playbooks. Job templates that use this project cannot be created until the update succeeds and its playbooks are visible through the API."
+    fail_msg: >-
+      The project {{ project.name }} (id {{ project_id }}) is not ready: its SCM update
+      ended as '{{ project_update.json.status | default('unknown') }}' and it published
+      {{ project_playbooks.json | default([]) | length }} playbooks. Job templates that
+      use this project cannot be created until the update succeeds and its playbooks are
+      visible through the API. See
+      {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/projects/{{ project_id }}/project_updates/
+      for what the update did.
