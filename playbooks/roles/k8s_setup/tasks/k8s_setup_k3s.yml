@@ -44,7 +44,7 @@
 
 - name: Install K3s Online (this may take up to 5 minutes)
   ansible.builtin.shell:
-    cmd: set -o pipefail && curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode 644" sh -
+    cmd: set -o pipefail && curl -sfL https://get.k3s.io | sh -
     executable: /bin/bash
   become: true
   when:
