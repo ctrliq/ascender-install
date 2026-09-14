@@ -52,7 +52,7 @@ if os.environ.get('ASCENDER_HTTP_MODE', 'redirect').strip().lower() == 'insecure
 DATABASES = {
     'default': {
         'ATOMIC_REQUESTS': True,
-        'ENGINE': 'awx.main.db.profiled_pg',
+        'ENGINE': 'ascender.main.db.profiled_pg',
         'NAME': os.environ.get('DATABASE_NAME', 'ascender'),
         'USER': os.environ.get('DATABASE_USER', 'ascender'),
         'PASSWORD': os.environ['DATABASE_PASSWORD'],
@@ -67,7 +67,7 @@ DATABASES = {
 # valkey listens only on this unix socket (see config/valkey.conf), shared with
 # the Ascender containers through the valkey_socket volume. The image defaults
 # (awx/settings/defaults.py) already point the broker (BROKER_URL), the cache
-# (awx.main.cache.AWXValkeyCache) and the channel layer (channels_valkey) at
+# (ascender.main.cache.AWXValkeyCache) and the channel layer (channels_valkey) at
 # unix:///var/run/valkey/valkey.sock, so nothing is overridden here. Do not copy
 # upstream AWX's ansible_base / channels_redis backends into this file: the
 # image ships neither package and every ascender-manage call fails at startup.
