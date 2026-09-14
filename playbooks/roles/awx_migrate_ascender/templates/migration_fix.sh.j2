@@ -3,7 +3,7 @@ set -eu
 
 # -----------------------------------------------------------------------
 # Clean up django_migrations after restoring AWX 24.6.1 into Ascender.
-# This runs in the postgres pod BEFORE awx-manage migrate.
+# This runs in the postgres pod BEFORE ascender-manage migrate.
 # Only deletes records -- no business logic SQL, no INSERTs.
 #
 # We delete ALL main app records from 0183 onward. Partial deletion
@@ -12,7 +12,7 @@ set -eu
 # deleting 0184_django_indexes while 0185 still has a record fails
 # because 0185 depends on 0184_django_indexes.
 #
-# awx-manage migrate will re-fake or re-apply everything from 0183.
+# ascender-manage migrate will re-fake or re-apply everything from 0183.
 # -----------------------------------------------------------------------
 
 psql -U awx -d awx -c "

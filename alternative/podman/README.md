@@ -113,7 +113,7 @@ systemctl start ascender                                    # manage-containers.
 systemctl status ascender
 /usr/libexec/ascender/manage-containers.sh status
 podman logs -f ascender-task                           # dispatcher / job lifecycle
-podman exec ascender-task awx-manage <command>
+podman exec ascender-task ascender-manage <command>
 podman exec ascender-receptor podman images            # EE images cached for jobs
 podman exec ascender-postgres pg_dump -U ascender ascender > ascender.sql   # backup
 /usr/libexec/ascender/manage-containers.sh destroy --yes   # remove everything INCLUDING data

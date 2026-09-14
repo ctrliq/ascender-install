@@ -14,5 +14,5 @@ images:
   - name: {{ k8s_container_registry | default("ghcr.io/ctrliq", true)  ~ "/ascender-operator" }}
     newTag: {{ ASCENDER_OPERATOR_VERSION }}
 
-# Specify a custom namespace in which to install AWX
+# Specify a custom namespace in which to install Ascender
 namespace: {{ ASCENDER_NAMESPACE }}

@@ -137,7 +137,7 @@ services:
     command: launch_awx_web.sh
     environment:
       <<: *ascender-env
-      # awx-manage reload/restart helpers call supervisorctl with this config.
+      # ascender-manage reload/restart helpers call supervisorctl with this config.
       SUPERVISOR_CONFIG_PATH: /etc/supervisord_web.conf
     volumes:
       - ./config/settings.py:/etc/tower/settings.py:ro
@@ -172,7 +172,7 @@ services:
     command: /opt/ascender/launch_task.sh
     environment:
       <<: *ascender-env
-      # awx-manage reload/restart helpers call supervisorctl with this config.
+      # ascender-manage reload/restart helpers call supervisorctl with this config.
       SUPERVISOR_CONFIG_PATH: /etc/supervisord_task.conf
       # Convenience for `docker compose exec task receptorctl status`. The
       # dispatcher itself reads the socket path from receptor.conf.
@@ -201,7 +201,7 @@ services:
     command: launch_awx_rsyslog.sh
     environment:
       <<: *ascender-env
-      # awx-manage reload/restart helpers call supervisorctl with this config.
+      # ascender-manage reload/restart helpers call supervisorctl with this config.
       SUPERVISOR_CONFIG_PATH: /etc/supervisord_rsyslog.conf
     volumes:
       - ./config/settings.py:/etc/tower/settings.py:ro

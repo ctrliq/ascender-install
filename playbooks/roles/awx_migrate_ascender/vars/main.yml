@@ -40,7 +40,7 @@ restore_pvc:
   sc: "{{ restore_pvc_storage_class | default('thin-csi') }}"
 
 # Ordered migration plan for AWX 24.6.1 -> Ascender 25.3.5.
-# Each step runs: awx-manage migrate main <target> [--fake] --noinput
+# Each step runs: ascender-manage migrate main <target> [--fake] --noinput
 # Django processes all migrations between the last applied and the target.
 # fake = schema already exists from AWX, just record it
 # apply = Ascender-only, Django runs the actual Python/SQL

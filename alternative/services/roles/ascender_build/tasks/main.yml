@@ -86,7 +86,7 @@
         set -e
         empty=$(mktemp --suffix=.py)
         AWX_SETTINGS_FILE=$empty SKIP_SECRET_KEY_CHECK=yes SKIP_PG_VERSION_CHECK=yes \
-          {{ ascender_venv }}/bin/awx-manage collectstatic --noinput --clear
+          {{ ascender_venv }}/bin/ascender-manage collectstatic --noinput --clear
         rm -f $empty
       args:
         executable: /bin/bash
@@ -113,14 +113,14 @@
   when: ansible_facts['selinux']['status'] == 'enabled' and (ascender_build_needed or _venv_fcontext.changed)
   changed_when: true
 
-- name: awx-manage and awx-python on the PATH
+- name: ascender-manage and awx-python on the PATH
   ansible.builtin.file:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     state: link
     force: true
   loop:
-    - { src: "{{ ascender_venv }}/bin/awx-manage", dest: /usr/bin/awx-manage }
+    - { src: "{{ ascender_venv }}/bin/ascender-manage", dest: /usr/bin/ascender-manage }
     - { src: "{{ ascender_src_dir }}/tools/scripts/awx-python", dest: /usr/bin/awx-python }
 
 - name: Supervisor helper scripts from the source tree

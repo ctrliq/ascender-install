@@ -1,7 +1,7 @@
 # Copyright (c) 2026, Ctrl IQ, Inc. All rights reserved.
 #
 # Copies the most recent AWXBackup from the backup PVC to the local filesystem.
-# The backup PVC is created by the AWX Operator when an AWXBackup k8s object is applied.
+# The backup PVC is created by the Ascender Operator when an AWXBackup k8s object is applied.
 # This role mounts that PVC via a temporary pod, reads the backup directory path
 # from the AWXBackup k8s object status, and uses k8s_cp to pull the files locally.
 

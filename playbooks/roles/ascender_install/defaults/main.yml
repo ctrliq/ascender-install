@@ -23,7 +23,7 @@ ASCENDER_IMAGE: ghcr.io/ctrliq/ascender
 # The image tag indicating the version of Ascender you wish to install
 ASCENDER_VERSION: latest
 
-# The version of the AWX Operator used to install Ascender and its components
+# The version of the Ascender Operator used to install Ascender and its components
 ASCENDER_OPERATOR_VERSION: 25.6.2
 
 k8s_container_registry: ghcr.io/ctrliq

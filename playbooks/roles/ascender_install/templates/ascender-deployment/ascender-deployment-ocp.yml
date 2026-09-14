@@ -62,7 +62,8 @@ metadata:
 type: kubernetes.io/tls
 {% endif %}
 ---
-# Ascender AWX Object
+# The Ascender deployment. The kind is still AWX, and the operator API
+# group rename is what changes it.
 apiVersion: awx.ansible.com/v1beta1
 kind: AWX
 metadata:

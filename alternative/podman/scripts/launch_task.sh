@@ -14,8 +14,8 @@ wait-for-migrations
 
 mkdir -p /var/lib/awx/job_status
 
-awx-manage provision_instance --hostname="$(hostname)" --node_type=hybrid
-awx-manage register_queue --queuename=controlplane --instance_percent=100
-awx-manage register_queue --queuename=default --instance_percent=100
+ascender-manage provision_instance --hostname="$(hostname)" --node_type=hybrid
+ascender-manage register_queue --queuename=controlplane --instance_percent=100
+ascender-manage register_queue --queuename=default --instance_percent=100
 
 exec supervisord -c /etc/supervisord_task.conf

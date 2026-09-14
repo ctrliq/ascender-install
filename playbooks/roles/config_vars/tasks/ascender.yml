@@ -95,7 +95,7 @@
   ansible.builtin.set_fact:
     config_data: "{{ config_data | combine({'ASCENDER_VERSION': ascender_version_value}, recursive=True) }}"
 
-- name: "The version of the AWX Operator used to install Ascender"
+- name: "The version of the Ascender Operator used to install Ascender"
   prompt:
     prompt: "Enter your selection [{{ config_data.ASCENDER_OPERATOR_VERSION | default('25.6.2') }}]: "
   register: config_vars_ascender_operator_version
