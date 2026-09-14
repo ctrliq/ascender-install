@@ -41,11 +41,11 @@ DOCUMENTATION = '''
 EXAMPLES = '''
 - name: Show job templates with notifications
   debug:
-    msg: "{{ lookup('awx_notification_templates', host='https://awx.example.com', username='admin', password='password') }}"
+    msg: "{{ lookup('awx_templates_with_enabled_notifications', host='https://awx.example.com', username='admin', password='password') }}"
 
 - name: Get job templates with notifications using 10 workers
   set_fact:
-    notification_data: "{{ lookup('awx_notification_templates', host=awx_host, username=awx_username, password=awx_password, max_workers=10)[0] }}"
+    notification_data: "{{ lookup('awx_templates_with_enabled_notifications', host=awx_host, username=awx_username, password=awx_password, max_workers=10)[0] }}"
     
 - name: Use specific parts of the results
   debug:
@@ -58,7 +58,7 @@ EXAMPLES = '''
   
 - name: Use with SSL verification disabled
   debug:
-    msg: "{{ lookup('awx_notification_templates', host='https://awx.example.com', username='admin', password='password', verify_ssl=false) }}"
+    msg: "{{ lookup('awx_templates_with_enabled_notifications', host='https://awx.example.com', username='admin', password='password', verify_ssl=false) }}"
 '''
 
 RETURN = '''
@@ -204,4 +204,4 @@ class LookupModule(LookupBase):
             }]
             
         except Exception as e:
-            raise AnsibleError(f"Error in awx_notification_templates lookup: {str(e)}")
+            raise AnsibleError(f"Error in awx_templates_with_enabled_notifications lookup: {str(e)}")
