@@ -2,7 +2,7 @@
 DATABASES = {
     'default': {
         'ATOMIC_REQUESTS': True,
-        'ENGINE': 'awx.main.db.profiled_pg',
+        'ENGINE': 'ascender.main.db.profiled_pg',
         # to_json: valid Python string literals whatever the values contain
         'NAME': {{ ascender_pg_database | to_json }},
         'USER': {{ ascender_pg_user | to_json }},
