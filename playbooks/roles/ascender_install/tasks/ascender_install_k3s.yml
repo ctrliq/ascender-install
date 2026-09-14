@@ -31,6 +31,9 @@
 - name: Import Operator Images
   ansible.builtin.shell:
     cmd: k3s ctr images import {{ item }}
+  # containerd's socket under /run/k3s is root-only; without become this
+  # only worked when the whole installer was run as root.
+  become: true
   with_fileglob:
     - "{{ playbook_dir }}/../offline/images/kube-rbac-proxy*.tar"
     - "{{ playbook_dir }}/../offline/images/ascender-operator*.tar"
@@ -49,6 +52,9 @@
 - name: Import Ascender Images
   ansible.builtin.shell:
     cmd: k3s ctr images import {{ item }}
+  # containerd's socket under /run/k3s is root-only; without become this
+  # only worked when the whole installer was run as root.
+  become: true
   with_fileglob:
     - "{{ playbook_dir }}/../offline/images/ascender*.tar"
     - "{{ playbook_dir }}/../offline/images/postgres*.tar"
@@ -84,7 +90,7 @@
 - name: Generate manifest to install ascender-app k8s object with timestamp attached, for purposes of deletion later
   ansible.builtin.template:
     src: "ascender-deployment/ascender-deployment-k3s.yml"
-    dest: "{{ tmp_dir }}/ascender-deployment-k3s.yml.{{ ansible_date_time.iso8601_basic_short }}" 
+    dest: "{{ tmp_dir }}/ascender-deployment-k3s.yml.{{ ansible_date_time.iso8601_basic_short }}"
 
 - name: "Apply ascender-app manifest for {{ k8s_platform }}"
   kubernetes.core.k8s:
@@ -133,7 +139,7 @@
 
 - ansible.builtin.debug:
     msg: "The Ascender API endpoint is {{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
-    
+
 - name: Wait until Ascender API is Up (This may take between 10-20 mins)
   ansible.builtin.uri:
     url: "{{ k8s_lb_protocol }}://{{ ascender_ip }}:{{ ascender_port }}/api/v2/ping/"
@@ -141,7 +147,7 @@
     validate_certs: false
     status_code:
       - 200
-  until: 
+  until:
     - uri_output.status|int == 200
     - uri_output.url == k8s_lb_protocol + "://" + ascender_ip + ":" + ascender_port + "/api/v2/ping/"
   retries: 200

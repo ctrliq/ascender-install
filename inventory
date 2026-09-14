@@ -5,3 +5,17 @@ localhost ansible_host=localhost ansible_connection=local
 # ascender_host ansible_host=x.x.x.x ansible_user=user ansible_ssh_pass=password
 # ascender_host ansible_host=x.x.x.x ansible_user=user ansible_ssh_private_key_file=~/.ssh/key.pem
 ascender_host ansible_host=localhost ansible_connection=local
+
+# Ansible defaults to the interpreter it is running under. When the installer is
+# driven from a virtualenv (the usual way to get a modern ansible-core onto
+# Debian, since PEP 668 blocks system-wide pip), that venv cannot see
+# /usr/lib/python3/dist-packages, so:
+#   - ansible.builtin.apt / apt_repository fail on "python3-apt is not installed"
+#   - kubernetes.core.* fail on "kubernetes is not installed", even though the
+#     common role just installed the python3-kubernetes .deb
+#
+# The system interpreter sees both, and matches what setup.sh probes with
+# `python3 -c "import kubernetes"`. Override per-host if you deliberately keep
+# the python deps inside the venv instead.
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3

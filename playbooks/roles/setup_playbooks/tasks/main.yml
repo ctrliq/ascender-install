@@ -15,12 +15,23 @@
     loop_var: project
     pause: 1
 
+# Some job templates only make sense on one OS family - the SELinux one runs a
+# playbook out of a RHEL-oriented project, and SELinux does not exist on Debian.
+# The play this role runs in gathers no facts, so collect just the OS family
+# before the templates that declare one are filtered on it.
+- name: Retrieve the OS family of the installer host
+  ansible.builtin.setup:
+    gather_subset:
+      - os_family
+  when: templates | selectattr('os_family', 'defined') | list | length > 0
+
 - name: Create Templates
   include_tasks: templates.yml
   loop: "{{ templates }}"
   loop_control:
     label: "{{ template.name }}"
     loop_var: template
+  when: template.os_family is not defined or template.os_family == ansible_os_family
 
 - name: Create Workflow Templates
   include_tasks: workflow_templates.yml

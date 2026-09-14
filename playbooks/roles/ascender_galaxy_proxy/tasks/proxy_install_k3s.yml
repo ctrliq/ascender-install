@@ -6,6 +6,8 @@
 - name: Import images
   ansible.builtin.shell:
     cmd: k3s ctr images import {{ item }}
+  # containerd's socket under /run/k3s is root-only.
+  become: true
   with_fileglob:
     - "{{ playbook_dir }}/../offline/images/ascender-galaxy-proxy*.tar"
   when: k8s_offline
@@ -32,7 +34,7 @@
     wait_sleep: 10
     wait_timeout: 360
     verify_ssl: false
-     
+
 - name: Restart Proxy deployments to pull latest image
   kubernetes.core.k8s:
     state: present
