@@ -191,6 +191,7 @@ if [ $? -ne 0 ]; then
     sudo apt-get update -y && sudo apt-get install -y python3-kubernetes || true
   fi
   if [[ "$OS" == "rhel" ]]; then
+    sudo dnf install -y epel-release || true
     sudo dnf install -y python3-kubernetes || true
   fi
 
