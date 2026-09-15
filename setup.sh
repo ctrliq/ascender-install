@@ -95,30 +95,20 @@ check_python_kubernetes() {
   python3 -c "import kubernetes" > /dev/null 2>&1
 }
 
-# "sudo ./setup.sh" resets PATH via sudo's secure_path, which
-# silently drops an activated virtualenv. Ansible then resolves to the system
-# install, which on these boxes carries a pre-3.0 Jinja2, and every single
-# ansible invocation below fails with the same opaque error. Diagnose it once,
-# up front, instead of five times in a row.
-check_controller_jinja() {
-  python3 - <<'PY' 2>/dev/null
-import sys
-try:
-    import jinja2
-except ImportError:
-    sys.exit(1)
-sys.exit(0 if int(jinja2.__version__.split('.')[0]) >= 3 else 1)
-PY
-}
-
+# Being on PATH does not mean ansible-playbook can actually run, so fail here
+# rather than at the first playbook.
 preflight() {
-  type -p ansible-playbook > /dev/null || return 0
+  type -p ansible-playbook > /dev/null || {
+    echo "Error: ansible-playbook is not on PATH."
+    exit 1
+  }
 
-  if check_controller_jinja; then
+  if diag=$(ansible-playbook --version 2>&1); then
     return 0
   fi
 
-  echo "ERROR: the ansible on PATH cannot run - Jinja2 is missing or older than 3.0."
+  echo "Error: ansible-playbook on PATH cannot run:"
+  printf '%s\n' "$diag" | sed 's/^/       /'
   echo "       ansible-playbook: $(type -p ansible-playbook)"
   echo "       python3:          $(type -p python3)"
   if [ -n "${SUDO_USER:-}" ]; then
@@ -128,7 +118,7 @@ preflight() {
     echo "  unprivileged user with passwordless sudo (recommended - every task"
     echo "  that needs root escalates on its own):"
     echo
-    echo "      source ~/ansible-venv/bin/activate && ./setup.sh"
+    echo "      source /path/to/venv/bin/activate && ./setup.sh"
     echo
     echo "  or keep the environment when escalating:"
     echo
