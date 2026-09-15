@@ -21,7 +21,7 @@ x-ascender-image: &ascender-image
   image: ${ASCENDER_IMAGE:-ghcr.io/ctrliq/ascender}:${ASCENDER_VERSION:-latest}
 
 x-ascender-env: &ascender-env
-  AWX_LOGGING_MODE: stdout
+  ASCENDER_LOGGING_MODE: stdout
   ASCENDER_HOSTNAME: ${ASCENDER_HOSTNAME:-localhost}
   ASCENDER_ALLOWED_HOSTS: ${ASCENDER_ALLOWED_HOSTS:-}
   ASCENDER_HTTP_PORT: ${ASCENDER_HTTP_PORT:-80}
