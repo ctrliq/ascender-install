@@ -23,7 +23,7 @@ kubeapi_server_ip: "127.0.0.1"
 kube_install: false
 
     # Offline Install - Whether to use local assets to complete the install
-k8s_offline: false 
+k8s_offline: false
 
     # Whether to configure the upstream Kubernetes package repository on the installing server
     # Set this to false when kubectl is already served by a local mirror you have configured
@@ -55,12 +55,12 @@ k3s_master_node_ip: "127.0.0.1"
 
     # Determines whether to use Route53's Domain Management (which is automated)
     # Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
-    # If this value is set to false, you will have to manually set a CNAME record for 
+    # If this value is set to false, you will have to manually set a CNAME record for
     # {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to their corresponding
     # AWS Loadbalancers
 USE_ROUTE_53: yes
 
-    # If desired, this indicates an AWS IAM user that can be set up in order to have minimum 
+    # If desired, this indicates an AWS IAM user that can be set up in order to have minimum
     # permissions to set up a new eks cluster and install Ascender and its associoated components
 EKS_USER: ascenderuser
 
@@ -69,7 +69,7 @@ EKS_CLUSTER_NAME: ascender-eks-cluster
 
     # Determines what to do with the eks cluster Ascender wil be installed on:
     # provision: Provision a new EKS cluster from scratch
-    # configure: use the cluster specified by the variable EKS_CLUSTER_NAME, and configure it with 
+    # configure: use the cluster specified by the variable EKS_CLUSTER_NAME, and configure it with
     #            policies for loa balancer creation and elastic block service access
     # no_action: use the cluster specified by the variable EKS_CLUSTER_NAME, but make no changes to it before
     #            installing Ascender.
@@ -96,7 +96,7 @@ EKS_SUBNET_SIZE: 26
     # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
 EKS_K8S_VERSION: "1.35"
 
-    # The worker node instance types 
+    # The worker node instance types
 EKS_INSTANCE_TYPE: t3.large
 
     # The minimum number of worker nodes that the cluster will run
@@ -112,7 +112,7 @@ EKS_NUM_WORKER_NODES: 3
 EKS_WORKER_VOLUME_SIZE: 100
 
     # The ARN for the SSL certificate; required when k8s_lb_protocol is https.
-    # The same certificate is used for all components (currently Ascender and Ledger); 
+    # The same certificate is used for all components (currently Ascender and Ledger);
     # as such, we recommend that the certificate is set for a wildcard domain
     # (e.g., *.example.com)
 EKS_SSL_CERT: arn:aws:acm:<region>:xxxxxxxxxx:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx
@@ -129,7 +129,7 @@ AKS_CLUSTER_NAME: ascender-aks-cluster
 
     # Determines whether to use Azure DNS' Domain Management (which is automated)
     # Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
-    #If this value is set to false, you will have to manually set an A record for 
+    #If this value is set to false, you will have to manually set an A record for
     # {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to their corresponding
     # Azure Loadbalancers
 USE_AZURE_DNS: true
@@ -153,15 +153,49 @@ AKS_NUM_WORKER_NODES: 3
     # The volume size of aks worker nodes in GB
 AKS_WORKER_VOLUME_SIZE: 100
 
+    # ---gke variables---
+    # The name of the Google Cloud Project ID where the gke cluster should live
+GKE_PROJECT_ID: ascender-gke-project
+
+    # Determines whether to use Google Cloud DNS Domain Management (which is automated)
+    # Or a third-party service (e.g., Cloudflare, GoDaddy, etc.)
+    # If this value is set to false, you will have to manually set an A record for
+    # {{ASCENDER_HOSTNAME }} and {{ LEDGER_HOSTNAME }} to point to their corresponding
+    # Google Cloud Loadbalancers
+USE_GOOGLE_DNS: true
+
+    # The name of the gke cluster to install Ascender on - if it does not already exist, the installer can set it up
+GKE_CLUSTER_NAME: ascender-gke-cluster
+
+    # Specifies whether the GKE cluster needs to be provisioned (provision), exists but needs to be configured to support Ascender (configure), or exists and needs nothing done before installing Ascender (no_action)
+GKE_CLUSTER_STATUS: provision
+
+    # The Google Cloud zone hosting the gke cluster. To see a list of all available zones in your
+    # Google Cloud project, run: gcloud compute zones list --project <your-project-id>
+GKE_CLUSTER_ZONE: us-central1-a
+
+    # The kubernetes version for the gke cluster; available kubernetes versions can be determined
+    # by running: gcloud container get-server-config --zone <zone>
+GKE_K8S_VERSION: "1.29.4-gke.1043002"
+
+    # The gke worker node instance types
+GKE_INSTANCE_TYPE: "e2-medium"
+
+    # The desired number of gke worker nodes
+GKE_NUM_WORKER_NODES: 3
+
+    # The volume size of gke worker nodes in GB
+GKE_WORKER_VOLUME_SIZE: 100
+
     # ---dkp variables---
     # The name of the dkp cluster you wish to deploy Ascender to and/or create
-    # See a list of all dkp clusters with the command 
+    # See a list of all dkp clusters with the command
     # NOTE: This must be done while pointing to the DKP Bootstrap Cluster
 DKP_CLUSTER_NAME: dkp-cluster
 
     # ---rke2 variables---
 
-    # The URL to the binary file rke2.linux-amd64. If you want to choose a different 
+    # The URL to the binary file rke2.linux-amd64. If you want to choose a different
     # release, you can choose here:
     # https://github.com/rancher/rke2/releases
 RKE2_BINARY_URL: https://github.com/rancher/rke2/releases/download/v1.25.16%2Brke2r1/rke2.linux-amd64
@@ -170,10 +204,10 @@ RKE2_BINARY_URL: https://github.com/rancher/rke2/releases/download/v1.25.16%2Brk
     # ---Local artifact variables---
 
     # TLS Certificate file, required when deploying HTTPS in K3s
-tls_crt_path: "~/ascender.crt"
+tls_crt_path: "{{ playbook_dir }}/../ascender.crt"
 
     # TLS Private Key file, required when deploying HTTPS in K3s
-tls_key_path: "~/ascender.key"
+tls_key_path: "{{ playbook_dir }}/../ascender.key"
 
     # CA Bundle that contains both your CA Cert and other external CA bundles
     # Such as the ones located at /etc/ssl/certs/ca-bundle.crt
@@ -226,7 +260,7 @@ ASCENDER_VERSION: 25.6.2
 ascender_garbage_collect_secrets: true
 
     # Setup extra demo playbooks after installation
-ascender_setup_playbooks: true
+ascender_setup_playbooks: false
 
     # External PostgreSQL ip or url resolvable by the cluster
 # ASCENDER_PGSQL_HOST: "ascenderpghost.example.com"
@@ -256,6 +290,82 @@ ascender_setup_playbooks: true
     ### All of these options are unnecessary to change, but will allow you to tweak your Ascender deployment if you choose to change them
 ascender_replicas: 1
 ascender_image_pull_policy: Always
+
+    # ---Ascender React install variables---
+
+    # these used to live only in playbooks/group_vars/all.yml, where they were
+    # invisible to anyone configuring an install. They are repeated here so that every
+    # user-facing switch sits in one file; this file is loaded through vars_files and
+    # therefore wins over group_vars, and custom.config.yml in turn wins over this one.
+
+    # Determines whether or not Ascender React will be installed
+REACT_INSTALL: true
+
+    # DNS resolvable hostname for Ascender React service. This is required for install.
+REACT_HOSTNAME: react.example.com
+
+    # k8s namespace for Ascender React k8s objects
+REACT_NAMESPACE: react
+
+    # Administrator username for Ascender React
+REACT_ADMIN_USER: admin
+
+    # Administrator password for Ascender React
+REACT_ADMIN_PASSWORD: "myadminpassword"
+
+    # The version of the EDA Operator used to install Ascender React and its components
+REACT_OPERATOR_VERSION: main
+
+    # The OCI container image for Ascender React
+REACT_IMAGE: quay.io/ansible/eda-server
+REACT_IMAGE_VERSION: main
+
+    # The OCI container image for Ascender React UI
+REACT_IMAGE_WEB: quay.io/ansible/eda-ui
+REACT_IMAGE_WEB_VERSION: latest
+
+    # TLS Certificate file, required when deploying HTTPS in K3s
+react_tls_crt_path: "{{ playbook_dir }}/../ascender.crt"
+
+    # TLS Private Key file, required when deploying HTTPS in K3s
+react_tls_key_path: "{{ playbook_dir }}/../ascender.key"
+
+    # ---Ascender React database---
+
+    # Which PostgreSQL instance Ascender React runs on:
+    #
+    #   managed   the EDA Operator deploys and owns ascender-react-postgres-15 inside
+    #             REACT_NAMESPACE. A second database server next to Ascender's.
+    #   ascender  React uses the same instance as Ascender, in its own database and
+    #             with its own role. One server to size, back up and upgrade. The
+    #             installer creates the role and the database; Ascender has to be
+    #             installed first.
+    #   external  React uses a server you run yourself. Set REACT_PGSQL_HOST below.
+    #             The database and both roles must already exist - the EDA Operator
+    #             only creates those on an instance it manages.
+REACT_PGSQL_MODE: ascender
+
+    # Database, role and password React connects with. Used by the 'ascender' and
+    # 'external' modes; the managed mode generates its own.
+    # NOTE: Do NOT use special characters in the postgres password (Django requirement)
+REACT_PGSQL_DB: react
+REACT_PGSQL_USER: react
+REACT_PGSQL_PWD: "anotherpassword"
+
+    # The event stream connects as a second, less privileged role on the same database.
+    # Defaults to the password above when left unset.
+REACT_PGSQL_EVENT_STREAM_USER: react_event_stream
+# REACT_PGSQL_EVENT_STREAM_PWD: "anotherpassword"
+
+    # External PostgreSQL ip or url resolvable by the cluster; required, and only used,
+    # when REACT_PGSQL_MODE is 'external'
+# REACT_PGSQL_HOST: "reactpghost.example.com"
+
+    # External PostgreSQL port, this usually defaults to 5432
+# REACT_PGSQL_PORT: 5432
+
+    # PostgreSQL sslmode React connects with
+# REACT_PGSQL_SSLMODE: prefer
 
     # ---Ledger install variables---
 
@@ -315,13 +425,13 @@ LEDGER_ADMIN_PASSWORD: "myadminpassword"
 LEDGER_DB_PASSWORD: "mydbpassword"
 
     # Whether to install the Ascender Galaxy Proxy
-PROXY_INSTALL: false
+PROXY_INSTALL: true
 
 PROXY_HOSTNAME: galaxy-proxy.example.com
 
 PROXY_IMAGE: ghcr.io/ctrliq/ascender-galaxy-proxy
 
-PROXY_VERSION: latest
+PROXY_VERSION: main
 
 PROXY_CONFIG:
   # Enable debug logging.
@@ -348,10 +458,10 @@ PROXY_CONFIG:
   PVC_SIZE: 5
 
     # TLS Certificate file, required when deploying HTTPS in K3s
-PROXY_TLS_CRT_PATH: "~/ascender.crt"
+PROXY_TLS_CRT_PATH: "{{ playbook_dir }}/../ascender.crt"
 
     # TLS Private Key file, required when deploying HTTPS in K3s
-PROXY_TLS_KEY_PATH: "~/ascender.key"
+PROXY_TLS_KEY_PATH: "{{ playbook_dir }}/../ascender.key"
 
     # Storage Class for the Persistent Volume Claim for Ledger's database
     # Only uncomment to set a specific storage class on new installs

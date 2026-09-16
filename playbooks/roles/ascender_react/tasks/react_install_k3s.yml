@@ -1,0 +1,325 @@
+- name: Retrieve the current time in order to timestamp files
+  ansible.builtin.setup:
+    gather_subset:
+     - date_time
+
+# the k8s API server can answer "503 Service Unavailable / apiserver not
+# ready" while it is (re)starting, or while it rebuilds its discovery cache right
+# after new CRDs are registered. kubernetes.core modules turn that into a hard
+# module failure, which used to abort the whole React install. Every task that
+# talks to the API below is therefore retried instead of failing on the first
+# transient error.
+- name: Wait for the Kubernetes API server to be responsive
+  kubernetes.core.k8s_info:
+    kind: Namespace
+    verify_ssl: false
+  register: react_api_probe
+  until: react_api_probe is not failed
+  retries: 60
+  delay: 5
+
+- name: Create Namespace
+  kubernetes.core.k8s:
+    name: "{{ REACT_NAMESPACE }}"
+    api_version: v1
+    kind: Namespace
+    verify_ssl: false
+    state: present
+  register: react_namespace
+  until: react_namespace is not failed
+  retries: 30
+  delay: 10
+
+- name: Ensure React directory exists
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}/react/"
+    state: directory
+
+- name: Generate manifest to install EDA Operator
+  ansible.builtin.template:
+    src: templates/eda-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/react/kustomization.yml"
+
+- name: Generate manifest to install EDA Operator with timestamp attached, for purposes of operator deletion later
+  ansible.builtin.template:
+    src: templates/eda-operator/kustomization.j2
+    dest: "{{ tmp_dir }}/react/kustomization.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+
+
+# Import EDA Operator images here
+- name: Install EDA Operator with Kustomize
+  kubernetes.core.k8s:
+    definition: "{{ lookup('kubernetes.core.kustomize', dir=tmp_dir ~'/react/') }}"
+    verify_ssl: false
+  register: react_operator_install
+  until: react_operator_install is not failed
+  retries: 30
+  delay: 10
+
+- name: delete Kustomization file
+  ansible.builtin.file:
+    path: "{{ tmp_dir }}/react/kustomization.yml"
+    state: absent
+
+# Import React images here
+# registering the EDA CRDs makes the API server reload discovery; querying
+# it during that window is what produced the 503. Wait for the CRD to be
+# Established before asking for anything in the eda.ansible.com group.
+- name: Wait for the EDA CustomResourceDefinition to be established
+  kubernetes.core.k8s_info:
+    api_version: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    name: edas.eda.ansible.com
+    verify_ssl: false
+  register: react_crd
+  until:
+    - react_crd is not failed
+    - react_crd.resources | default([]) | length > 0
+    - react_crd.resources[0].status.conditions | default([])
+      | selectattr('type', 'equalto', 'Established')
+      | selectattr('status', 'equalto', 'True') | list | length > 0
+  retries: 60
+  delay: 5
+
+# k8s_info with wait:yes fails outright if the Deployment does not exist
+# yet, so first wait for the operator Deployment object to appear.
+- name: Wait for Operator deployment to be created
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: eda-server-operator-controller-manager
+    namespace: "{{ REACT_NAMESPACE }}"
+    verify_ssl: false
+  register: react_operator_deployment
+  until:
+    - react_operator_deployment is not failed
+    - react_operator_deployment.resources | default([]) | length > 0
+  retries: 60
+  delay: 5
+
+- name: Wait for Operator deployment to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: eda-server-operator-controller-manager
+    namespace: "{{ REACT_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 360
+    verify_ssl: false
+  register: react_operator_ready
+  until: react_operator_ready is not failed
+  retries: 5
+  delay: 15
+
+# k3s enforces NetworkPolicy (kube-router), and eda-server-operator's policies
+# were written for OpenShift: they allow DNS egress only to a namespace named
+# "openshift-dns" and ingress only from the OpenShift router namespaces. On k3s that
+# leaves the eda-ui pod unable to reach CoreDNS - nginx then dies at startup with
+# 'host not found in upstream "ascender-react-api"' and goes CrashLoopBackOff - and
+# leaves Traefik unable to reach the UI and event-stream pods, which answers every
+# request through the ingress with 502. These additive policies re-open both paths.
+# They are applied before the EDA custom resource so the pods are covered from the
+# moment the operator creates them.
+- name: Set the namespaces the React ingress controller runs in
+  ansible.builtin.set_fact:
+    react_ingress_controller_namespaces: ["kube-system"]
+
+# decide which PostgreSQL instance React uses (its own, Ascender's, or an
+# external one) and build the secrets the operator needs, before the custom resource
+# is applied and before the NetworkPolicies are rendered - the policy that opens the
+# path to a shared database depends on the facts this sets.
+- name: Configure the PostgreSQL instance Ascender React will use
+  ansible.builtin.include_tasks: react_postgres.yml
+
+- name: Apply the NetworkPolicies the React pods need outside OpenShift
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'react-networkpolicy/react-networkpolicies.yml') }}"
+    verify_ssl: false
+  register: react_netpol_apply
+  until: react_netpol_apply is not failed
+  retries: 30
+  delay: 10
+
+- name: Generate manifest to install AWX ascender-app k8s object with timestamp attached, for purposes of deletion later
+  ansible.builtin.template:
+    src: "react-deployment/react-deployment-k3s.yml"
+    dest: "{{ tmp_dir }}/react-deployment-k3s.yml.{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: "Apply React manifest for {{ k8s_platform }}"
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'react-deployment/react-deployment-k3s.yml') }}"
+    verify_ssl: false
+  register: react_manifest_apply
+  until: react_manifest_apply is not failed
+  retries: 30
+  delay: 10
+
+# the custom resource now asks for ingress_type "none" (see the react-deployment
+# template), because the operator's eda-ui.ingress.yaml.j2 publishes the event-stream
+# backend on a hardcoded "/" next to the UI on the same host. Ingress controllers keep
+# one of two identical rules - Traefik keeps the event-stream one - so the React UI
+# answered 404 on every request. The Ansible operator does not garbage-collect the
+# objects it created before the switch, so an existing install still carries that
+# Ingress and it has to be removed explicitly.
+- name: Remove the Ingress the EDA Operator created before ingress_type was set to none
+  kubernetes.core.k8s:
+    state: absent
+    api_version: networking.k8s.io/v1
+    kind: Ingress
+    name: ascender-react-ui-ingress
+    namespace: "{{ REACT_NAMESPACE }}"
+    verify_ssl: false
+  register: react_stale_ingress
+  until: react_stale_ingress is not failed
+  retries: 10
+  delay: 5
+
+- name: Apply the React Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('ansible.builtin.template', 'react-deployment/react-ingress.yml') }}"
+    verify_ssl: false
+  register: react_ingress_apply
+  until: react_ingress_apply is not failed
+  retries: 30
+  delay: 10
+
+# the role used to wait for a Deployment called "ascender-react-scheduler".
+# eda-server-operator does not create one - the Deployments it reconciles are
+# <name>-api, <name>-ui, <name>-event-stream, <name>-activation-worker and
+# <name>-default-worker, plus the <name>-postgres-15 StatefulSet - so that wait could
+# only ever time out and fail an install that had in fact succeeded. Wait for the
+# operator to report the custom resource reconciled, then for the API Deployment.
+- name: Wait for the EDA Operator to finish reconciling the React custom resource (this may take up to 10 minutes)
+  kubernetes.core.k8s_info:
+    api_version: eda.ansible.com/v1alpha1
+    kind: EDA
+    name: ascender-react
+    namespace: "{{ REACT_NAMESPACE }}"
+    verify_ssl: false
+  register: react_cr
+  until:
+    - react_cr is not failed
+    - react_cr.resources | default([]) | length > 0
+    - react_cr.resources[0].status.conditions | default([])
+      | selectattr('type', 'equalto', 'Successful')
+      | selectattr('status', 'equalto', 'True') | list | length > 0
+  retries: 60
+  delay: 10
+
+- name: Wait for the ascender-react-api Deployment to be created
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: ascender-react-api
+    namespace: "{{ REACT_NAMESPACE }}"
+    verify_ssl: false
+  register: react_api_created
+  until:
+    - react_api_created is not failed
+    - react_api_created.resources | default([]) | length > 0
+  retries: 60
+  delay: 10
+
+- name: Wait for the ascender-react-api Deployment to complete setting up (this may take up to 10 minutes)
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    wait: yes
+    name: ascender-react-api
+    namespace: "{{ REACT_NAMESPACE }}"
+    wait_sleep: 10
+    wait_timeout: 600
+    verify_ssl: false
+  register: react_deployment
+  until: react_deployment is not failed
+  retries: 3
+  delay: 30
+
+# the UI is the part of React a user actually opens, so wait for it explicitly
+# instead of declaring the install finished once the scheduler is up.
+- name: Wait for the ascender-react-ui Deployment to become available
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: ascender-react-ui
+    namespace: "{{ REACT_NAMESPACE }}"
+    verify_ssl: false
+  register: react_ui_deployment
+  until:
+    - react_ui_deployment is not failed
+    - react_ui_deployment.resources | default([]) | length > 0
+    - react_ui_deployment.resources[0].status.availableReplicas | default(0) | int > 0
+  retries: 30
+  delay: 10
+  ignore_errors: true
+
+# nginx in the eda-ui image resolves its upstreams once, when it loads its
+# configuration, and exits if the name does not resolve. A pod that started in the
+# window before the NetworkPolicies above were in force therefore stays in
+# CrashLoopBackOff even after DNS works again. Replacing the pod is what clears it.
+- name: Replace React UI pods that started before DNS egress was allowed
+  when: react_ui_deployment is failed
+  block:
+
+    - name: Find the React UI pods
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: "{{ REACT_NAMESPACE }}"
+        label_selectors:
+          - app.kubernetes.io/component=eda-ui
+        verify_ssl: false
+      register: react_ui_pods
+
+    - name: Delete the React UI pods
+      kubernetes.core.k8s:
+        state: absent
+        api_version: v1
+        kind: Pod
+        name: "{{ item.metadata.name }}"
+        namespace: "{{ REACT_NAMESPACE }}"
+        verify_ssl: false
+      loop: "{{ react_ui_pods.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.metadata.name }}"
+
+    - name: Wait for the replacement React UI pods to become available
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        name: ascender-react-ui
+        namespace: "{{ REACT_NAMESPACE }}"
+        verify_ssl: false
+      register: react_ui_deployment
+      until:
+        - react_ui_deployment is not failed
+        - react_ui_deployment.resources | default([]) | length > 0
+        - react_ui_deployment.resources[0].status.availableReplicas | default(0) | int > 0
+      retries: 30
+      delay: 10
+
+- name: Set the Ascender React URL
+  ansible.builtin.set_fact:
+      react_ip: "{{ REACT_HOSTNAME }}"
+      react_port: "{{ '443' if k8s_lb_protocol == 'https' else '80' }}"
+
+# /api/v2/ping/ is AWX's endpoint and 404s on React; the EDA API answers on
+# /api/eda/v1/status/.
+- ansible.builtin.debug:
+    msg: "The Ascender React API endpoint is {{ k8s_lb_protocol }}://{{ react_ip }}:{{ react_port }}/api/eda/v1/status/"
+
+# prove the ingress actually serves React from outside the cluster before the
+# play reports success. This is what catches the NetworkPolicy and duplicate-path
+# problems above if they ever come back.
+- name: Wait until the Ascender React API is up (this may take a few minutes)
+  ansible.builtin.uri:
+    url: "{{ k8s_lb_protocol }}://{{ react_ip }}:{{ react_port }}/api/eda/v1/status/"
+    validate_certs: false
+    status_code:
+      - 200
+  register: react_uri_output
+  until: react_uri_output.status | int == 200
+  retries: 60
+  delay: 10
+  when: REACT_API_CHECK | default(true) | bool
+
+- ansible.builtin.debug:
+    msg: "Ascender React is up at {{ k8s_lb_protocol }}://{{ react_ip }}:{{ react_port }}/"
