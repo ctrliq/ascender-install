@@ -110,11 +110,23 @@
       when: k8s_platform == "k3s"
 
 
+    # the message this used to print ("not installed or the incorrect version")
+    # named neither the version that was found nor a command that puts the collection
+    # where ansible.cfg looks for it, which sent people round in circles installing
+    # collections into ~/.ansible/collections - a directory the repository's
+    # collections_path does not include. Report both, and name the working command.
     - name: Verify Collections
       ansible.builtin.assert:
         that:
           - (lookup('community.general.collection_version', item.name) | default('0.0.0', true)) is version(item.version, item.compare, version_type=item.version_type)
-        fail_msg: "{{ item.name }} Collection is not installed or the incorrect version.  Please run 'ansible-galaxy install -r collections/requirements.yml'"
+        fail_msg: >-
+          {{ item.name }} {{ item.compare }} {{ item.version }} is required, but this
+          controller resolves
+          {{ lookup('community.general.collection_version', item.name) | default('no installed copy', true) }}.
+          Run 'ansible-galaxy collection install -r collections/requirements.yml' from
+          the root of this repository - ansible.cfg puts ./collections first on the
+          collections path, so that is where the installer reads them from.
+        success_msg: "{{ item.name }} {{ lookup('community.general.collection_version', item.name) }} satisfies {{ item.compare }} {{ item.version }}"
       when: item.platform is undefined or k8s_platform in item.platform
       loop: "{{ required_collections }}"
       loop_control:
