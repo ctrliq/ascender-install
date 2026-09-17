@@ -676,7 +676,7 @@ DR configuration uses the Ascender REST API via the `ctrliq.ascender` collection
 | 4 | **Disable all enabled schedules** | Prevents DR from running production scheduled jobs |
 | 5 | **Set LDAP server URIs** | Points to DR domain controllers instead of production |
 
-Uses the existing `awx_templates_with_enabled_notifications` lookup plugin (in `lookup_plugins/`) for efficient notification discovery with concurrent API calls.
+Uses the existing `ascender_templates_with_enabled_notifications` lookup plugin (in `lookup_plugins/`) for efficient notification discovery with concurrent API calls.
 
 ### Step 10: verify.yml
 
