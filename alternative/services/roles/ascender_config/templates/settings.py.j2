@@ -32,7 +32,7 @@ CLUSTER_HOST_ID = {{ ascender_node_name | to_json }}
 
 # valkey listens only on the unix socket /run/valkey/valkey.sock (see the
 # ascender_valkey role). Ascender's defaults (awx/settings/defaults.py) already
-# point the broker, the cache (awx.main.cache.AWXValkeyCache) and the channel
+# point the broker, the cache (ascender.main.cache.AWXValkeyCache) and the channel
 # layer (channels_valkey) at unix:///var/run/valkey/valkey.sock, which is the
 # same file because /var/run is a symlink to /run on EL9, so nothing is
 # overridden here. Do not copy upstream AWX's ansible_base / channels_redis
