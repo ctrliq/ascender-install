@@ -270,11 +270,11 @@ run_init() {
     podman run --rm --name ascender-init \
         --user 0:0 \
         -v "${SCRIPTS_DIR}:/opt/ascender:ro,z" \
-        -v "${VOL_PROJECTS}:/var/lib/awx/projects" \
+        -v "${VOL_PROJECTS}:/var/lib/ascender/projects" \
         -v "${VOL_JOBDATA}:/tmp" \
-        -v "${VOL_RECEPTOR_SOCK}:/var/run/awx-receptor" \
-        -v "${VOL_RSYSLOG_SOCK}:/var/run/awx-rsyslog" \
-        -v "${VOL_PODMAN}:/var/lib/awx/.local/share/containers" \
+        -v "${VOL_RECEPTOR_SOCK}:/var/run/ascender-receptor" \
+        -v "${VOL_RSYSLOG_SOCK}:/var/run/ascender-rsyslog" \
+        -v "${VOL_PODMAN}:/var/lib/ascender/.local/share/containers" \
         --entrypoint /bin/bash "${ASCENDER_REF}" /opt/ascender/init.sh
 }
 
@@ -344,14 +344,14 @@ run_receptor() {
         --privileged \
         --security-opt label=type:spc_t --security-opt label=level:s0 \
         --restart on-failure \
-        -e RECEPTORCTL_SOCKET=/var/run/awx-receptor/receptor.sock \
+        -e RECEPTORCTL_SOCKET=/var/run/ascender-receptor/receptor.sock \
         -e XDG_RUNTIME_DIR=/run/user/1000 \
         --mount type=tmpfs,destination=/run/user/1000,tmpfs-mode=0700,U=true \
         -v "${ASCENDER_CONFIG_DIR}/receptor.conf:/etc/receptor/receptor.conf:ro,z" \
-        -v "${VOL_PROJECTS}:/var/lib/awx/projects" \
+        -v "${VOL_PROJECTS}:/var/lib/ascender/projects" \
         -v "${VOL_JOBDATA}:/tmp" \
-        -v "${VOL_RECEPTOR_SOCK}:/var/run/awx-receptor" \
-        -v "${VOL_PODMAN}:/var/lib/awx/.local/share/containers" \
+        -v "${VOL_RECEPTOR_SOCK}:/var/run/ascender-receptor" \
+        -v "${VOL_PODMAN}:/var/lib/ascender/.local/share/containers" \
         -v /sys/fs/cgroup:/sys/fs/cgroup \
         "${RECEPTOR_REF}" >/dev/null
 }
@@ -367,14 +367,14 @@ run_task() {
         --restart on-failure \
         --env-file "${envfile}" "${COMMON_ENV[@]}" \
         -e SUPERVISOR_CONFIG_PATH=/etc/supervisord_task.conf \
-        -e RECEPTORCTL_SOCKET=/var/run/awx-receptor/receptor.sock \
+        -e RECEPTORCTL_SOCKET=/var/run/ascender-receptor/receptor.sock \
         "${COMMON_MOUNTS[@]}" "${SECRET_MOUNT[@]}" \
         -v "${SCRIPTS_DIR}:/opt/ascender:ro,z" \
-        -v "${VOL_PROJECTS}:/var/lib/awx/projects" \
+        -v "${VOL_PROJECTS}:/var/lib/ascender/projects" \
         -v "${VOL_JOBDATA}:/tmp" \
         -v "${VOL_VALKEY_SOCK}:/var/run/valkey" \
-        -v "${VOL_RECEPTOR_SOCK}:/var/run/awx-receptor" \
-        -v "${VOL_RSYSLOG_SOCK}:/var/run/awx-rsyslog" \
+        -v "${VOL_RECEPTOR_SOCK}:/var/run/ascender-receptor" \
+        -v "${VOL_RSYSLOG_SOCK}:/var/run/ascender-rsyslog" \
         "${ASCENDER_REF}" /opt/ascender/launch_task.sh >/dev/null || status=$?
     rm -f "${envfile}"
     return "${status}"
@@ -401,9 +401,9 @@ run_web() {
         -v "${ASCENDER_CONFIG_DIR}/nginx-locations.conf:/etc/nginx/ascender-locations.conf:ro,z" \
         -v "${ASCENDER_CONFIG_DIR}/nginx-http-${ASCENDER_HTTP_MODE}.conf:/etc/nginx/ascender-http.conf:ro,z" \
         -v "${CERT_DIR}:/etc/tower/certs:ro,z" \
-        -v "${VOL_PROJECTS}:/var/lib/awx/projects" \
+        -v "${VOL_PROJECTS}:/var/lib/ascender/projects" \
         -v "${VOL_VALKEY_SOCK}:/var/run/valkey" \
-        -v "${VOL_RSYSLOG_SOCK}:/var/run/awx-rsyslog" \
+        -v "${VOL_RSYSLOG_SOCK}:/var/run/ascender-rsyslog" \
         --health-cmd 'curl -kfsS -o /dev/null https://127.0.0.1:8053/api/v2/ping/' \
         --health-interval 15s --health-timeout 5s --health-retries 20 --health-start-period 60s \
         "${ASCENDER_REF}" launch_awx_web.sh >/dev/null || status=$?
@@ -424,8 +424,8 @@ run_rsyslog() {
         -e SUPERVISOR_CONFIG_PATH=/etc/supervisord_rsyslog.conf \
         "${COMMON_MOUNTS[@]}" "${SECRET_MOUNT[@]}" \
         -v "${VOL_VALKEY_SOCK}:/var/run/valkey" \
-        -v "${VOL_RSYSLOG_SOCK}:/var/run/awx-rsyslog" \
-        -v "${VOL_RSYSLOG_SPOOL}:/var/lib/awx/rsyslog" \
+        -v "${VOL_RSYSLOG_SOCK}:/var/run/ascender-rsyslog" \
+        -v "${VOL_RSYSLOG_SPOOL}:/var/lib/ascender/rsyslog" \
         "${ASCENDER_REF}" launch_awx_rsyslog.sh >/dev/null || status=$?
     rm -f "${envfile}"
     return "${status}"
