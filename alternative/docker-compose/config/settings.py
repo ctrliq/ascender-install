@@ -1,6 +1,6 @@
 # Ascender settings for the Docker Compose deployment.
 #
-# Loaded by awx/settings/production.py after the defaults. Everything
+# Loaded by ascender/settings/production.py after the defaults. Everything
 # deployment-specific comes from environment variables set in
 # docker-compose.yml (which reads them from .env), so this file is the same for
 # every install. Any setting that is not read-only can still be changed in the
@@ -66,7 +66,7 @@ DATABASES = {
 
 # valkey listens only on this unix socket (see config/valkey.conf), shared with
 # the Ascender containers through the valkey_socket volume. The image defaults
-# (awx/settings/defaults.py) already point the broker (BROKER_URL), the cache
+# (ascender/settings/defaults.py) already point the broker (BROKER_URL), the cache
 # (awx.main.cache.AWXValkeyCache) and the channel layer (channels_valkey) at
 # unix:///var/run/valkey/valkey.sock, so nothing is overridden here. Do not copy
 # upstream AWX's ansible_base / channels_redis backends into this file: the

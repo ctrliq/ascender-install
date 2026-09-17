@@ -34,7 +34,7 @@ x-ascender-env: &ascender-env
   DATABASE_PASSWORD: ${ASCENDER_PGSQL_PWD:?ASCENDER_PGSQL_PWD is not set; copy .env.example to .env or run ./setup.sh}
   BROADCAST_WEBSOCKET_SECRET: ${ASCENDER_WEBSOCKET_SECRET:?ASCENDER_WEBSOCKET_SECRET is not set; copy .env.example to .env or run ./setup.sh}
 
-# awx/settings/defaults.py reads /etc/tower/SECRET_KEY and derives the channel
+# ascender/settings/defaults.py reads /etc/tower/SECRET_KEY and derives the channel
 # layer (websocket event) encryption key from it, so every Ascender container
 # must see the same file. It is delivered as a compose secret from .env.
 x-ascender-secrets: &ascender-secrets
