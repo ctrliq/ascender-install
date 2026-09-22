@@ -1,6 +1,6 @@
 # {{ ansible_managed }}
 # Ascender settings for the single-host (services) install. Loaded by
-# awx/settings/production.py after the defaults; /etc/tower/conf.d/*.py is
+# ascender/settings/production.py after the defaults; /etc/tower/conf.d/*.py is
 # loaded after this file. Settings defined here are read-only in the UI.
 
 import os
@@ -31,7 +31,7 @@ USE_X_FORWARDED_PORT = True
 CLUSTER_HOST_ID = {{ ascender_node_name | to_json }}
 
 # valkey listens only on the unix socket /run/valkey/valkey.sock (see the
-# ascender_valkey role). Ascender's defaults (awx/settings/defaults.py) already
+# ascender_valkey role). Ascender's defaults (ascender/settings/defaults.py) already
 # point the broker, the cache (awx.main.cache.AWXValkeyCache) and the channel
 # layer (channels_valkey) at unix:///var/run/valkey/valkey.sock, which is the
 # same file because /var/run is a symlink to /run on EL9, so nothing is

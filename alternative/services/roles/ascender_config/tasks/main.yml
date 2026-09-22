@@ -44,7 +44,7 @@
     ascender_admin_password_effective: "{{ (_secrets.results | selectattr('item', 'equalto', 'admin_password') | first).content | b64decode | trim }}"
   no_log: true
 
-# awx/settings/defaults.py reads this file and derives the channel layer
+# ascender/settings/defaults.py reads this file and derives the channel layer
 # encryption key from it; settings.py reads it for SECRET_KEY.
 - name: SECRET_KEY file
   ansible.builtin.copy:
