@@ -2,19 +2,19 @@
 # -*- coding: utf-8 -*-
 
 DOCUMENTATION = '''
-    lookup: awx_templates_with_enabled_notifications
-    short_description: Find AWX job templates with notifications
+    lookup: ascender_templates_with_enabled_notifications
+    short_description: Find Ascender job templates with notifications
     description:
-        - This lookup returns all AWX job templates that have notification templates configured
+        - This lookup returns all Ascender job templates that have notification templates configured
     options:
         host:
-            description: The AWX host URL
+            description: The Ascender host URL
             required: True
         username:
-            description: The AWX username
+            description: The Ascender username
             required: True
         password:
-            description: The AWX password
+            description: The Ascender password
             required: True
         max_workers:
             description: Maximum number of concurrent workers
@@ -41,11 +41,11 @@ DOCUMENTATION = '''
 EXAMPLES = '''
 - name: Show job templates with notifications
   debug:
-    msg: "{{ lookup('awx_templates_with_enabled_notifications', host='https://awx.example.com', username='admin', password='password') }}"
+    msg: "{{ lookup('ascender_templates_with_enabled_notifications', host='https://ascender.example.com', username='admin', password='password') }}"
 
 - name: Get job templates with notifications using 10 workers
   set_fact:
-    notification_data: "{{ lookup('awx_templates_with_enabled_notifications', host=awx_host, username=awx_username, password=awx_password, max_workers=10)[0] }}"
+    notification_data: "{{ lookup('ascender_templates_with_enabled_notifications', host=ascender_host, username=ascender_username, password=ascender_password, max_workers=10)[0] }}"
     
 - name: Use specific parts of the results
   debug:
@@ -58,7 +58,7 @@ EXAMPLES = '''
   
 - name: Use with SSL verification disabled
   debug:
-    msg: "{{ lookup('awx_templates_with_enabled_notifications', host='https://awx.example.com', username='admin', password='password', verify_ssl=false) }}"
+    msg: "{{ lookup('ascender_templates_with_enabled_notifications', host='https://ascender.example.com', username='admin', password='password', verify_ssl=false) }}"
 '''
 
 RETURN = '''
@@ -77,7 +77,7 @@ RETURN = '''
         type: int
         returned: always
       total_templates:
-        description: Total number of job templates in AWX
+        description: Total number of job templates in Ascender
         type: int
         returned: always
       execution_time_seconds:
@@ -204,4 +204,4 @@ class LookupModule(LookupBase):
             }]
             
         except Exception as e:
-            raise AnsibleError(f"Error in awx_templates_with_enabled_notifications lookup: {str(e)}")
+            raise AnsibleError(f"Error in ascender_templates_with_enabled_notifications lookup: {str(e)}")

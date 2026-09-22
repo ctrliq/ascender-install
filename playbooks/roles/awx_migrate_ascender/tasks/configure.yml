@@ -84,7 +84,7 @@
 
 - name: Get enabled job template notifications
   ansible.builtin.set_fact:
-    enabled_notifications: "{{ lookup('awx_templates_with_enabled_notifications', **awx_controller_auth) }}"
+    enabled_notifications: "{{ lookup('ascender_templates_with_enabled_notifications', **awx_controller_auth) }}"
 
 - name: Disable enabled notifications on job templates
   ctrliq.ascender.job_template:
