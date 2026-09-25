@@ -77,7 +77,7 @@
 
     - name: Install Ascender into the virtualenv
       ansible.builtin.command:
-        cmd: "{{ ascender_venv }}/bin/pip install --no-deps --force-reinstall {{ ascender_src_dir }}/dist/awx.tar.gz"
+        cmd: "{{ ascender_venv }}/bin/pip install --no-deps --force-reinstall {{ ascender_src_dir }}/dist/ascender.tar.gz"
 
     # An empty settings module is enough for collectstatic and keeps it from
     # needing the database configuration, which is written later.
