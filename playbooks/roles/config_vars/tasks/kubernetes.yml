@@ -95,6 +95,15 @@
   ansible.builtin.include_tasks: ee_images.yml
   when: config_data.use_ee_images | default(false) | bool
 
+# Leave ee_images out of custom.config.yml unless at least one valid image was
+# given, so the ascender_install role default is used instead of an empty list.
+- name: Remove the EE image list when no custom images were specified
+  ansible.builtin.set_fact:
+    config_data: "{{ config_data | dict2items | rejectattr('key', 'equalto', 'ee_images') | list | items2dict }}"
+  when: >-
+    (not (config_data.use_ee_images | default(false) | bool)) or
+    ((config_data.ee_images | default([])) | length == 0)
+
 - name: Prompt whether to download the kubeconfig to the controller
   ansible.builtin.include_tasks: menu_choice.yml
   vars:

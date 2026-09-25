@@ -17,6 +17,31 @@
         fail_msg: "LEDGER_HOSTNAME ({{ LEDGER_HOSTNAME }}) and ASCENDER_HOSTNAME ({{ ASCENDER_HOSTNAME }}) must be different"
       when: LEDGER_HOSTNAME is defined
 
+    # An empty ee_images list, or an entry with a blank name or image, stops the
+    # operator from deploying the web pods. Omit ee_images entirely to use the default.
+    - name: Validate custom Execution Environment images
+      block:
+
+        - name: Verify that ee_images is a non-empty list
+          ansible.builtin.assert:
+            that:
+              - ee_images is sequence
+              - ee_images is not string
+              - ee_images | length > 0
+            fail_msg: "ee_images must be a non-empty list. Remove the ee_images section from custom.config.yml to use the default Execution Environment."
+
+        - name: Verify that every ee_images entry has a name and an image
+          ansible.builtin.assert:
+            that:
+              - item.name | default('', true) | trim | length > 0
+              - item.image | default('', true) | trim | length > 0
+            fail_msg: "ee_images entry {{ item }} has a blank name or image. Fill in both fields, or remove the ee_images section from custom.config.yml to use the default Execution Environment."
+          loop: "{{ ee_images }}"
+          loop_control:
+            label: "{{ item.name | default('') }}"
+
+      when: ee_images is defined
+
 - hosts: ascender
   gather_facts: yes
   become: false

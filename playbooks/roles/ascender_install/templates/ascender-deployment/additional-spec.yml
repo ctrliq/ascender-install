@@ -44,6 +44,6 @@
   ee_images:
 {% for ee in ee_images %}
     - name: {{ ee.name }}
-      image: {{ ee.image}}
+      image: {{ ee.image }}
 {% endfor %}
 {% endif %}
