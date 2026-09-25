@@ -9,14 +9,27 @@
   register: config_vars_ee_image_path
 
 - name: Append the EE image to the config
+  vars:
+    config_vars_ee_image_name_value: "{{ config_vars_ee_image_name.user_input | default('', true) | trim }}"
+    config_vars_ee_image_path_value: "{{ config_vars_ee_image_path.user_input | default('', true) | trim }}"
   ansible.builtin.set_fact:
     config_data: >-
       {{ config_data | combine({
         'ee_images': (config_data.ee_images | default([])) + [{
-          'name': (config_vars_ee_image_name.user_input | trim),
-          'image': (config_vars_ee_image_path.user_input | trim)
+          'name': config_vars_ee_image_name_value,
+          'image': config_vars_ee_image_path_value
         }]
       }, recursive=True) }}
+  when:
+    - config_vars_ee_image_name_value | length > 0
+    - config_vars_ee_image_path_value | length > 0
+
+- name: Warn when an EE image entry was skipped
+  ansible.builtin.debug:
+    msg: "Skipping Execution Environment entry: both the image name and the image path are required."
+  when: >-
+    (config_vars_ee_image_name.user_input | default('', true) | trim | length == 0) or
+    (config_vars_ee_image_path.user_input | default('', true) | trim | length == 0)
 
 - name: "Do you have another image to enter? (true/false)"
   prompt:
