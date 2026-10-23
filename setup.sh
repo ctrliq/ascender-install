@@ -67,9 +67,9 @@ if [[ $LINUX_ARCH != "x86_64" ]]; then
 fi
 
 if [[ "$OS" == "rhel" ]]; then
-  # Verify that the Operating System major version of the local machine is either 8 or 9
-  if [[ $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
-    echo "Linux major version must be 8 or 9.";
+  # Verify that the Operating System major version of the local machine is 8, 9 or 10
+  if [[ $LINUX_VERSION != "10" && $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
+    echo "Linux major version must be 8, 9 or 10.";
     exit 1;
   fi
 fi

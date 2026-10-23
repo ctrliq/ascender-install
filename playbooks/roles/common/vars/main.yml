@@ -12,6 +12,13 @@ common_packages:
       - python3-pip
       - kubectl
       - python3-kubernetes
+    # EL10 names it python3-setuptools (EL9 python-setuptools, EL8 platform-python-setuptools)
+    10:
+      - jq
+      - python3-setuptools
+      - python3-pip
+      - kubectl
+      - python3-kubernetes
   Debian:
     11:
       - jq
