@@ -44,7 +44,7 @@ cp inventory.example inventory      # set the host, ascender_hostname, ascender_
 ```
 
 `setup.sh` passes extra arguments to `ansible-playbook`, so `./setup.sh --check`
-or `./setup.sh -e ascender_version=25.6.2` work; `ansible-playbook install.yml`
+or `./setup.sh -e ascender_version=25.6.3` work; `ansible-playbook install.yml`
 is equivalent once the tooling is in place.
 
 The first run takes 15 to 30 minutes: package installs, the virtualenv build
@@ -60,7 +60,7 @@ the inventory or `group_vars/all.yml`.
 
 | Variable | Default | Purpose |
 | -------- | ------- | ------- |
-| `ascender_version` | `25.6.2` | git tag, branch or commit of `ascender_repo` to install |
+| `ascender_version` | `25.6.3` | git tag, branch or commit of `ascender_repo` to install |
 | `ascender_python` | `python3.12` | interpreter the tree targets: `python3.12` for the 25.x releases, `python3.14` for `main`. Rocky 9 ships both as AppStream packages (`python3.<x>` and `python3.<x>-devel`), installed by the system role |
 | `ascender_hostname` | host FQDN | name users reach the UI with (certificate, CSRF trusted origins) |
 | `ascender_allowed_hosts` | `[]` | other names users reach the UI with (an IP address, an alias); added to the CSRF trusted origins |

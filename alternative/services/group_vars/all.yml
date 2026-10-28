@@ -3,7 +3,7 @@
 # overrides in the inventory or in this file. The commonly changed ones:
 #
 # ascender_hostname: ascender.example.com
-# ascender_version: 25.6.2
+# ascender_version: 25.6.3
 # ascender_python: python3.12
 # ascender_node_name: "{{ ansible_facts['nodename'] }}"
 # ascender_admin_user: admin
