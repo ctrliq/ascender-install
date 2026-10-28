@@ -4,7 +4,7 @@
 
 # --- What to install -----------------------------------------------------------
 ascender_repo: https://github.com/ctrliq/ascender.git
-ascender_version: "25.6.2"          # git tag, branch or commit
+ascender_version: "25.6.3"          # git tag, branch or commit
 ascender_python: python3.12         # python3.12 for the 25.x releases, python3.14 for main
 ascender_receptor_version: "1.6.8"
 ascender_receptor_arch: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"

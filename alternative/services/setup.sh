@@ -5,7 +5,7 @@
 # Installs Ascender as host services on the Rocky 9 host(s) in the inventory:
 # makes sure Ansible and the required collections are present, checks the
 # inventory, then runs install.yml. Extra arguments are passed to
-# ansible-playbook (for example: ./setup.sh --check, ./setup.sh -e ascender_version=25.6.2).
+# ansible-playbook (for example: ./setup.sh --check, ./setup.sh -e ascender_version=25.6.3).
 
 cd "$(dirname "$0")" || exit 1
 

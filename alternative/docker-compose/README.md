@@ -64,7 +64,7 @@ important ones:
 
 | Variable | Default | Purpose |
 | -------- | ------- | ------- |
-| `ASCENDER_VERSION` | `latest` | Tag of `ghcr.io/ctrliq/ascender` to run (e.g. `25.6.2`) |
+| `ASCENDER_VERSION` | `latest` | Tag of `ghcr.io/ctrliq/ascender` to run (e.g. `25.6.3`) |
 | `ASCENDER_HOSTNAME` | `localhost` | Name users reach the UI with; CSRF trusted origins and the generated certificate |
 | `ASCENDER_ALLOWED_HOSTS` | empty | Other names users reach the UI with, comma-separated (an IP address, an alias); added to the CSRF trusted origins |
 | `ASCENDER_HTTP_PORT` / `ASCENDER_HTTPS_PORT` | `80` / `443` | Host ports |
