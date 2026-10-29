@@ -85,7 +85,7 @@
       ansible.builtin.shell: |
         set -e
         empty=$(mktemp --suffix=.py)
-        AWX_SETTINGS_FILE=$empty SKIP_SECRET_KEY_CHECK=yes SKIP_PG_VERSION_CHECK=yes \
+        ASCENDER_SETTINGS_FILE=$empty SKIP_SECRET_KEY_CHECK=yes SKIP_PG_VERSION_CHECK=yes \
           {{ ascender_venv }}/bin/ascender-manage collectstatic --noinput --clear
         rm -f $empty
       args:
