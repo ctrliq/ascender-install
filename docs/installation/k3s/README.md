@@ -24,7 +24,7 @@ If you have not done so already, be sure to follow the general prerequisites fou
   which to try Ascender. As such, the Installer expects a single-node K3s cluster which will act as
   both master and worker node.
 - Operating System
-  - If the OS family is Enterprise Linux (Rocky, Fedora, Alma, RHEL, or CentOS) then the major version must be 8 or 9.
+  - If the OS family is Enterprise Linux (Rocky, Fedora, Alma, RHEL, or CentOS) then the major version must be 8, 9 or 10.
   - If the OS family is Ubuntu/Debian then the major version must be 24 or 26
 - Minimal System Requirements for the k3s server:
   - CPUs: 2
