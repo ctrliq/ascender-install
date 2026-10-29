@@ -6,7 +6,7 @@
 set -euo pipefail
 
 if [ "$(id -u)" -ge 500 ]; then
-    echo "awx:x:$(id -u):$(id -g):,,,:/var/lib/awx:/bin/bash" >> /etc/passwd
+    echo "awx:x:$(id -u):$(id -g):,,,:/var/lib/ascender:/bin/bash" >> /etc/passwd
 fi
 
 echo "bootstrap: waiting for PostgreSQL at ${DATABASE_HOST}:${DATABASE_PORT}"

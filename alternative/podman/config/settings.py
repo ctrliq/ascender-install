@@ -8,9 +8,9 @@
 
 import os
 
-STATIC_ROOT = '/var/lib/awx/public/static'
-PROJECTS_ROOT = '/var/lib/awx/projects'
-JOBOUTPUT_ROOT = '/var/lib/awx/job_status'
+STATIC_ROOT = '/var/lib/ascender/public/static'
+PROJECTS_ROOT = '/var/lib/ascender/projects'
+JOBOUTPUT_ROOT = '/var/lib/ascender/job_status'
 
 # docker-compose.yml mounts ASCENDER_SECRET_KEY from .env at this path.
 with open('/etc/tower/SECRET_KEY', 'rb') as _f:
