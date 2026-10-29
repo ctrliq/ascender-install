@@ -82,6 +82,29 @@
 
       when: extra_settings is defined
 
+    # Each origin goes straight into Django's CSRF_TRUSTED_ORIGINS, which
+    # requires the scheme on every entry.
+    - name: Validate ascender_csrf_trusted_origins
+      block:
+
+        - name: Verify that ascender_csrf_trusted_origins is a list
+          ansible.builtin.assert:
+            that:
+              - ascender_csrf_trusted_origins is sequence
+              - ascender_csrf_trusted_origins is not string
+              - ascender_csrf_trusted_origins is not mapping
+            fail_msg: "ascender_csrf_trusted_origins must be a list of URLs. Remove it from custom.config.yml if you have none to add."
+
+        - name: Verify that every ascender_csrf_trusted_origins entry is a URL with a scheme
+          ansible.builtin.assert:
+            that:
+              - item is string
+              - item is match('^https?://[^/\\s]+$')
+            fail_msg: "ascender_csrf_trusted_origins entry '{{ item }}' must be a scheme and host, such as https://ascender-lb.example.com, with no path."
+          loop: "{{ ascender_csrf_trusted_origins }}"
+
+      when: ascender_csrf_trusted_origins is defined
+
 - hosts: ascender
   gather_facts: yes
   become: false

@@ -61,6 +61,9 @@
 {% else %}
       - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}
 {% endif %}
+{% for origin in ascender_csrf_trusted_origins | default([]) %}
+      - {{ origin }}
+{% endfor %}
 {% if extra_settings is defined %}
 {{ extra_settings | to_nice_yaml(indent=2) | trim | indent(width=2, first=True) }}
 {% endif %}

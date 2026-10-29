@@ -142,6 +142,13 @@ ascender_image_pull_policy: Always
 #    value:
 #      HTTPS_PROXY: "http://proxy.example.com:3128"
 
+# Additional origins to trust for CSRF checks, on top of ASCENDER_HOSTNAME.
+# Add every URL users reach Ascender through, such as a load balancer or
+# an alternate DNS name. Each entry must include the scheme.
+#ascender_csrf_trusted_origins:
+#  - https://ascender-lb.example.com
+#  - https://10.0.0.10
+
 
 # ---Ledger install variables---
 
