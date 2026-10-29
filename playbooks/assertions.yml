@@ -42,6 +42,19 @@
 
       when: ee_images is defined
 
+    # The manifest passes ASCENDER_SECRET_KEY straight into the Secret's data field,
+    # which Kubernetes rejects unless it is valid base64.
+    - name: Verify that ASCENDER_SECRET_KEY is base64 encoded
+      ansible.builtin.assert:
+        that:
+          - ASCENDER_SECRET_KEY is string
+          - ASCENDER_SECRET_KEY | length > 0
+          - ASCENDER_SECRET_KEY | length % 4 == 0
+          - ASCENDER_SECRET_KEY is match('^[A-Za-z0-9+/]+={0,2}$')
+        fail_msg: "ASCENDER_SECRET_KEY must be the base64 encoding of the secret key (encode it with: echo -n 'mysecretkey' | base64 -w0). Remove it from custom.config.yml to let the Ascender Operator generate one."
+        quiet: true
+      when: ASCENDER_SECRET_KEY is defined
+
 - hosts: ascender
   gather_facts: yes
   become: false

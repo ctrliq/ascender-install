@@ -8,6 +8,19 @@ metadata:
   namespace: {{ ASCENDER_NAMESPACE }}
 stringData:
   password: {{ ASCENDER_ADMIN_PASSWORD }}
+{% if ASCENDER_SECRET_KEY is defined %}
+---
+# Ascender SECRET_KEY, used to encrypt stored credentials. When this is not
+# supplied the operator generates one under the same name.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ascender-app-secret-key
+  namespace: {{ ASCENDER_NAMESPACE }}
+data:
+  secret_key: {{ ASCENDER_SECRET_KEY }}
+type: Opaque
+{% endif %}
 {% if ASCENDER_PGSQL_HOST is defined %}
 ---
 # Ascender postgres host/port and credentials
@@ -58,6 +71,9 @@ spec:
 {% include 'additional-spec.yml' %}
   admin_user: {{ ASCENDER_ADMIN_USER | default('admin') }}
   admin_password_secret: ascender-app-admin-password
+{% if ASCENDER_SECRET_KEY is defined %}
+  secret_key_secret: ascender-app-secret-key
+{% endif %}
   garbage_collect_secrets: {{ ascender_garbage_collect_secrets | default('false') }}
 {% if ASCENDER_PGSQL_HOST is defined %}
   postgres_configuration_secret: ascender-app-postgres-configuration

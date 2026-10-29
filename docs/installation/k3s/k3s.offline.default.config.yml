@@ -97,6 +97,16 @@ ASCENDER_OPERATOR_VERSION: 25.6.3
 # Determines whether to keep the secrets required to encrypt within Ascender (important when backing up)
 ascender_garbage_collect_secrets: true
 
+# Ascender SECRET_KEY, used to encrypt credentials stored in Ascender.
+# Leave this unset and the Ascender Operator generates one for you, stored in the
+# kubernetes secret ascender-app-secret-key. Set it to reuse a known key, for
+# example when rebuilding an instance whose database you are keeping.
+# The value must be the base64 encoding of the key, as shown by
+#   kubectl get secret/ascender-app-secret-key -n ascender -o jsonpath='{.data.secret_key}'
+# To encode a new key: echo -n 'mysecretkey' | base64 -w0
+# !!! Do not change this on an existing install; stored credentials become unreadable !!!
+#ASCENDER_SECRET_KEY: "bXlzZWNyZXRrZXk="
+
 # Setup extra demo playbooks after installation
 ascender_setup_playbooks: true
 
