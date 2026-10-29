@@ -126,7 +126,3 @@ spec:
   postgres_security_context_settings:
     fsGroup: 26
     runAsUser: 26
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}

@@ -55,6 +55,33 @@
         quiet: true
       when: ASCENDER_SECRET_KEY is defined
 
+    # extra_settings is rendered straight into the AWX spec, where the operator
+    # expects a list of {setting, value} entries.
+    - name: Validate extra_settings
+      block:
+
+        - name: Verify that extra_settings is a non-empty list
+          ansible.builtin.assert:
+            that:
+              - extra_settings is sequence
+              - extra_settings is not string
+              - extra_settings is not mapping
+              - extra_settings | length > 0
+            fail_msg: "extra_settings must be a non-empty list of entries with a setting and a value. Remove the extra_settings section from custom.config.yml if you have none to add."
+
+        - name: Verify that every extra_settings entry has a setting name and a value
+          ansible.builtin.assert:
+            that:
+              - item is mapping
+              - item.setting | default('', true) | trim | length > 0
+              - "'value' in item"
+            fail_msg: "extra_settings entry {{ item }} needs both a setting name and a value."
+          loop: "{{ extra_settings }}"
+          loop_control:
+            label: "{{ item.setting | default(item) }}"
+
+      when: extra_settings is defined
+
 - hosts: ascender
   gather_facts: yes
   become: false

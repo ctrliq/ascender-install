@@ -111,7 +111,3 @@ spec:
   ingress_tls_secret: ascender-tls-secret
 {% endif %}
   hostname: {{ ASCENDER_HOSTNAME }}
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}

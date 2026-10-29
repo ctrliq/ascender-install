@@ -112,7 +112,3 @@ spec:
     alb.ingress.kubernetes.io/security-groups: "{{ EKS_ALB_SECURITY_GROUPS }}"
     alb.ingress.kubernetes.io/manage-backend-security-group-rules: "true"
 {% endif %}
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - https://{{ ASCENDER_HOSTNAME }}

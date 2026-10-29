@@ -47,3 +47,20 @@
       image: {{ ee.image }}
 {% endfor %}
 {% endif %}
+  # Settings the operator injects into Ascender's Django settings. The CSRF
+  # entry is always present; entries from the extra_settings config variable
+  # are appended to the same list after it.
+  extra_settings:
+  - setting: CSRF_TRUSTED_ORIGINS
+    value:
+{% if k8s_platform in ['k3s', 'ocp'] %}
+      - http://{{ ASCENDER_HOSTNAME }}
+      - https://{{ ASCENDER_HOSTNAME }}
+{% elif k8s_platform == 'eks' %}
+      - https://{{ ASCENDER_HOSTNAME }}
+{% else %}
+      - http{% if k8s_lb_protocol == 'https' %}s{% endif %}://{{ ASCENDER_HOSTNAME }}
+{% endif %}
+{% if extra_settings is defined %}
+{{ extra_settings | to_nice_yaml(indent=2) | trim | indent(width=2, first=True) }}
+{% endif %}

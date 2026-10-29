@@ -117,11 +117,6 @@ spec:
 {% if custom_ldap_cacert is defined %}
   ldap_cacert_secret: ascender-app-custom-ldap-cacert
 {% endif %}
-  extra_settings:
-  - setting: CSRF_TRUSTED_ORIGINS
-    value:
-      - http://{{ ASCENDER_HOSTNAME }}
-      - https://{{ ASCENDER_HOSTNAME }}
 {% if ASCENDER_MESH_HOSTNAME is defined %}
 ---
 apiVersion: awx.ansible.com/v1alpha1

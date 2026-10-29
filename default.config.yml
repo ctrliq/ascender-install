@@ -267,6 +267,17 @@ ascender_setup_playbooks: true
 ascender_replicas: 1
 ascender_image_pull_policy: Always
 
+    # Additional Django settings for Ascender, applied by the Ascender Operator.
+    # Each entry needs a setting name and a value; the value can be a string,
+    # number, boolean, list, or mapping. See the Ascender documentation for the
+    # settings that can be tuned this way.
+#extra_settings:
+#  - setting: SESSION_COOKIE_AGE
+#    value: 3600
+#  - setting: AWX_TASK_ENV
+#    value:
+#      HTTPS_PROXY: "http://proxy.example.com:3128"
+
     # ---Ledger install variables---
 
     # Determines whether or not Ledger will be installed
