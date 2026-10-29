@@ -81,6 +81,7 @@ On k3s, RKE2, and DKP the installer can run without outside internet access, usi
 | [ascender-ee](https://github.com/ctrliq/ascender-ee) | Default execution environment image for Ascender jobs |
 | [ascender-kit](https://github.com/ctrliq/ascender-kit) | The `ascender` command line client and Python API library |
 | [ascender-collection](https://github.com/ctrliq/ascender-collection) | The `ctrliq.ascender` Ansible collection for a controller |
+| [ascender-mcp](https://github.com/ctrliq/ascender-mcp) | MCP server that lets AI agents drive Ascender through its REST API |
 | [ascender-ledger](https://github.com/ctrliq/ascender-ledger) | Reporting tool for host facts and playbook changes |
 | [ascender-galaxy-proxy](https://github.com/ctrliq/ascender-galaxy-proxy) | Caching proxy for Ansible Galaxy collection downloads |
 | [ascender-playbooks](https://github.com/ctrliq/ascender-playbooks) | Example playbooks for use with Ascender |
