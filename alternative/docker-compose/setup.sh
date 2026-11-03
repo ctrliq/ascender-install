@@ -17,7 +17,8 @@ chmod 0600 .env
 fill() {
     local key="$1" value="$2"
     if grep -qE "^${key}=$" .env; then
-        sed -i "s|^${key}=$|${key}=${value}|" .env
+        # -i.bak is the only in-place form GNU and BSD sed both accept.
+        sed -i.bak "s|^${key}=$|${key}=${value}|" .env && rm -f .env.bak
         echo "generated ${key}"
     fi
 }
@@ -57,8 +58,12 @@ fi
 https_port=$(grep -E '^ASCENDER_HTTPS_PORT=' .env | cut -d= -f2-)
 https_port=${https_port:-443}
 if [ "${https_port}" = "443" ]; then https_suffix=""; else https_suffix=":${https_port}"; fi
-sed -i -E "s#^(return 301 https://\\\$host)(:[0-9]+)?(\\\$request_uri;)#\\1${https_suffix}\\3#" \
-    config/nginx-http-redirect.conf
+cat > config/nginx-http-redirect.conf <<EOF
+# ASCENDER_HTTP_MODE=redirect (default): plain http only redirects to https.
+# setup.sh rewrites this target to include ASCENDER_HTTPS_PORT when it is not
+# 443 (e.g. https://\$host:8443\$request_uri).
+return 301 https://\$host${https_suffix}\$request_uri;
+EOF
 
 # Under sudo, hand the files written here back to the invoking user so their
 # later `docker compose` commands can read .env (0600) and they can still edit
