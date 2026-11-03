@@ -1,0 +1,72 @@
+---
+# Defaults for the ascender_react role.
+#
+# this file is new. eda-server-operator is developed against OpenShift, and two
+# of its assumptions do not hold on any other distribution:
+#
+#   * its NetworkPolicies re-open DNS only towards a namespace called "openshift-dns"
+#     and ingress only from the namespaces carrying the OpenShift router labels
+#   * its UI Ingress publishes the event-stream backend on a hardcoded "/", which
+#     collides with the UI itself
+#
+# The variables below are what the role needs to repair both without hardcoding a
+# single distribution's namespace names.
+
+# Namespace running the cluster DNS service, re-opened for the React pods so that
+# nginx in the eda-ui image can resolve the API service at startup.
+react_dns_namespace: kube-system
+
+# Namespaces whose pods may reach the React UI (8080) and event-stream (8000) ports.
+# An empty list allows those two ports from any source, which is what a platform whose
+# load balancer terminates outside the cluster needs - an AWS ALB is not a pod and
+# cannot be matched by a namespaceSelector. The per-platform task file overrides this
+# where the ingress controller does run in the cluster (kube-system on k3s).
+react_ingress_controller_namespaces: []
+
+# Path prefix the event-stream service is published under. Matches the operator's own
+# event_stream_prefix_path default; change both together if you set event_stream.prefix
+# on the EDA custom resource.
+react_event_stream_prefix: /eda-event-streams
+
+# Set to publish the React Ingress through a specific IngressClass or with extra
+# controller annotations. Left empty the cluster's default IngressClass is used.
+react_ingress_class_name: ""
+react_ingress_annotations: {}
+
+# Poll the React API through the ingress at the end of the install. Turn this off where
+# the React hostname only becomes resolvable after the install (external DNS, a load
+# balancer record created later).
+REACT_API_CHECK: true
+
+# --- PostgreSQL ---------------------------------------------------------------
+# The user-facing switches live in default.config.yml (REACT_PGSQL_*). What follows
+# is what the role derives from them; override only if your deployment differs.
+
+# Where the role reads Ascender's own database credentials from when
+# REACT_PGSQL_MODE is 'ascender'.
+react_pg_ascender_secret: ascender-app-postgres-configuration
+
+# The pod of Ascender's managed PostgreSQL StatefulSet. The role runs psql in it to
+# create React's role and database, which the EDA Operator will not do for an instance
+# it does not manage. Matches the AWX object name in the ascender_install role
+# (ascender-app) and the supported PostgreSQL version.
+react_pg_ascender_pod: ascender-app-postgres-15-0
+
+react_pg_database: "{{ REACT_PGSQL_DB | default('react') }}"
+react_pg_user: "{{ REACT_PGSQL_USER | default('react') }}"
+react_pg_password: "{{ REACT_PGSQL_PWD | default('react') }}"
+react_pg_sslmode: "{{ REACT_PGSQL_SSLMODE | default('prefer') }}"
+
+# The event stream needs a second role on the same database. The operator creates it
+# itself on a managed instance; on any other one the installer has to.
+react_pg_event_stream_user: "{{ REACT_PGSQL_EVENT_STREAM_USER | default('react_event_stream') }}"
+react_pg_event_stream_password: "{{ REACT_PGSQL_EVENT_STREAM_PWD | default(react_pg_password) }}"
+
+# Set by tasks/react_postgres.yml; listed here so the templates can be rendered
+# whatever mode is in use.
+react_pg_external: false
+react_pg_host: ""
+react_pg_port: 5432
+# Namespace the shared instance runs in, when it runs in this cluster. Empty for an
+# external server, which the NetworkPolicy then has to reach by address instead.
+react_pg_namespace: ""
