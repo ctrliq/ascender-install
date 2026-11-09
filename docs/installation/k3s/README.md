@@ -58,11 +58,11 @@ If you have not done so already, be sure to follow the general prerequisites fou
 
 ## Dual-Stack and IPv6 Clusters
 
-k3s supports dual-stack and single-stack IPv6 clusters, but this installer does not set them up and
-carries no variables for the k3s options involved. A cluster of that kind is one you install
-yourself, with `kube_install` set to `false` so the installer expects your existing cluster. The
-subsections below record what such an environment means for an Ascender install. They are grounded
-in the behavior verified by the reporter of
+k3s supports dual-stack and single-stack IPv6 clusters, but the installer at the moment does not
+set them up and carries no variables for the k3s options involved. A cluster of that kind is one
+you install yourself, with `kube_install` set to `false` so the installer expects your existing
+cluster. The subsections below record what such an environment means for an Ascender install. They
+are grounded in the behavior verified by the reporter of
 [issue #270](https://github.com/ctrliq/ascender-install/issues/270) on k3s v1.36.4+k3s1 and in the
 [k3s network options documentation](https://docs.k3s.io/networking/basic-network-options).
 
