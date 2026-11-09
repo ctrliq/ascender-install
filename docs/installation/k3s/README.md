@@ -9,6 +9,7 @@ supported, please submit an issue to this Github repository.
 
 - [General Prerequisites](#general-prerequisites)
 - [K3s-specific Prerequisites](#k3s-specific-prerequisites)
+- [Dual-Stack and IPv6 Clusters](#dual-stack-and-ipv6-clusters)
 - [Install Instructions](#install-instructions)
   - [Offline Installation](#offline-installation)
   - [Offline Ascender Upgrade](#offline-ascender-upgrade)
@@ -52,8 +53,130 @@ If you have not done so already, be sure to follow the general prerequisites fou
     Authority, [Let's Encrypt](https://letsencrypt.org/getting-started/).
   - Once you have a Certificate and Private Key file, make sure they are present on the Ascender
     installing server, and specify their locations in the default config file, with the variables
-    `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their
-    content, and use the content to create a Kubernetes TLS Secret for HTTPS enablement.
+  `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their
+  content, and use the content to create a Kubernetes TLS Secret for HTTPS enablement.
+
+## Dual-Stack and IPv6 Clusters
+
+k3s supports dual-stack and single-stack IPv6 clusters, but this installer does not set them up and
+carries no variables for the k3s options involved. A cluster of that kind is one you install
+yourself, with `kube_install` set to `false` so the installer expects your existing cluster. The
+subsections below record what such an environment means for an Ascender install. They are grounded
+in the behavior verified by the reporter of
+[issue #270](https://github.com/ctrliq/ascender-install/issues/270) on k3s v1.36.4+k3s1 and in the
+[k3s network options documentation](https://docs.k3s.io/networking/basic-network-options).
+
+### Pod IPv6 traffic and flannel-ipv6-masq
+
+On a dual-stack cluster whose pod CIDR includes an IPv6 unique local address range (a ULA, for
+example `fd00:42::/56`), pods send their traffic with the ULA as the source address. k3s applies
+masquerade to IPv4 traffic by default, but sets up IPv6 masquerade only when the
+`flannel-ipv6-masq` option is enabled. The packets still leave the node and reach the destination
+host, but replies to a private ULA have no route back, so the connection hangs until it times
+out. In an Ascender install this appears as a job that cannot reach a host which is reachable only
+over IPv6, and as a project sync from a git host reachable only over IPv6, both failing with
+connection timeouts.
+
+The fix is a k3s drop-in config file on the node. Create
+`/etc/rancher/k3s/config.yaml.d/10-flannel-ipv6-masq.yaml` with the single key below, then restart
+the service.
+
+```text
+flannel-ipv6-masq: true
+```
+
+```text
+$ sudo mkdir -p /etc/rancher/k3s/config.yaml.d
+$ printf 'flannel-ipv6-masq: true\n' | sudo tee /etc/rancher/k3s/config.yaml.d/10-flannel-ipv6-masq.yaml
+$ sudo systemctl restart k3s
+```
+
+A `systemctl restart k3s` applies it; the reporter measured the restart at 6 to 9 seconds, and
+after it the same job and project sync succeeded, because pod traffic then left the node
+masqueraded behind the node's own routable IPv6 address. k3s recommends this setting for pod
+networks built on unrouted IPv6 space such as the ULA range, and it applies on dual-stack and
+IPv6-only clusters with any flannel backend other than `none`.
+
+Two properties of this fix are worth knowing before adopting it. Removing the drop-in and
+restarting k3s does not remove the IPv6 masquerade rules. The reporter verified that a full removal
+needs `systemctl stop k3s`, then `/usr/local/bin/k3s-killall.sh`, then `systemctl start k3s`, a
+sequence that takes the k3s API down for about 21 seconds. On the other side, the drop-in survives
+an in-place k3s upgrade (verified across an upgrade from v1.36.4+k3s1 to v1.36.5+k3s1), so it does
+not need to be reapplied with each k3s release.
+
+### Configuring a dual-stack cluster
+
+k3s must be configured for dual-stack when the cluster is first created; an existing IPv4-only
+cluster cannot gain an IPv6 family later. The installer carries no variables for `cluster-cidr` or
+`service-cidr` and passes no such options to k3s, so the supported path today is the k3s config
+file `/etc/rancher/k3s/config.yaml` on the node, written before the Ascender install runs. Each of
+the two keys takes a list with one IPv4 and one IPv6 CIDR, as in this working example from the
+reporter's cluster.
+
+```text
+write-kubeconfig-mode: "0644"
+cluster-cidr:
+  - 10.42.0.0/16
+  - fd00:42::/56
+service-cidr:
+  - 10.43.0.0/16
+  - fd00:43::/112
+```
+
+Any valid CIDR pair works, and the k3s documentation recommends these mask sizes, a `/56` pod
+network and a `/112` service network alongside the IPv4 defaults, noting that other masks should
+match the planned pods per node and node count. With a ULA pod network like `fd00:42::/56`, also
+apply the `flannel-ipv6-masq` drop-in from the previous subsection. The firewalld guidance in the
+prerequisites needs a matching change too. If you keep `firewalld` running with
+`firewalld_disable: false`, the `trusted` zone must hold the IPv6 halves of both networks as well,
+because `k3s_firewalld_trusted_sources` defaults to the IPv4 pod and service networks
+(`10.42.0.0/16` and `10.43.0.0/16`) only. Add the IPv6 pod and service CIDRs you chose to that
+list alongside the IPv4 entries.
+
+### Single-stack IPv6 clusters
+
+k3s also supports clusters with no IPv4, configured the same way with a single IPv6 CIDR for each
+of the two keys. The installer variable that matters on such a node is `k3s_master_node_ip`. It
+defaults to `127.0.0.1`, an IPv4 loopback address, in `default.config.yml`, in
+`playbooks/group_vars/all.yml`, and in the `config_vars.sh` prompt. The installer uses the value
+in three places. When it fetches a kubeconfig from a remote node, it replaces the `127.0.0.1` API
+endpoint in that kubeconfig with the value. It writes an `/etc/hosts` entry on the machine running
+the installer (when `use_etc_hosts` is true, the default), mapping the hostnames of the installed
+components, Ascender, Ledger and the Galaxy Proxy among them, to the value. Its final wait for the
+Ascender API then polls the Ascender hostname, which resolves through that `/etc/hosts` entry. The IPv4 loopback default serves a
+single-node install where the web service answers over IPv4. On a node with no IPv4, set
+`k3s_master_node_ip` to the node's global IPv6 address in your `custom.config.yml`, and the hosts
+entry and the API wait run against that address.
+
+### A node with no IPv4 egress
+
+A node can also sit on a network where only IPv6 reaches the outside world. Two separate kinds of
+outbound traffic then need a home, the image pulls made by the k3s node's embedded containerd, and
+the traffic from the Ascender pods themselves, such as the project sync described above.
+
+For image pulls, k3s documents two mechanisms, and the installer carries no variables for either.
+A containerd registry mirror is configured in `/etc/rancher/k3s/registries.yaml` on the node, which
+points registries such as `docker.io` and `ghcr.io` at mirror endpoints you control, reachable over
+IPv6. k3s reads the file when it starts, so a restart applies changes, and it governs every image
+the node pulls, including the execution environment images Ascender jobs fetch on demand. The
+alternative is an HTTP proxy configured on the k3s systemd service through its environment file,
+`/etc/systemd/system/k3s.service.env`, using `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` entries.
+k3s passes these down to the embedded containerd and kubelet, and adds the cluster's own pod and
+service ranges to `NO_PROXY` on its own. The one proxy setting the installer itself carries,
+`PROXY_CONFIG`, configures the optional Galaxy Proxy component and does not reach k3s or the image
+pulls.
+
+For the pods' own traffic, what covers it is the cluster's stack rather than the node's proxy,
+because k3s documents that environment variables from the node are not passed into pods. The
+project sync from an IPv6-only git host works on the dual-stack cluster described above once
+`flannel-ipv6-masq` is in place. Where a destination exists only on IPv4, the standard answer is
+NAT64 with DNS64, both of which live in the site's infrastructure rather than in k3s or this
+installer. DNS64 runs on the recursive resolver the node uses, and pods resolve external names
+through CoreDNS, which forwards to those same resolvers, so the synthesized IPv6 addresses reach
+the pods as well. NAT64 runs on the border router and translates the resulting connections to
+IPv4. The [Offline Installation](#offline-installation) section later in this guide takes image
+pulls off the network entirely by pre-loading bundled images, which is worth considering alongside
+these options.
 
 ## Install and Upgrade Instructions
 
