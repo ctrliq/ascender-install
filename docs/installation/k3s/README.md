@@ -53,8 +53,8 @@ If you have not done so already, be sure to follow the general prerequisites fou
     Authority, [Let's Encrypt](https://letsencrypt.org/getting-started/).
   - Once you have a Certificate and Private Key file, make sure they are present on the Ascender
     installing server, and specify their locations in the default config file, with the variables
-  `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their
-  content, and use the content to create a Kubernetes TLS Secret for HTTPS enablement.
+    `tls_crt_path`and `tls_key_path`, respectively. The installer will parse these files for their
+    content, and use the content to create a Kubernetes TLS Secret for HTTPS enablement.
 
 ## Dual-Stack and IPv6 Clusters
 
@@ -93,16 +93,17 @@ $ sudo systemctl restart k3s
 
 A `systemctl restart k3s` applies it; the reporter measured the restart at 6 to 9 seconds, and
 after it the same job and project sync succeeded, because pod traffic then left the node
-masqueraded behind the node's own routable IPv6 address. k3s recommends this setting for pod
+masqueraded behind the node's own routable IPv6 address. k3s suggests this setting for pod
 networks built on unrouted IPv6 space such as the ULA range, and it applies on dual-stack and
 IPv6-only clusters with any flannel backend other than `none`.
 
 Two properties of this fix are worth knowing before adopting it. Removing the drop-in and
 restarting k3s does not remove the IPv6 masquerade rules. The reporter verified that a full removal
 needs `systemctl stop k3s`, then `/usr/local/bin/k3s-killall.sh`, then `systemctl start k3s`, a
-sequence that takes the k3s API down for about 21 seconds. On the other side, the drop-in survives
-an in-place k3s upgrade (verified across an upgrade from v1.36.4+k3s1 to v1.36.5+k3s1), so it does
-not need to be reapplied with each k3s release.
+sequence that takes k3s, and with it every Ascender workload on this single-node cluster, down for
+about 21 seconds. On the other side, the drop-in survives an in-place k3s upgrade (verified by the
+reporter across an upgrade from v1.36.4+k3s1 to v1.36.5+k3s1), so it does not need to be reapplied
+with each k3s release.
 
 ### Configuring a dual-stack cluster
 
@@ -114,7 +115,6 @@ the two keys takes a list with one IPv4 and one IPv6 CIDR, as in this working ex
 reporter's cluster.
 
 ```text
-write-kubeconfig-mode: "0644"
 cluster-cidr:
   - 10.42.0.0/16
   - fd00:42::/56
@@ -124,8 +124,9 @@ service-cidr:
 ```
 
 Any valid CIDR pair works, and the k3s documentation recommends these mask sizes, a `/56` pod
-network and a `/112` service network alongside the IPv4 defaults, noting that other masks should
-match the planned pods per node and node count. With a ULA pod network like `fd00:42::/56`, also
+network and a `/112` service network alongside the IPv4 defaults, noting that changing the
+`cluster-cidr` mask means also changing `node-cidr-mask-size-ipv4` and `node-cidr-mask-size-ipv6`
+to match the planned pods per node and node count. With a ULA pod network like `fd00:42::/56`, also
 apply the `flannel-ipv6-masq` drop-in from the previous subsection. The firewalld guidance in the
 prerequisites needs a matching change too. If you keep `firewalld` running with
 `firewalld_disable: false`, the `trusted` zone must hold the IPv6 halves of both networks as well,
@@ -143,10 +144,12 @@ in three places. When it fetches a kubeconfig from a remote node, it replaces th
 endpoint in that kubeconfig with the value. It writes an `/etc/hosts` entry on the machine running
 the installer (when `use_etc_hosts` is true, the default), mapping the hostnames of the installed
 components, Ascender, Ledger and the Galaxy Proxy among them, to the value. Its final wait for the
-Ascender API then polls the Ascender hostname, which resolves through that `/etc/hosts` entry. The IPv4 loopback default serves a
-single-node install where the web service answers over IPv4. On a node with no IPv4, set
-`k3s_master_node_ip` to the node's global IPv6 address in your `custom.config.yml`, and the hosts
-entry and the API wait run against that address.
+Ascender API then polls the Ascender hostname, which resolves through that `/etc/hosts` entry. The
+IPv4 loopback default serves a single-node install where the web service answers over IPv4. On a
+node with no IPv4, set `k3s_master_node_ip` to the node's global IPv6 address in your
+`custom.config.yml`, and the hosts entry and the API wait run against that address. A single-stack
+cluster with unrouted pod space, such as a ULA pod CIDR, also needs the `flannel-ipv6-masq` drop-in
+and the firewalld trusted-sources change from the two subsections above, which apply unchanged.
 
 ### A node with no IPv4 egress
 
