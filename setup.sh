@@ -50,8 +50,8 @@ if [[ "$k8s_platform" == "eks" || "$k8s_platform" == "gke" || "$k8s_platform" ==
 
   # Check if the system is using a supported Linux family for this platform
   if [[ "$OS" == "rhel" ]]; then
-    if [ "$LINUX_VERSION" -lt 9 ]; then
-      echo "Error: This script must be run on RHEL or Rocky Linux version 9 or higher when k8s_platform is $k8s_platform."
+    if [ "$LINUX_VERSION" -ne 9 ]; then
+      echo "Error: This script must be run on RHEL or Rocky Linux version 9 when k8s_platform is $k8s_platform."
       exit 1
     fi
   else
@@ -67,9 +67,9 @@ if [[ $LINUX_ARCH != "x86_64" ]]; then
 fi
 
 if [[ "$OS" == "rhel" ]]; then
-  # Verify that the Operating System major version of the local machine is either 8 or 9
-  if [[ $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
-    echo "Linux major version must be 8 or 9.";
+  # Verify that the Operating System major version of the local machine is 8, 9 or 10
+  if [[ $LINUX_VERSION != "10" && $LINUX_VERSION != "9" && $LINUX_VERSION != "8" ]]; then
+    echo "Linux major version must be 8, 9 or 10.";
     exit 1;
   fi
 fi
