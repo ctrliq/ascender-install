@@ -74,7 +74,7 @@
     # list said. Install the few packages the repository setup itself needs, first.
     - name: Ensure the packages the Kubernetes apt repository setup needs
       ansible.builtin.apt:
-        name: "{{ common_packages[ansible_os_family][ansible_distribution_major_version | int] | default([]) }}"
+        name: "{{ k8s_repo_prereq_packages }}"
         state: present
         update_cache: true
       become: true

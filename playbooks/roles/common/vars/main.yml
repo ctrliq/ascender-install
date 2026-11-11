@@ -1,3 +1,8 @@
+k8s_repo_prereq_packages:
+  - ca-certificates
+  - curl
+  - gnupg
+
 common_packages:
   RedHat:
     8:
