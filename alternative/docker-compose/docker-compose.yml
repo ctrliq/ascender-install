@@ -92,11 +92,11 @@ services:
     command: ["/opt/ascender/init.sh"]
     volumes:
       - ./scripts:/opt/ascender:ro
-      - projects:/var/lib/awx/projects
+      - projects:/var/lib/ascender/projects
       - job_private_data:/tmp
-      - receptor_socket:/var/run/awx-receptor
-      - rsyslog_socket:/var/run/awx-rsyslog
-      - podman_storage:/var/lib/awx/.local/share/containers
+      - receptor_socket:/var/run/ascender-receptor
+      - rsyslog_socket:/var/run/ascender-rsyslog
+      - podman_storage:/var/lib/ascender/.local/share/containers
     restart: "no"
 
   # One-shot: waits for the database, applies migrations, creates/updates the
@@ -146,9 +146,9 @@ services:
       - ./config/nginx-locations.conf:/etc/nginx/ascender-locations.conf:ro
       - ./config/nginx-http-${ASCENDER_HTTP_MODE:-redirect}.conf:/etc/nginx/ascender-http.conf:ro
       - ./certs:/etc/tower/certs:ro
-      - projects:/var/lib/awx/projects
+      - projects:/var/lib/ascender/projects
       - valkey_socket:/var/run/valkey
-      - rsyslog_socket:/var/run/awx-rsyslog
+      - rsyslog_socket:/var/run/ascender-rsyslog
     ports:
       - "${ASCENDER_HTTP_PORT:-80}:8052"
       - "${ASCENDER_HTTPS_PORT:-443}:8053"
@@ -176,16 +176,16 @@ services:
       SUPERVISOR_CONFIG_PATH: /etc/supervisord_task.conf
       # Convenience for `docker compose exec task receptorctl status`. The
       # dispatcher itself reads the socket path from receptor.conf.
-      RECEPTORCTL_SOCKET: /var/run/awx-receptor/receptor.sock
+      RECEPTORCTL_SOCKET: /var/run/ascender-receptor/receptor.sock
     volumes:
       - ./scripts:/opt/ascender:ro
       - ./config/settings.py:/etc/tower/settings.py:ro
       - ./config/receptor.conf:/etc/receptor/receptor.conf:ro
-      - projects:/var/lib/awx/projects
+      - projects:/var/lib/ascender/projects
       - job_private_data:/tmp
       - valkey_socket:/var/run/valkey
-      - receptor_socket:/var/run/awx-receptor
-      - rsyslog_socket:/var/run/awx-rsyslog
+      - receptor_socket:/var/run/ascender-receptor
+      - rsyslog_socket:/var/run/ascender-rsyslog
     secrets: *ascender-secrets
     depends_on:
       migrate:
@@ -207,8 +207,8 @@ services:
       - ./config/settings.py:/etc/tower/settings.py:ro
       - ./config/receptor.conf:/etc/receptor/receptor.conf:ro
       - valkey_socket:/var/run/valkey
-      - rsyslog_socket:/var/run/awx-rsyslog
-      - rsyslog_spool:/var/lib/awx/rsyslog
+      - rsyslog_socket:/var/run/ascender-rsyslog
+      - rsyslog_spool:/var/lib/ascender/rsyslog
     secrets: *ascender-secrets
     depends_on:
       migrate:
@@ -235,7 +235,7 @@ services:
     user: "1000:0"
     privileged: true
     environment:
-      RECEPTORCTL_SOCKET: /var/run/awx-receptor/receptor.sock
+      RECEPTORCTL_SOCKET: /var/run/ascender-receptor/receptor.sock
       XDG_RUNTIME_DIR: /run/user/1000
     # Runtime state of the nested podman: a fresh tmpfs per container start,
     # never the shared /tmp volume (see receptor/launch_awx_receptor.sh).
@@ -243,10 +243,10 @@ services:
       - /run/user/1000:uid=1000,gid=0,mode=0700
     volumes:
       - ./config/receptor.conf:/etc/receptor/receptor.conf:ro
-      - projects:/var/lib/awx/projects
+      - projects:/var/lib/ascender/projects
       - job_private_data:/tmp
-      - receptor_socket:/var/run/awx-receptor
-      - podman_storage:/var/lib/awx/.local/share/containers
+      - receptor_socket:/var/run/ascender-receptor
+      - podman_storage:/var/lib/ascender/.local/share/containers
       - /sys/fs/cgroup:/sys/fs/cgroup
     # Uncomment to let remote execution / hop nodes peer into this node.
     # ports:
@@ -262,10 +262,10 @@ secrets:
 
 volumes:
   postgres_data:
-  projects:            # /var/lib/awx/projects   shared by web, task, receptor
+  projects:            # /var/lib/ascender/projects   shared by web, task, receptor
   job_private_data:    # /tmp                    job private data dirs: task + receptor
-  receptor_socket:     # /var/run/awx-receptor   task -> receptor control socket
-  rsyslog_socket:      # /var/run/awx-rsyslog    web, task -> rsyslog
+  receptor_socket:     # /var/run/ascender-receptor   task -> receptor control socket
+  rsyslog_socket:      # /var/run/ascender-rsyslog    web, task -> rsyslog
   valkey_socket:       # /var/run/valkey
   rsyslog_spool:
   podman_storage:      # execution environment images pulled by podman

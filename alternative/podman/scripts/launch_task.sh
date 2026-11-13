@@ -5,14 +5,14 @@
 # this container and hands jobs to the receptor sidecar over the shared socket.
 
 if [ "$(id -u)" -ge 500 ]; then
-    echo "awx:x:$(id -u):$(id -g):,,,:/var/lib/awx:/bin/bash" >> /etc/passwd
+    echo "awx:x:$(id -u):$(id -g):,,,:/var/lib/ascender:/bin/bash" >> /etc/passwd
 fi
 
 set -e
 
 wait-for-migrations
 
-mkdir -p /var/lib/awx/job_status
+mkdir -p /var/lib/ascender/job_status
 
 ascender-manage provision_instance --hostname="$(hostname)" --node_type=hybrid
 ascender-manage register_queue --queuename=controlplane --instance_percent=100

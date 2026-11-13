@@ -29,7 +29,7 @@ RUN sed -i -e 's|^#mount_program|mount_program|g' \
            -e '/additionalimage.*/a "/var/lib/shared",' \
            -e 's|^mountopt[[:space:]]*=.*$|mountopt = "nodev,fsync=0"|g' \
            /etc/containers/storage.conf && \
-    /var/lib/awx/venv/awx/bin/python3 -c "import tomllib; \
+    /var/lib/ascender/venv/ascender/bin/python3 -c "import tomllib; \
 o = tomllib.load(open('/etc/containers/storage.conf', 'rb'))['storage']['options']; \
 assert o['additionalimagestores'] == ['/var/lib/shared'], o.get('additionalimagestores'); \
 assert o['overlay']['mount_program'] == '/usr/bin/fuse-overlayfs', o['overlay'].get('mount_program'); \
@@ -42,11 +42,11 @@ COPY containers.conf /etc/containers/containers.conf
 COPY launch_awx_receptor.sh /usr/bin/launch_awx_receptor.sh
 
 # Rootless podman needs a named user with subordinate id ranges.
-RUN echo "awx:x:1000:0:Ascender:/var/lib/awx:/bin/bash" >> /etc/passwd && \
+RUN echo "awx:x:1000:0:Ascender:/var/lib/ascender:/bin/bash" >> /etc/passwd && \
     echo "awx:100000:65536" > /etc/subuid && \
     echo "awx:100000:65536" > /etc/subgid && \
-    for dir in /var/lib/awx/projects /var/run/awx-receptor \
-               /var/lib/awx/.local/share/containers/storage \
+    for dir in /var/lib/ascender/projects /var/run/ascender-receptor \
+               /var/lib/ascender/.local/share/containers/storage \
                /var/lib/shared/overlay-images /var/lib/shared/overlay-layers \
                /var/lib/shared/vfs-images /var/lib/shared/vfs-layers ; do \
         mkdir -p "$dir"; chgrp 0 "$dir"; chmod 2775 "$dir"; \
@@ -58,8 +58,8 @@ RUN echo "awx:x:1000:0:Ascender:/var/lib/awx:/bin/bash" >> /etc/passwd && \
 
 ENV _CONTAINERS_USERNS_CONFIGURED=""
 # ansible-runner comes from the Ascender virtualenv.
-ENV PATH="/var/lib/awx/venv/awx/bin:${PATH}"
-ENV HOME="/var/lib/awx"
+ENV PATH="/var/lib/ascender/venv/ascender/bin:${PATH}"
+ENV HOME="/var/lib/ascender"
 
 USER 1000
 EXPOSE 27199

@@ -3,7 +3,7 @@ set -e
 
 uid="$(id -u)"
 if [ "${uid}" -ge 500 ] && ! getent passwd "${uid}" >/dev/null; then
-    echo "awx:x:${uid}:$(id -g):,,,:/var/lib/awx:/bin/bash" >> /etc/passwd
+    echo "awx:x:${uid}:$(id -g):,,,:/var/lib/ascender:/bin/bash" >> /etc/passwd
 fi
 
 # Rootless podman keeps its runtime state (runroot, cached boot id, locks)

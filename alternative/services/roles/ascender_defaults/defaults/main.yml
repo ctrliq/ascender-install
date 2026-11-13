@@ -29,10 +29,10 @@ ascender_pg_max_connections: 1024
 # --- Paths and accounts (the application hard-codes most of these) -------------
 ascender_user: awx
 ascender_group: awx
-ascender_home: /var/lib/awx
-ascender_src_dir: /var/lib/awx/src
-ascender_venv_base: /var/lib/awx/venv
-ascender_venv: /var/lib/awx/venv/awx
+ascender_home: /var/lib/ascender
+ascender_src_dir: /var/lib/ascender/src
+ascender_venv_base: /var/lib/ascender/venv
+ascender_venv: /var/lib/ascender/venv/ascender
 ascender_config_dir: /etc/tower
 ascender_secrets_dir: /etc/tower/.secrets
 ascender_cert_dir: /etc/tower/certs

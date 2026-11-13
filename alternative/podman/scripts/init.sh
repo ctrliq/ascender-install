@@ -5,11 +5,11 @@
 set -euo pipefail
 
 for dir in \
-    /var/lib/awx/projects \
-    /var/run/awx-receptor \
-    /var/run/awx-rsyslog \
-    /var/lib/awx/.local/share/containers \
-    /var/lib/awx/.local/share/containers/storage ; do
+    /var/lib/ascender/projects \
+    /var/run/ascender-receptor \
+    /var/run/ascender-rsyslog \
+    /var/lib/ascender/.local/share/containers \
+    /var/lib/ascender/.local/share/containers/storage ; do
     mkdir -p "$dir"
     chgrp 0 "$dir"
     chmod 2775 "$dir"

@@ -17,7 +17,7 @@ converges the host and upgrades are a variable change plus a re-run.
 | PostgreSQL 15 | AppStream module `postgresql:15`, local TCP only, scram passwords |
 | Valkey | AppStream package, unix socket `/run/valkey/valkey.sock` shared with the `awx` user |
 | nginx | AppStream package, `/etc/nginx/nginx.conf` templated: 443 with TLS, 80 redirects (or serves, see `ascender_http_mode`) |
-| Ascender | git checkout in `/var/lib/awx/src`, virtualenv `/var/lib/awx/venv/awx` built with the tree's own `make requirements_awx` and `make sdist` (includes the UI build), static files in `/var/lib/awx/public/static` |
+| Ascender | git checkout in `/var/lib/ascender/src`, virtualenv `/var/lib/ascender/venv/ascender` built with the tree's own `make requirements_awx` and `make sdist` (includes the UI build), static files in `/var/lib/ascender/public/static` |
 | Processes | one `ascender.service` (user `awx`) running supervisord with the same programs the web, task and rsyslog containers run, plus receptor. Logs in `/var/log/tower/<program>.log` |
 | Receptor | binary from the GitHub release under `/usr/local/lib/receptor-<version>`, config `/etc/receptor/receptor.conf`, control socket `/run/ascender/receptor.sock` |
 | rsyslog | from the `ansible/Rsyslog` COPR (the `omhttp` module the log aggregator needs), run as `awx` by supervisord with the config the app generates |
@@ -76,7 +76,7 @@ the inventory or `group_vars/all.yml`.
 
 Set `ascender_version` to the new tag and re-run the playbook. The build role
 compares the checked-out commit (and Python version) with the stamp from the
-last build in `/var/lib/awx/.ascender-build` and rebuilds only when it changed.
+last build in `/var/lib/ascender/.ascender-build` and rebuilds only when it changed.
 An upgrade means downtime: `ascender.service` is stopped before the virtualenv
 is replaced (and, on a re-run, before any still-pending migrations), the
 services role then runs the migrations and starts it again on the new code.
