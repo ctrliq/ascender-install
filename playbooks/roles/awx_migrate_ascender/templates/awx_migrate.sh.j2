@@ -30,8 +30,8 @@ ascender-manage migrate dab_rbac --noinput
 ascender-manage shell <<'PYEOF'
 from django.apps import apps
 from django.contrib.auth.models import User
-from awx.main.models.rbac import Role, ROLE_SINGLETON_SYSTEM_ADMINISTRATOR
-from awx.main.migrations._rbac import rebuild_role_parentage, rebuild_role_hierarchy
+from ascender.main.models.rbac import Role, ROLE_SINGLETON_SYSTEM_ADMINISTRATOR
+from ascender.main.migrations._rbac import rebuild_role_parentage, rebuild_role_hierarchy
 
 rebuild_role_parentage(apps, None)   # main_rbac_roles_parents + implicit_parents
 rebuild_role_hierarchy(apps, None)   # main_rbac_role_ancestors (full recompute)
