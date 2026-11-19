@@ -40,15 +40,22 @@ WHERE app = 'main'
 # See README: "DAB RBAC: the shadow permission system"
 # -----------------------------------------------------------------------
 
+# Older AWX releases never created the dab_rbac tables, so skip when absent.
 psql -U awx -d awx -c "
-TRUNCATE dab_rbac_roleuserassignment,
-         dab_rbac_roleteamassignment,
-         dab_rbac_roleevaluation,
-         dab_rbac_roleevaluationuuid,
-         dab_rbac_objectrole_provides_teams,
-         dab_rbac_objectrole,
-         dab_rbac_roledefinition_permissions,
-         dab_rbac_roledefinition,
-         dab_rbac_dabpermission
-         CASCADE;
+DO \$\$
+BEGIN
+  IF to_regclass('dab_rbac_dabpermission') IS NOT NULL THEN
+    TRUNCATE dab_rbac_roleuserassignment,
+             dab_rbac_roleteamassignment,
+             dab_rbac_roleevaluation,
+             dab_rbac_roleevaluationuuid,
+             dab_rbac_objectrole_provides_teams,
+             dab_rbac_objectrole,
+             dab_rbac_roledefinition_permissions,
+             dab_rbac_roledefinition,
+             dab_rbac_dabpermission
+             CASCADE;
+  END IF;
+END
+\$\$;
 "

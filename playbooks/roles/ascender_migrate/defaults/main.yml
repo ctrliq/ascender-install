@@ -1,0 +1,23 @@
+---
+# The restored database must have reached this AWX migration (AWX 23.9 and
+# later, including 24.6.1, the final AWX release), because migration_steps
+# fakes schema that AWX applied up to it. Older databases are rejected.
+awx_migration_marker: 0189_inbound_hop_nodes
+
+# How to bring the AWX database onto Ascender's migration chain, after
+# migration_fix.sh.j2 has removed every main migration record from 0183 on.
+# fake  = AWX already applied the same schema, only record it.
+# apply = Ascender-only migration, run it for real.
+# Same sequence as the awx_migrate_ascender role, whose templates this role uses.
+migration_steps:
+  - { target: "0183_pre_django_upgrade",                    action: fake  }  # AWX applied identical schema
+  - { target: "0184_alter_credentialtype_kind",             action: apply }  # Ascender-only: 0183_auto + 0184_alter
+  - { target: "0186_drop_django_taggit",                    action: fake  }  # AWX applied: 0184_django_indexes, 0185, 0186
+  - { target: "0186a_disable_NEXT_UI",                      action: apply }  # Ascender-only
+  - { target: "0187_hop_nodes",                             action: fake  }  # AWX applied identical schema
+  - { target: "0187a_mountain_credential",                  action: apply }  # Ascender-only
+  - { target: "0190_alter_inventorysource_source_and_more", action: fake  }  # AWX applied 0188, 0189; 0190 only changes choices
+  - { target: ~,                                             action: apply }  # apply all remaining Ascender migrations
+
+# The migration scripts are shared with the awx_migrate_ascender role.
+awx_migrate_templates: "{{ role_path }}/../awx_migrate_ascender/templates"

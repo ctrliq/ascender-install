@@ -53,7 +53,7 @@ migration_steps:
   - { target: "0187_hop_nodes",                             action: fake  }  # AWX applied identical schema
   - { target: "0187a_mountain_credential",                  action: apply }  # Ascender-only: register Mountain credential
   - { target: "0190_alter_inventorysource_source_and_more", action: fake  }  # AWX applied: 0188, 0189, 0190
-  - { target: ~,                                             action: apply }  # no target = apply all remaining (0191 through 0194)
+  - { target: ~,                                             action: apply }  # no target = apply all remaining Ascender migrations
 
 # Secrets to patch from the AWX backup into Ascender K8s secrets.
 # src_key = key in the backup's secrets.yml dict

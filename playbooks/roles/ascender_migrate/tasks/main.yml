@@ -1,4 +1,16 @@
 
+# A failed earlier run can leave the operator scaled to 0, and the backup below
+# needs it running.
+- name: Ensure Ascender Operator is running
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Deployment
+    name: awx-operator-controller-manager
+    replicas: 1
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
+
 - name: Remove restore if exists
   kubernetes.core.k8s:
     state: absent
@@ -8,6 +20,7 @@
       metadata:
         name: ascender-app-restore
         namespace: "{{ ASCENDER_NAMESPACE }}"
+    wait: true
     verify_ssl: false
 
 - name: Take backup of the current database
@@ -264,7 +277,6 @@
         backup_dir: /backups/awx_migration
         no_log: false
         #force_drop_db: true
-      wait: true
     verify_ssl: false
 
 - name: Scale up Ascender Operator
@@ -279,64 +291,165 @@
   loop:
     - awx-operator-controller-manager
 
-- name: Search for all Pods labelled app=web
+# The operator only processes the AWXRestore once it is scaled back up. Wait
+# for it to finish, or the steps below run against the empty database.
+- name: Wait for the restore to complete
   kubernetes.core.k8s_info:
+    api_version: awx.ansible.com/v1beta1
+    kind: AWXRestore
+    name: ascender-app-restore
     namespace: "{{ ASCENDER_NAMESPACE }}"
-    kind: Pod
-    name: ascender-app-postgres-15-0
     verify_ssl: false
-  register: db_pods
-  until: db_pods.resources | length > 0
-  retries: 60
-  delay: 20
+  register: restore_info
+  until: >-
+    restore_info.resources | length > 0 and
+    restore_info.resources[0].status.restoreComplete | default(false) | bool
+  retries: 120
+  delay: 15
 
-- name: Remove specific migration entries from django_migrations table
+# Keep the operator from reconciling while the steps below fix up the migration
+# history. It is scaled back up once the migrations are done.
+- name: Scale down Ascender Operator during migrations
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Deployment
+    name: awx-operator-controller-manager
+    replicas: 0
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
+
+# The operator may already have started its own migration Job against the
+# restored AWX database. Remove it so it cannot run alongside the steps below.
+- name: Find operator migration Jobs
+  kubernetes.core.k8s_info:
+    kind: Job
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    verify_ssl: false
+  register: migration_jobs
+
+- name: Delete operator migration Jobs
+  kubernetes.core.k8s:
+    state: absent
+    kind: Job
+    name: "{{ item }}"
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    delete_options:
+      propagationPolicy: Foreground
+    wait: true
+    wait_timeout: 300
+    verify_ssl: false
+  loop: >-
+    {{ migration_jobs.resources | map(attribute='metadata.name')
+       | select('match', 'ascender-app-migration-') | list }}
+
+# The web deployment was scaled to 0 above and the operator is now down, so
+# bring up one web pod to run the migrations in.
+- name: Scale up Ascender web deployment for migrations
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Deployment
+    name: ascender-app-web
+    replicas: 1
+    wait: false
+    verify_ssl: false
+
+- name: Check whether the restored database reached AWX migration {{ awx_migration_marker }}
   kubernetes.core.k8s_exec:
     namespace: "{{ ASCENDER_NAMESPACE }}"
     pod: ascender-app-postgres-15-0
-    command: psql -U awx -c "delete from django_migrations where app = 'main' and name like '{{ item }}%';"
-  verify_ssl: false
+    command: >-
+      psql -U awx -tAc "select count(*) from django_migrations
+      where app = 'main' and name = '{{ awx_migration_marker }}';"
+    verify_ssl: false
+  register: awx_marker_check
+  until: awx_marker_check.rc is defined and awx_marker_check.rc == 0
   retries: 30
   delay: 10
-  loop:
-    - "018"
-    - "019"
 
-- name: Search for all Pods labelled app=web
+- name: Fail if the AWX database is too old for this migration
+  ansible.builtin.fail:
+    msg: >-
+      The restored database has not reached AWX migration {{ awx_migration_marker }}
+      (AWX 23.9 or later), so it cannot be migrated to Ascender by this playbook.
+      Upgrade AWX first (24.6.1 is the final AWX release), take a new backup and
+      run this playbook again. The Ascender operator is left scaled to 0.
+  when: awx_marker_check.stdout | trim | int == 0
+
+- name: Clean up migration records and DAB RBAC data
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: ascender-app-postgres-15-0
+    command: "bash -c {{ lookup('template', awx_migrate_templates ~ '/migration_fix.sh.j2') | quote }}"
+    verify_ssl: false
+
+- name: Wait for a running Ascender web pod
   kubernetes.core.k8s_info:
     namespace: "{{ ASCENDER_NAMESPACE }}"
     kind: Pod
     label_selectors:
       - "app.kubernetes.io/name = ascender-app-web"
+    field_selectors:
+      - status.phase=Running
     verify_ssl: false
   register: web_pods
-  until: web_pods.resources | length > 0
+  until: web_pods.resources | rejectattr('metadata.deletionTimestamp', 'defined') | list | length > 0
   retries: 60
   delay: 20
 
 - ansible.builtin.set_fact:
-    web_pod: "{{ web_pods.resources[0].metadata.name }}"
+    web_pod: "{{ (web_pods.resources | rejectattr('metadata.deletionTimestamp', 'defined') | first).metadata.name }}"
 
-- name: Run migrations
+# The web readiness probe needs a migrated database, so wait for the container
+# to accept commands instead of waiting for Ready.
+- name: Wait for the web container to accept commands
   kubernetes.core.k8s_exec:
     namespace: "{{ ASCENDER_NAMESPACE }}"
     pod: "{{ web_pod }}"
     container: "ascender-app-web"
-    command: "/usr/bin/ascender-manage migrate"
+    command: "true"
     verify_ssl: false
-  ignore_errors: yes
+  register: web_exec
+  until: web_exec.rc is defined and web_exec.rc == 0
+  retries: 30
+  delay: 10
 
-- name: Run fake migrations
+- name: Run Ascender migrations
   kubernetes.core.k8s_exec:
     namespace: "{{ ASCENDER_NAMESPACE }}"
     pod: "{{ web_pod }}"
     container: "ascender-app-web"
-    command: /bin/bash -c "ascender-manage migrate main {{ item }} --fake; ascender-manage migrate --noinput;"
+    command: "bash -c {{ lookup('template', awx_migrate_templates ~ '/awx_migrate.sh.j2') | quote }}"
     verify_ssl: false
-  ignore_errors: yes
-  loop:
-    - "0183_pre_django_upgrade"
-    - "0187_hop_nodes"
+  register: awx_migrate_result
+
+- name: Show migration output
+  ansible.builtin.debug:
+    var: awx_migrate_result.stdout_lines
+
+- name: Check for unapplied migrations
+  kubernetes.core.k8s_exec:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    pod: "{{ web_pod }}"
+    container: "ascender-app-web"
+    command: /bin/bash -ec "out=$(ascender-manage showmigrations); grep -F '[ ]' <<< \"$out\" || true"
+    verify_ssl: false
+  register: unapplied_migrations
+
+- name: Fail if any migration is still unapplied
+  ansible.builtin.fail:
+    msg: "Migration did not complete. Unapplied migrations: {{ unapplied_migrations.stdout_lines }}"
+  when: unapplied_migrations.stdout | trim | length > 0
+
+- name: Scale up Ascender Operator after migrations
+  kubernetes.core.k8s_scale:
+    namespace: "{{ ASCENDER_NAMESPACE }}"
+    kind: Deployment
+    name: awx-operator-controller-manager
+    replicas: 1
+    wait: true
+    wait_timeout: 180
+    verify_ssl: false
 
 - name: Remove restore if exists
   kubernetes.core.k8s:

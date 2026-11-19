@@ -14,12 +14,11 @@ ascender-manage migrate main {% if step.action == 'fake' %}--fake {% endif %}--n
 {% endif %}
 {% endfor %}
 
-# dab_resource_registry: applies 0005-0007 (AWX 24.6.1 stops at 0004)
-ascender-manage migrate dab_resource_registry --noinput
-
-# dab_rbac: applies 0004-0008 (AWX 24.6.1 stops at 0003)
-# Tables were cleared by migration_fix.sh.j2 so data migrations find zero rows.
-ascender-manage migrate dab_rbac --noinput
+# Apply the remaining migrations in every installed app: dab_resource_registry
+# (AWX 24.6.1 stops at 0004), dab_rbac where Ascender still installs it (AWX
+# stops at 0003; migration_fix.sh.j2 cleared its tables so data migrations find
+# zero rows; Ascender 25.6 drops the app in main 0209), social_django, etc.
+ascender-manage migrate --noinput
 
 # Reconcile derived RBAC state the bulk pg_restore left stale. A SQL-level
 # restore fires no Django ORM signals, so the role ancestor cache, implicit
