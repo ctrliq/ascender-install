@@ -17,10 +17,15 @@
 - name: Gather the hostnames this install publishes
   ansible.builtin.set_fact:
     etc_hosts_marker_comment: "# managed by ascender-install"
+    # REACT_HOSTNAME was missing, so an install with REACT_INSTALL enabled left
+    # the React ingress host unresolvable on the controller - every check against it,
+    # and every later run of this file, silently skipped the one hostname the React
+    # role had just published.
     etc_hosts_names: >-
       {{ [ASCENDER_HOSTNAME]
          + ([LEDGER_HOSTNAME] if LEDGER_INSTALL | bool else [])
-         + ([PROXY_HOSTNAME] if PROXY_INSTALL | bool else []) }}
+         + ([PROXY_HOSTNAME] if PROXY_INSTALL | bool else [])
+         + ([REACT_HOSTNAME] if REACT_INSTALL | default(false) | bool and REACT_HOSTNAME is defined else []) }}
 
 - name: Remove unmarked /etc/hosts entries for the hostnames the installer manages
   ansible.builtin.lineinfile:

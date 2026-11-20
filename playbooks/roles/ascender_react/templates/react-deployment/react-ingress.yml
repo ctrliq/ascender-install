@@ -1,0 +1,57 @@
+{#
+  this Ingress replaces the one eda-server-operator would create.
+
+  The operator's eda-ui.ingress.yaml.j2 publishes the event-stream backend on a
+  hardcoded '/' instead of the event-stream prefix, so with ingress_path '/' the
+  UI and the event stream collide on the same host+path. Ingress controllers
+  resolve that collision by keeping one of the two rules - Traefik keeps the
+  event-stream one - and the React UI then answers 404 on every request.
+
+  The role sets 'ingress_type: none' on the EDA custom resource and applies this
+  object instead, which routes the event-stream prefix to the event-stream
+  service and everything else to the UI.
+#}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ascender-react-ingress
+  namespace: {{ REACT_NAMESPACE }}
+  labels:
+    app.kubernetes.io/part-of: ascender-react
+    app.kubernetes.io/managed-by: ascender-install
+{% if react_ingress_annotations | default({}) %}
+  annotations:
+{{ react_ingress_annotations | to_nice_yaml | indent(4, True) }}
+{% endif %}
+spec:
+{% if react_ingress_class_name | default('') %}
+  ingressClassName: {{ react_ingress_class_name }}
+{% endif %}
+  rules:
+    - host: {{ REACT_HOSTNAME }}
+      http:
+        paths:
+          # Longest prefix first: controllers that preserve rule order (and Traefik,
+          # which prioritises by rule length) must send the event-stream traffic to
+          # the event-stream service and everything else to the UI.
+          - path: {{ react_event_stream_prefix }}
+            pathType: Prefix
+            backend:
+              service:
+                name: ascender-react-event-stream
+                port:
+                  number: 8000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ascender-react-ui
+                port:
+                  number: 80
+{% if k8s_lb_protocol == 'https' %}
+  tls:
+    - hosts:
+        - {{ REACT_HOSTNAME }}
+      secretName: ascender-react-tls-secret
+{% endif %}

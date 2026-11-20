@@ -1,0 +1,128 @@
+{#
+  eda-server-operator ships NetworkPolicies that were written for OpenShift.
+
+  For every pod it manages it applies a default-deny policy and then re-opens only
+  what OpenShift needs:
+    * DNS egress is allowed only to a namespace named "openshift-dns" on port 5353
+    * ingress is allowed only from namespaces carrying the OpenShift router labels
+      (policy-group.network.openshift.io/ingress, network.openshift.io/policy-group)
+
+  On any other distribution that actually enforces NetworkPolicy - k3s and RKE2 do,
+  through their built-in kube-router controller - that means:
+    * the eda-ui pod cannot reach CoreDNS, so nginx dies at startup with
+      'host not found in upstream "<name>-api"' and the pod goes CrashLoopBackOff
+    * the ingress controller cannot reach the eda-ui / eda-event-stream pods, so the
+      React ingress answers 502 Bad Gateway even once the pods are healthy
+
+  NetworkPolicies are additive, so these two policies re-open exactly those paths
+  without touching (or being reverted by) the ones the operator owns.
+#}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ascender-react-allow-cluster-dns
+  namespace: {{ REACT_NAMESPACE }}
+  labels:
+    app.kubernetes.io/part-of: ascender-react
+    app.kubernetes.io/managed-by: ascender-install
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/managed-by
+        operator: In
+        values:
+          - eda-operator
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ react_dns_namespace }}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ascender-react-allow-ingress-controller
+  namespace: {{ REACT_NAMESPACE }}
+  labels:
+    app.kubernetes.io/part-of: ascender-react
+    app.kubernetes.io/managed-by: ascender-install
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values:
+          - eda-ui
+          - eda-event-stream
+  policyTypes:
+    - Ingress
+  ingress:
+{% if react_ingress_controller_namespaces | default([]) | length > 0 %}
+    - from:
+{% for ns in react_ingress_controller_namespaces %}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ ns }}
+{% endfor %}
+      ports:
+{% else %}
+    # No namespace listed: the load balancer terminating traffic for this platform
+    # lives outside the cluster (an AWS ALB, for example), so its source address is
+    # not a pod and cannot be matched with a namespaceSelector. Allow the two ports
+    # the ingress publishes from any source instead.
+    - ports:
+{% endif %}
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8000
+{% if react_pg_external | default(false) | bool %}
+---
+{#
+  the operator's own ascender-react-db-management policy allows egress on 5432
+  only towards the PostgreSQL pod it manages (app.kubernetes.io/instance:
+  postgres-15-<name>). When React is pointed at Ascender's instance, or at an external
+  server, the migration and db-management pods are cut off from it and the install
+  hangs on a database that is reachable from everywhere except the pods that need it.
+#}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ascender-react-allow-postgres
+  namespace: {{ REACT_NAMESPACE }}
+  labels:
+    app.kubernetes.io/part-of: ascender-react
+    app.kubernetes.io/managed-by: ascender-install
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/managed-by
+        operator: In
+        values:
+          - eda-operator
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+{% if react_pg_namespace | default('') %}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ react_pg_namespace }}
+{% else %}
+        # The server is outside the cluster, so there is no namespace or pod to select;
+        # the port is the only thing left to narrow this to.
+        - ipBlock:
+            cidr: 0.0.0.0/0
+{% endif %}
+      ports:
+        - protocol: TCP
+          port: {{ react_pg_port | int }}
+{% endif %}

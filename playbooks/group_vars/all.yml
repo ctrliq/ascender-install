@@ -261,6 +261,75 @@ ascender_replicas: 1
 ascender_image_pull_policy: Always
 
 
+  # ---Ascender React install variables---
+#
+# every switch below is also in default.config.yml, which is the file people
+# actually edit and which - being loaded through vars_files - takes precedence over
+# this one. What is left here is the fallback for a play that runs without a config
+# file. Change both together, or the two will drift the way the collection lists did.
+
+# Determines whether or not Ascender React will be installed
+REACT_INSTALL: false
+
+# DNS resolvable hostname for Ascender React service. This is required for install.
+REACT_HOSTNAME: react.example.com
+
+# k8s namespace for Ascender React k8s objects
+REACT_NAMESPACE: react
+
+# Administrator username for Ascender React
+REACT_ADMIN_USER: admin
+
+# Administrator password for Ascender React
+REACT_ADMIN_PASSWORD: "myadminpassword"
+
+# The version of the EDA Operator used to install Ascender React and its components
+REACT_OPERATOR_VERSION: main
+
+# The OCI container image for Ascender React
+REACT_IMAGE: quay.io/ansible/eda-server
+REACT_IMAGE_VERSION: main
+
+# The OCI container image for Ascender React UI
+REACT_IMAGE_WEB: quay.io/ansible/eda-ui
+REACT_IMAGE_WEB_VERSION: latest
+
+# TLS Certificate file, required when deploying HTTPS in K3s
+react_tls_crt_path: "{{ playbook_dir }}/../ascender.crt"
+
+# TLS Private Key file, required when deploying HTTPS in K3s
+react_tls_key_path: "{{ playbook_dir }}/../ascender.key"
+
+# Which PostgreSQL instance Ascender React runs on: 'managed' (the EDA Operator deploys
+# its own inside REACT_NAMESPACE), 'ascender' (share the instance Ascender uses, in a
+# separate database) or 'external' (a server you run yourself, see REACT_PGSQL_HOST).
+# default.config.yml documents the three in full.
+REACT_PGSQL_MODE: managed
+
+# Database, role and password React connects with, for the 'ascender' and 'external'
+# modes. The managed mode generates its own.
+# NOTE: Do NOT use special characters in the postgres password (Django requirement)
+REACT_PGSQL_DB: react
+REACT_PGSQL_USER: react
+REACT_PGSQL_PWD: "anotherpassword"
+
+# The event stream connects as a second role on the same database. The EDA Operator
+# creates it itself only on a database it manages, so the installer creates it for the
+# other two modes.
+REACT_PGSQL_EVENT_STREAM_USER: react_event_stream
+# REACT_PGSQL_EVENT_STREAM_PWD: "anotherpassword"
+
+# # External PostgreSQL ip or url resolvable by the cluster, required when
+# # REACT_PGSQL_MODE is 'external'
+# REACT_PGSQL_HOST: "reactpghost.example.com"
+
+# # External PostgreSQL port, this usually defaults to 5432
+# REACT_PGSQL_PORT: 5432
+
+# # PostgreSQL sslmode React connects with
+# REACT_PGSQL_SSLMODE: prefer
+
+
 # ---Ledger install variables---
 
 # Determines whether or not Ledger will be installed
